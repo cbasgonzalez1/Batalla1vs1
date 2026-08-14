@@ -40,7 +40,24 @@ crea un lock paralelo y desincroniza las dependencias.
 - Exponer siempre `window.render_game_to_text()` (ángulo, potencia, viento,
   posición y velocidad del proyectil, altura del terreno muestreada, turno
   activo) y `window.advanceTime(ms)` para avanzar frames de forma determinista.
-- Un solo puerto. Sin backend, sin cuentas, sin menús.
+- Sin cuentas, sin login, sin base de datos. Se entra a una sala con un código
+  y ya está.
+
+## El servidor no simula
+
+Hay servidor porque el juego es online por equipos (hasta 3 por bando), pero su
+único trabajo es repartir mensajes entre los móviles de una sala. No calcula
+balística, no aplica daño y no guarda el estado de la partida.
+
+Cada móvil simula la partida entera a partir de la semilla y de los inputs que
+recibe: el mismo paso fijo y el mismo PRNG dan el mismo resultado en los seis
+dispositivos. Por eso viaja el input (ángulo, potencia, reacción), nunca la
+posición del proyectil.
+
+Esto es innegociable, y no por elegancia: si el servidor empieza a calcular,
+hay dos verdades que mantener sincronizadas y el determinismo deja de servir
+para nada. Si algo no cuadra entre dos móviles, el fallo está en la simulación
+o en el orden de los inputs, nunca en "lo que dijo el servidor".
 
 ## Convenciones
 
