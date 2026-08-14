@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verificar:idioma": "node scripts/verificar-idioma.mjs",
-    "verificar:determinismo": "node scripts/verificar-determinismo.mjs"
+    "verificar:determinismo": "node scripts/verificar-determinismo.mjs",
+    "verificar:sotavento": "node scripts/verificar-sotavento.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"

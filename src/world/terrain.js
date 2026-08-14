@@ -58,7 +58,13 @@ export class Terrain {
     this.floorY = floorY; // lo mas hondo que puede excavar un crater
     this.biome = biome;
 
-    this.heights = new Float32Array(columns);
+    // Float64 y no Float32: con Sotavento el heightmap deja de ser un perfil
+    // que se dibuja y pasa a ser un libro de contabilidad. La masa total ronda
+    // las 2400 u², y en simple precision (7 digitos) cada suma arrastra ~2e-4
+    // de error; en un combate de 16 impactos eso se acerca al milesimo que la
+    // conservacion tiene que respetar. La AO se queda en simple porque solo
+    // pinta. Sigue siendo determinista entre maquinas: IEEE 754 es IEEE 754.
+    this.heights = new Float64Array(columns);
     this.ao = new Float32Array(columns);
 
     this._generate(rng, minHeight, amplitude, pads, bowlHalfWidth, bowlWeight);
@@ -158,9 +164,15 @@ export class Terrain {
    * baja hasta la parte inferior del circulo. Devuelve el rango tocado, que
    * la fase de animacion necesitara para interpolar el hundimiento.
    */
-  carve(cx, cy, r) {
+  carve(cx, cy, r, { rehacerMalla = true } = {}) {
     const i0 = Math.max(0, Math.floor((cx - r - this.x0) / this.dx));
     const i1 = Math.min(this.cols - 1, Math.ceil((cx + r - this.x0) / this.dx));
+
+    // La masa que sale del crater no se destruye: la recoge quien llame para
+    // volver a soltarla a sotavento. Se mide lo que REALMENTE se quita, que no
+    // es el semidisco entero: donde el crater toca `floorY` hay roca madre, y
+    // donde el suelo ya estaba por debajo no se quita nada.
+    let volumen = 0;
 
     for (let i = i0; i <= i1; i++) {
       const dx = this.x0 + i * this.dx - cx;
@@ -168,13 +180,56 @@ export class Terrain {
       if (k <= 0) continue;
       const bottom = cy - Math.sqrt(k);
       if (this.heights[i] > bottom) {
+        const antes = this.heights[i];
         this.heights[i] = Math.max(this.floorY, bottom);
+        volumen += (antes - this.heights[i]) * this.dx;
       }
     }
 
     // La AO mira a los vecinos, asi que hay que refrescar mas ancho que el crater.
-    this.rebuild(i0 - AO_WINDOW, i1 + AO_WINDOW);
-    return { i0, i1 };
+    if (rehacerMalla) this.rebuild(i0 - AO_WINDOW, i1 + AO_WINDOW);
+    return { i0, i1, volumen };
+  }
+
+  /**
+   * Suelta `volumen` de arena en una campana centrada en `xc`.
+   *
+   * Los pesos se normalizan sobre la campana COMPLETA, incluidas las columnas
+   * que caen fuera del mundo: esa parte se pierde de verdad, y se devuelve
+   * aparte para que quien llame pueda comprobar que la masa cuadra. Normalizar
+   * solo sobre lo que cabe habria metido de vuelta al campo la arena que el
+   * viento se llevo fuera, y la conservacion seria mentira.
+   */
+  depositar(xc, sigma, volumen, { rehacerMalla = true } = {}) {
+    const vacio = { i0: 0, i1: -1, depositado: 0, perdido: 0 };
+    if (!(volumen > 0) || !(sigma > 0)) return vacio;
+
+    // Mas alla de cuatro sigmas queda menos de un 0,007 % de la campana.
+    const alcance = 4 * sigma;
+    const desde = Math.floor((xc - alcance - this.x0) / this.dx);
+    const hasta = Math.ceil((xc + alcance - this.x0) / this.dx);
+
+    let suma = 0;
+    for (let i = desde; i <= hasta; i++) {
+      const d = this.x0 + i * this.dx - xc;
+      suma += Math.exp(-(d * d) / (2 * sigma * sigma));
+    }
+    if (suma <= 0) return vacio;
+
+    const escala = volumen / (suma * this.dx);
+    const i0 = Math.max(0, desde);
+    const i1 = Math.min(this.cols - 1, hasta);
+
+    let depositado = 0;
+    for (let i = i0; i <= i1; i++) {
+      const d = this.x0 + i * this.dx - xc;
+      const altura = escala * Math.exp(-(d * d) / (2 * sigma * sigma));
+      this.heights[i] += altura;
+      depositado += altura * this.dx;
+    }
+
+    if (rehacerMalla && i1 >= i0) this.rebuild(i0 - AO_WINDOW, i1 + AO_WINDOW);
+    return { i0, i1, depositado, perdido: volumen - depositado };
   }
 
   // ------------------------------------------------------------- geometria
