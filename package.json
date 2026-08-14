@@ -15,7 +15,8 @@
     "verificar:sotavento": "node scripts/verificar-sotavento.mjs",
     "server": "node server/index.js",
     "verificar:sala": "node scripts/verificar-sala.mjs",
-    "verificar:lobby": "node scripts/verificar-lobby.mjs"
+    "verificar:lobby": "node scripts/verificar-lobby.mjs",
+    "verificar:red": "node scripts/verificar-partida-red.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"

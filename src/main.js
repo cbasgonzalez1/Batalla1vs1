@@ -33,6 +33,9 @@ import { idiomaDelNavegador, crearTraductor, aplicarTraduccion } from './ui/i18n
 import { exponerGanchos } from './ui/inspeccion.js';
 import { crearCliente } from './net/cliente.js';
 import { crearLobby } from './ui/lobby.js';
+import { crearSincronia } from './net/sincronia.js';
+import { crearPartida, avanzarTurno } from './game/roster.js';
+import { ACCION } from './net/protocolo.js';
 
 // El idioma se resuelve una vez, antes de construir nada: el HUD y la pantalla
 // de victoria lo reciben ya decidido.
@@ -405,7 +408,24 @@ function applyAim(aimInput) {
 
 // ────────────────────────────────────────────────────────────────── disparo
 
+/**
+ * Lo que hace el boton de disparar.
+ *
+ * En red no dispara: manda el input y espera al eco del servidor, igual que
+ * los demas. Un atajo para el que dispara le enseñaria una partida distinta a
+ * la de los otros y las desincronias se esconderian en vez de saltar.
+ */
 function fire() {
+  if (sincronia.estado.activa) {
+    if (!sincronia.meToca() || state.phase !== 'aiming') return;
+    const mio = activeAim();
+    sincronia.disparar(mio.phi * RAD_TO_DEG, mio.power);
+    return;
+  }
+  dispararDeVerdad();
+}
+
+function dispararDeVerdad() {
   const start = muzzleState();
   // El arco de prevision y el proyectil real comparten integrador, asi que
   // esta prediccion es exacta: sirve para abrir la ventana de reaccion en el
@@ -509,7 +529,21 @@ function onImpact(hit) {
 function endTurn() {
   projectile.visible = false;
   state.shot = null;
-  state.active = 1 - state.active;
+
+  if (sincronia.estado.activa) {
+    // En red el turno lo decide la partida compartida, que todos avanzan igual.
+    // Y de paso se manda la huella del estado: si dos moviles han calculado
+    // distinto, el servidor lo dice ahora y no tres turnos despues.
+    avanzarTurno(sincronia.estado.partida);
+    state.active = sincronia.indiceActivo();
+    red.contrastar(sincronia.estado.partida.ronda, {
+      alturas: world.terrain.heights,
+      vidas: state.players.map((p) => p.hp),
+      turno: sincronia.estado.partida.ronda,
+    });
+  } else {
+    state.active = 1 - state.active;
+  }
   state.wind = viento.avanzar();
   state.phase = 'aiming';
   activeCannon().setAim(activeAim().phi);
@@ -575,6 +609,22 @@ function spendCharge() {
 }
 
 function useShield() {
+  if (sincronia.estado.activa) {
+    if (canReact()) sincronia.reaccionar(ACCION.escudo, state.flightSteps);
+    return;
+  }
+  aplicarEscudo();
+}
+
+function useHop() {
+  if (sincronia.estado.activa) {
+    if (canReact()) sincronia.reaccionar(ACCION.salto, state.flightSteps);
+    return;
+  }
+  aplicarSalto();
+}
+
+function aplicarEscudo() {
   if (!canReact()) return;
   const i = state.reaction.defender;
   spendCharge();
@@ -582,7 +632,7 @@ function useShield() {
   world.shields[i].visible = true;
 }
 
-function useHop() {
+function aplicarSalto() {
   if (!canReact()) return;
   const i = state.reaction.defender;
   const cannon = world.cannons[i];
@@ -704,6 +754,14 @@ function fixedUpdate() {
   if (state.phase === 'flying') {
     const s = state.shot;
     state.flightSteps += 1;
+
+    // Las reacciones llegan selladas con su paso de vuelo y se aplican ahi, ni
+    // antes ni despues. Es lo que hace que los seis moviles vean el mismo salto
+    // en el mismo instante.
+    for (const entrada of sincronia.consumir(state.flightSteps)) {
+      if (entrada.accion === ACCION.escudo) aplicarEscudo();
+      else if (entrada.accion === ACCION.salto) aplicarSalto();
+    }
 
     // Ventana de reaccion: se abre a 0.9 s del impacto previsto.
     if (
@@ -895,15 +953,38 @@ exponerGanchos({
 const servidor = params.get('servidor') || `ws://${location.hostname}:8787`;
 const red = crearCliente({ url: servidor });
 
+const sincronia = crearSincronia({ cliente: red });
+
+// El disparo que llega del servidor —el propio incluido— es el que se ejecuta.
+sincronia.alDisparo(({ anguloDeg, potencia }) => {
+  const slot = activeAim();
+  slot.phi = clamp(anguloDeg * DEG, MIN_PHI, MAX_PHI);
+  slot.power = clamp(potencia, 0, 1);
+  activeCannon().setAim(slot.phi);
+  refreshPreview();
+  dispararDeVerdad();
+});
+
 const lobby = crearLobby({
   cliente: red,
   t,
   alEmpezar(m) {
-    // De momento solo se anuncia: enchufar la alineacion a la maquina de
-    // estados es el paso siguiente, y hasta que este hecho seria mentira
-    // dejar creer que se esta jugando en red.
-    console.log('[sala] empieza', m.semilla, m.alineacion);
+    // La escena monta exactamente dos vehiculos, asi que una sala de tres o mas
+    // reventaria al buscar world.cannons[2]. Se avisa y se juega en local en vez
+    // de dejar la partida a medias: generalizar la escena a N por bando es el
+    // trabajo siguiente y no esta hecho.
+    if (m.alineacion.length > 2) {
+      console.warn('[sala] de momento solo 1 contra 1; sois', m.alineacion.length);
+      lobby.avisar(t('solo1v1'));
+      return;
+    }
+
+    const partida = crearPartida({ jugadores: m.alineacion, semilla: m.semilla });
+    sincronia.empezar(partida, red.estado.yo);
     startMatch(m.semilla);
+    // El turno lo manda la partida compartida, no el contador local.
+    state.active = sincronia.indiceActivo();
+    updateHud();
   },
 });
 
@@ -915,6 +996,7 @@ window.GAME = {
   config: CONFIG,
   red,
   lobby,
+  sincronia,
   state,
   world,
   cam,

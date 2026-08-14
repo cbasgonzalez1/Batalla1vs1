@@ -55,13 +55,17 @@ pnpm dev        # el juego
 
 Abre `?online`, teclea tu nombre y pulsa **Crear sala**: sale un código de
 cuatro letras para dictar por teléfono. Los demás entran con ese código, eligen
-bando y confirman. Hasta **3 por bando**, y los bandos pueden ser desiguales —
-en familia nunca sois pares.
+bando y confirman.
+
+**Ahora mismo solo 1 contra 1.** La sala ya admite hasta 3 por bando y el
+reparto de turnos también, pero la escena monta exactamente dos vehículos; con
+más gente el juego avisa y no empieza, en vez de reventar a media partida.
 
 No hay cuentas ni registro: se entra con un código y ya está.
 
 ```bash
 pnpm verificar:lobby   # dos navegadores reales entrando a la misma sala
+pnpm verificar:red     # dos navegadores jugando cuatro turnos de verdad
 pnpm verificar:sala    # seis clientes; SABOTEAR=1 rompe uno a proposito
 ```
 

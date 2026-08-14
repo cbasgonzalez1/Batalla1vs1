@@ -177,6 +177,11 @@ export function crearLobby({ cliente, t, alEmpezar, documento = document }) {
     mostrar,
     ocultar,
     pintar,
+    /** Deja un aviso a la vista sin cerrar la sala. */
+    avisar(texto) {
+      el.panel.classList.add('on');
+      mostrarAviso(texto);
+    },
     ponerNombre(valor) {
       nombre = valor;
     },
