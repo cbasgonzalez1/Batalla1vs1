@@ -16,6 +16,8 @@ import { GameCamera } from './world/gamecamera.js';
 import { TrajectoryArc } from './world/trajectory.js';
 import { attachDragControl } from './ui/input.js';
 import { FIXED_DT, simulate, step, sweepTerrain, launchVelocity } from './game/ballistics.js';
+import { crearViento, flechaDe } from './game/viento.js';
+import { transporte } from './game/sotavento.js';
 import {
   MAX_HP,
   REACTION,
@@ -81,7 +83,10 @@ const CONFIG = {
   assistLevel: params.has('assist') ? clamp(parseFloat(params.get('assist')), 0, 1) : 1,
 
   craterRadius: 2.6,
-  settleSteps: 54,       // ~0.45 s mirando el impacto antes de cambiar turno
+  // La pluma dura 1,4 s: lo que tarda la arena en verse caer sin que el turno
+  // se haga largo. Se suelta en 12 tandas, no de golpe.
+  plumaSteps: 168,
+  plumaTandas: 12,       // ~0.45 s mirando el impacto antes de cambiar turno
 };
 
 const MIN_PHI = 2 * DEG;
@@ -186,7 +191,7 @@ scene.add(projectile);
 const world = { terrain: null, cannons: [], shields: [] };
 
 const state = {
-  phase: 'aiming',   // aiming | flying | settling | victory
+  phase: 'aiming',   // aiming | flying | pluma | victory
   active: 0,
   players: [newPlayerState(), newPlayerState()],
   aim: [
@@ -199,7 +204,7 @@ const state = {
   flightSteps: 0,
   impactSteps: Infinity,
   reaction: { open: false, used: false, defender: 1 },
-  settle: 0,
+  pluma: null,
   shots: [0, 0],
   dragging: false,
   scouting: false,
@@ -211,7 +216,8 @@ const state = {
 
 const activeCannon = () => world.cannons[state.active];
 const activeAim = () => state.aim[state.active];
-const nextWind = () => (state.turnRng() * 2 - 1) * CONFIG.windRange;
+// El viento ya no se sortea cada turno: deriva, y por eso se puede pronosticar.
+let viento = null;
 
 // ────────────────────────────────────────────────────────── construccion
 
@@ -272,7 +278,8 @@ function buildWorld(seedText) {
 
   // El PRNG de turnos cuelga del mismo hilo con semilla: nada de Math.random.
   state.turnRng = mulberry32(hashSeed(`${seedText}:turnos`));
-  state.wind = nextWind();
+  viento = crearViento(state.turnRng);
+  state.wind = viento.actual;
 }
 
 function startMatch(seedText) {
@@ -423,9 +430,13 @@ function fire() {
 }
 
 function onImpact(hit) {
-  // Fase 1: el crater se resta de golpe. La deformacion animada en ~200 ms
-  // entra con el resto del motion spec.
-  world.terrain.carve(hit.x, hit.y, CONFIG.craterRadius);
+  // La velocidad vertical con la que llega decide cuan lejos se lleva el viento
+  // la arena, asi que hay que leerla ANTES de soltar el proyectil.
+  const caida = state.shot ? state.shot.vy : 0;
+
+  // El crater no borra masa: la levanta. Lo que sale de aqui cae despues, en la
+  // fase 'pluma', a sotavento del impacto.
+  const { volumen } = world.terrain.carve(hit.x, hit.y, CONFIG.craterRadius);
   projectile.visible = false;
   state.shot = null;
   closeReaction();
@@ -450,16 +461,38 @@ function onImpact(hit) {
   const dead = state.players.findIndex((p) => p.destroyed);
   if (dead >= 0) return declareVictory(1 - dead, dead);
 
-  state.phase = 'settling';
-  state.settle = CONFIG.settleSteps;
-  state.goal = { x: hit.x, y: hit.y + 6, w: CONFIG.camera.aimWidth };
+  // La arena viaja: se calcula a donde y se suelta en tandas durante la fase
+  // 'pluma', para que se vea caer en vez de aparecer de golpe.
+  const { centro, anchura } = transporte(hit.x, state.wind, caida);
+  state.pluma = {
+    centro,
+    anchura,
+    restante: volumen,
+    porTanda: volumen / CONFIG.plumaTandas,
+    paso: 0,
+    depositado: 0,
+    perdido: 0,
+    impacto: hit.x,
+  };
+
+  state.phase = 'pluma';
+  // Encuadre entre el crater y donde va a caer la arena: si la camara se queda
+  // en el impacto, el jugador no ve lo unico que ha construido este turno.
+  const medio = (hit.x + centro) / 2;
+  const abarcar = Math.abs(centro - hit.x) + 24;
+  state.goal = {
+    x: medio,
+    y: hit.y + 6,
+    w: clamp(abarcar, CONFIG.camera.aimWidth, CONFIG.camera.dragMaxWidth),
+  };
+  cam.tweenTo(state.goal.x, state.goal.y, state.goal.w, 320, easeOutCubic);
 }
 
 function endTurn() {
   projectile.visible = false;
   state.shot = null;
   state.active = 1 - state.active;
-  state.wind = nextWind();
+  state.wind = viento.avanzar();
   state.phase = 'aiming';
   activeCannon().setAim(activeAim().phi);
   // Barrido al canon activo: 700 ms, easeInOutCubic.
@@ -681,10 +714,42 @@ function fixedUpdate() {
     return;
   }
 
-  if (state.phase === 'settling') {
-    state.settle -= 1;
-    if (state.settle <= 0) endTurn();
+  if (state.phase === 'pluma') {
+    avanzarPluma();
   }
+}
+
+/**
+ * Suelta la arena en tandas iguales a lo largo de la fase.
+ *
+ * Se trocea por dos razones. Una es que se vea: un monton que aparece de golpe
+ * no se lee como arena volando. La otra es que cada tanda es un deposito
+ * completo y conservado, asi que si la fase se corta a la mitad —victoria,
+ * revancha— lo depositado hasta ahi sigue cuadrando.
+ */
+function avanzarPluma() {
+  const p = state.pluma;
+  if (!p) return endTurn();
+
+  const cada = Math.max(1, Math.floor(CONFIG.plumaSteps / CONFIG.plumaTandas));
+  p.paso += 1;
+
+  if (p.paso % cada === 0 && p.restante > 0) {
+    const tanda = Math.min(p.porTanda, p.restante);
+    const caido = world.terrain.depositar(p.centro, p.anchura, tanda);
+    p.restante -= tanda;
+    p.depositado += caido.depositado;
+    p.perdido += caido.perdido;
+
+    // Reasentar: la arena que cae encima de un vehiculo lo levanta con ella.
+    for (let i = 0; i < 2; i++) {
+      if (state.players[i].hop) continue;
+      const g = world.cannons[i].group;
+      g.position.y = world.terrain.heightAt(g.position.x);
+    }
+  }
+
+  if (p.paso >= CONFIG.plumaSteps) endTurn();
 }
 
 function updateCamera(dt) {

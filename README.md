@@ -78,8 +78,24 @@ cronómetros ni capturas.
 Hecho: terreno destructible, cañones, arco, disparo, cámara con barrido y
 zoom, vida con destrucción y pantalla de victoria, y reacción en vuelo.
 
-**Sin el motion spec todavía.** El cráter se resta de golpe. No hay retroceso
-del cañón, fogonazo, humo, estela, onda expansiva, escombros ni screen shake.
+### Sotavento
+
+Un cañonazo **no destruye terreno: lo traslada**. El cráter levanta la masa que
+excava y el viento la deja caer a sotavento, más lejos cuanto más vertical fue
+la caída del proyectil. Como el alcance de un tiro depende de la altura del
+suelo bajo los dos cañones, mover arena le **invalida al rival la solución de
+tiro** que le costó tres turnos encontrar.
+
+En calma la arena vuelve al propio cráter: cavar sin viento no sirve de nada.
+El viento deja de ser ruido y pasa a ser el recurso que hace permanente lo que
+excavas — y como deriva en vez de sortearse, el del turno siguiente se puede
+leer ya.
+
+La pregunta del turno deja de ser *¿acerté?* y pasa a ser **¿gasto este disparo
+en cerrar mi horquilla o en romper la suya?**
+
+**Sin el motion spec todavía.** No hay retroceso del cañón, fogonazo, humo,
+estela, onda expansiva, escombros ni screen shake.
 Lo que sí se mueve es lo que hace falta para jugar: el barrido de cámara
 (700 ms, `easeInOutCubic`), el salto de reacción (280 ms, `easeOutQuad`) y el
 giro del proyectil sobre su eje.
