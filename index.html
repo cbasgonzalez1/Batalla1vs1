@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0A0D14">
+<title>Artillería 1v1 — prototipo</title>
+<style>
+  :root{
+    --ground:#0A0D14;
+    --plate:#111823;
+    --plate-hi:#18202D;
+    --line:#26303F;
+    --ink:#EEF3F9;
+    --mono:#7F8DA0;
+    --magma:#FF6B2C;
+    --plasma:#16E0FF;
+    --danger:#FF3B4E;
+    --f-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ height:100%; }
+  body{
+    background:var(--ground);
+    color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+    font-family:var(--f-mono);
+    -webkit-font-smoothing:antialiased;
+    touch-action:none;
+    overscroll-behavior:none;
+    user-select:none; -webkit-user-select:none;
+  }
+  #stage{
+    position:relative;
+    height:100dvh;
+    aspect-ratio: 1080 / 1920;
+    max-width:100vw;
+    width:auto;
+    background:#0A0D14;
+    overflow:hidden;
+    touch-action:none;
+    cursor:crosshair;
+    /* --u = 1 px del diseno a 1080 de ancho, EN PIXELES. Tiene que llevar
+       unidad: calc(var(--u)*28) sobre un numero pelado da un numero sin
+       unidad y el navegador descarta la declaracion entera. */
+    --u: 0.42px;
+  }
+  @media (max-aspect-ratio: 1080/1920){
+    #stage{ width:100vw; height:auto; }
+  }
+  #stage canvas{ display:block; width:100%; height:100%; }
+
+  .hud{ position:absolute; inset:0; pointer-events:none; }
+  .hud > *{ position:absolute; }
+
+  /* ─────────────────────────────── marcadores de vida ───────────────── */
+  #top{
+    top:0; left:0; right:0;
+    display:flex; align-items:flex-start; gap:calc(var(--u)*16);
+    padding:calc(var(--u)*26) calc(var(--u)*28);
+  }
+  .player{ flex:1 1 0; min-width:0; }
+  .player.b{ text-align:right; }
+  .pname{
+    font-size:calc(var(--u)*22); letter-spacing:.14em; text-transform:uppercase;
+    color:var(--mono); display:flex; align-items:center; gap:calc(var(--u)*10);
+    text-shadow:0 calc(var(--u)*2) calc(var(--u)*6) rgba(4,7,12,.9);
+  }
+  .player.b .pname{ justify-content:flex-end; }
+  .pname b{ font-weight:700; }
+  .player.a .pname b{ color:var(--magma); }
+  .player.b .pname b{ color:var(--plasma); }
+  .pname .hpnum{ color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums; }
+
+  .bar{
+    margin-top:calc(var(--u)*8);
+    height:calc(var(--u)*20);
+    background:rgba(8,12,18,.78);
+    border:1px solid var(--line);
+    border-radius:calc(var(--u)*4);
+    overflow:hidden; position:relative;
+  }
+  .bar .ghost{
+    position:absolute; inset:0 auto 0 0; height:100%;
+    background:var(--danger); opacity:.55; width:100%;
+    transition:width .5s cubic-bezier(.22,1,.36,1) .18s;
+  }
+  .bar .fill{
+    position:absolute; inset:0 auto 0 0; height:100%; width:100%;
+    border-radius:calc(var(--u)*3);
+    transition:width .16s cubic-bezier(.33,1,.68,1);
+  }
+  .player.a .bar .fill{ background:linear-gradient(180deg,#FFA774,var(--magma) 45%,#C7401A); }
+  .player.b .bar .fill{ background:linear-gradient(180deg,#7DEEFF,var(--plasma) 45%,#0090B8); }
+  .player.b .bar .ghost,
+  .player.b .bar .fill{ inset:0 0 0 auto; }
+
+  .charges{
+    margin-top:calc(var(--u)*9); display:flex; gap:calc(var(--u)*7);
+    font-size:calc(var(--u)*20); line-height:1;
+  }
+  .player.b .charges{ justify-content:flex-end; }
+  .charges i{ font-style:normal; color:#2E3949; }
+  .player.a .charges i.on{ color:var(--magma); }
+  .player.b .charges i.on{ color:var(--plasma); }
+
+  #wind{
+    flex:0 0 auto; text-align:center; padding-top:calc(var(--u)*4);
+    font-size:calc(var(--u)*20); letter-spacing:.12em; text-transform:uppercase;
+    color:var(--mono);
+    text-shadow:0 calc(var(--u)*2) calc(var(--u)*6) rgba(4,7,12,.9);
+  }
+  #wind b{
+    display:block; margin-top:calc(var(--u)*5);
+    font-size:calc(var(--u)*26); color:var(--ink); font-weight:700;
+    font-variant-numeric:tabular-nums; letter-spacing:.04em;
+  }
+
+  /* ─────────────────────────────────── lectura de tiro ──────────────── */
+  #shotinfo{
+    left:calc(var(--u)*28); bottom:calc(var(--u)*34);
+    font-size:calc(var(--u)*21); letter-spacing:.12em; text-transform:uppercase;
+    color:var(--mono); line-height:1.75;
+    text-shadow:0 calc(var(--u)*2) calc(var(--u)*6) rgba(4,7,12,.9);
+  }
+  #shotinfo b{ color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums; }
+
+  /* ───────────────────────────────────── boton otear ────────────────── */
+  #scout{
+    right:calc(var(--u)*28); bottom:calc(var(--u)*30);
+    width:calc(var(--u)*132); height:calc(var(--u)*132);
+    border-radius:50%;
+    background:radial-gradient(circle at 34% 28%, var(--plate-hi), var(--plate) 70%);
+    border:1px solid var(--line);
+    box-shadow:0 calc(var(--u)*6) calc(var(--u)*18) rgba(4,7,12,.6),
+               inset 0 1px 0 rgba(255,255,255,.06);
+    color:var(--mono);
+    font-family:var(--f-mono); font-size:calc(var(--u)*19); letter-spacing:.14em;
+    text-transform:uppercase;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:calc(var(--u)*4);
+    pointer-events:auto; cursor:pointer;
+    transition:transform .14s cubic-bezier(.34,1.56,.64,1), color .14s, border-color .14s;
+  }
+  #scout .eye{ font-size:calc(var(--u)*34); line-height:1; }
+  #scout:active, #scout.on{ transform:scale(.94); color:var(--ink); border-color:#3C4B60; }
+  #scout:focus-visible{ outline:calc(var(--u)*3) solid var(--plasma); outline-offset:calc(var(--u)*4); }
+
+  /* ──────────────────────────────── panel de reaccion ───────────────── */
+  #reaction{
+    left:50%; bottom:calc(var(--u)*200); transform:translate(-50%, calc(var(--u)*30));
+    width:calc(var(--u)*640);
+    background:linear-gradient(180deg, rgba(24,32,45,.97), rgba(15,21,30,.97));
+    border:1px solid #3A4759;
+    border-radius:calc(var(--u)*16);
+    padding:calc(var(--u)*22) calc(var(--u)*22) calc(var(--u)*24);
+    box-shadow:0 calc(var(--u)*18) calc(var(--u)*44) rgba(2,5,10,.75);
+    opacity:0; pointer-events:none;
+    transition:opacity .12s ease, transform .22s cubic-bezier(.34,1.56,.64,1);
+  }
+  #reaction.on{ opacity:1; transform:translate(-50%, 0); pointer-events:auto; }
+  #reaction .head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:calc(var(--u)*21); letter-spacing:.16em; text-transform:uppercase;
+    color:var(--danger);
+  }
+  #reaction .head span{ color:var(--mono); font-variant-numeric:tabular-nums; }
+  #rtimer{
+    margin:calc(var(--u)*12) 0 calc(var(--u)*18);
+    height:calc(var(--u)*8); background:rgba(8,12,18,.9);
+    border-radius:calc(var(--u)*4); overflow:hidden;
+  }
+  #rtimer i{ display:block; height:100%; width:100%; background:var(--danger); }
+  #reaction .acts{ display:grid; grid-template-columns:1fr 1fr; gap:calc(var(--u)*14); }
+  .ract{
+    pointer-events:auto; cursor:pointer;
+    background:linear-gradient(180deg, var(--plate-hi), var(--plate));
+    border:1px solid var(--line);
+    border-radius:calc(var(--u)*12);
+    padding:calc(var(--u)*18) calc(var(--u)*10) calc(var(--u)*16);
+    color:var(--ink);
+    font-family:var(--f-mono); font-size:calc(var(--u)*24); letter-spacing:.12em;
+    text-transform:uppercase;
+    display:flex; flex-direction:column; align-items:center; gap:calc(var(--u)*8);
+    transition:transform .12s cubic-bezier(.34,1.56,.64,1), border-color .12s;
+  }
+  .ract .ico{ font-size:calc(var(--u)*38); line-height:1; }
+  .ract:active{ transform:scale(.95); border-color:#4A5B72; }
+  .ract:focus-visible{ outline:calc(var(--u)*3) solid var(--plasma); outline-offset:calc(var(--u)*3); }
+  .ract[disabled]{ opacity:.32; pointer-events:none; }
+
+  /* ──────────────────────────────────────── victoria ────────────────── */
+  #victory{
+    inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:calc(var(--u)*10);
+    background:radial-gradient(120% 70% at 50% 45%, rgba(10,13,20,.5), rgba(10,13,20,.93));
+    opacity:0; pointer-events:none; transition:opacity .45s ease;
+  }
+  #victory.on{ opacity:1; pointer-events:auto; }
+  #victory .kicker{
+    font-size:calc(var(--u)*22); letter-spacing:.3em; text-transform:uppercase; color:var(--mono);
+  }
+  #victory .who{
+    font-size:calc(var(--u)*104); font-weight:900; letter-spacing:-.02em; line-height:1;
+    text-transform:uppercase;
+  }
+  #victory .who.a{ color:var(--magma); }
+  #victory .who.b{ color:var(--plasma); }
+  #victory .stats{
+    margin-top:calc(var(--u)*6); font-size:calc(var(--u)*22); color:var(--mono);
+    letter-spacing:.1em; text-transform:uppercase;
+  }
+  #again{
+    margin-top:calc(var(--u)*32); pointer-events:auto; cursor:pointer;
+    background:linear-gradient(180deg, var(--plate-hi), var(--plate));
+    border:1px solid #3A4759; border-radius:calc(var(--u)*12);
+    padding:calc(var(--u)*20) calc(var(--u)*44);
+    color:var(--ink); font-family:var(--f-mono);
+    font-size:calc(var(--u)*26); letter-spacing:.18em; text-transform:uppercase;
+    transition:transform .14s cubic-bezier(.34,1.56,.64,1);
+  }
+  #again:active{ transform:scale(.95); }
+  #again:focus-visible{ outline:calc(var(--u)*3) solid var(--plasma); outline-offset:calc(var(--u)*4); }
+
+  #hint{
+    left:0; right:0; bottom:calc(var(--u)*150); text-align:center;
+    font-size:calc(var(--u)*21); letter-spacing:.14em; text-transform:uppercase;
+    color:var(--mono);
+    text-shadow:0 calc(var(--u)*2) calc(var(--u)*6) rgba(4,7,12,.9);
+    transition:opacity .4s ease;
+  }
+  #hint.gone{ opacity:0; }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ transition-duration:.01ms !important; }
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <div class="hud">
+
+      <div id="top">
+        <div class="player a">
+          <div class="pname"><b>A</b> <span class="hpnum" id="hp-a">100</span></div>
+          <div class="bar"><i class="ghost" id="ghost-a"></i><i class="fill" id="fill-a"></i></div>
+          <div class="charges" id="ch-a"><i class="on">◆</i><i class="on">◆</i><i class="on">◆</i></div>
+        </div>
+
+        <div id="wind">Viento<b id="r-wind">0.0</b></div>
+
+        <div class="player b">
+          <div class="pname"><span class="hpnum" id="hp-b">100</span> <b>B</b></div>
+          <div class="bar"><i class="ghost" id="ghost-b"></i><i class="fill" id="fill-b"></i></div>
+          <div class="charges" id="ch-b"><i class="on">◆</i><i class="on">◆</i><i class="on">◆</i></div>
+        </div>
+      </div>
+
+      <div id="shotinfo">
+        <div>Turno <b id="r-turn">A</b></div>
+        <div>Ángulo <b id="r-angle">45°</b></div>
+        <div>Potencia <b id="r-power">55%</b></div>
+      </div>
+
+      <button id="scout" type="button" aria-label="Otear al rival">
+        <span class="eye" aria-hidden="true">◎</span>
+        Otear
+      </button>
+
+      <div id="reaction" role="group" aria-label="Reacción en vuelo">
+        <div class="head">⚡ Reacción <span id="rsecs">0.90s</span></div>
+        <div id="rtimer"><i id="rbar"></i></div>
+        <div class="acts">
+          <button class="ract" id="r-shield" type="button">
+            <span class="ico" aria-hidden="true">◈</span>
+            Escudo
+          </button>
+          <button class="ract" id="r-hop" type="button">
+            <span class="ico" aria-hidden="true">⤴</span>
+            Salto
+          </button>
+        </div>
+      </div>
+
+      <div id="victory">
+        <div class="kicker">Objetivo destruido</div>
+        <div class="who" id="v-who">Gana A</div>
+        <div class="stats" id="v-stats">—</div>
+        <button id="again" type="button">Revancha</button>
+      </div>
+
+      <div id="hint">Arrastra hacia atrás y suelta</div>
+    </div>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
