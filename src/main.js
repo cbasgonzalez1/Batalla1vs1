@@ -18,8 +18,10 @@ import { attachDragControl } from './ui/input.js';
 import { FIXED_DT, simulate, step, sweepTerrain, launchVelocity } from './game/ballistics.js';
 import { crearViento, flechaDe } from './game/viento.js';
 import { transporte } from './game/sotavento.js';
+import { lecturaDeTiro, acerto } from './game/lectura.js';
 import {
   MAX_HP,
+  BLAST,
   REACTION,
   damageAt,
   targetPoint,
@@ -475,6 +477,20 @@ function onImpact(hit) {
     impacto: hit.x,
   };
 
+  // Que aprende el jugador de este disparo. Se calcula aqui, con el daño ya
+  // aplicado, y solo se enseña si NO acerto: si acerto, la vida del rival ya
+  // se lo ha contado.
+  const rival = world.cannons[1 - state.active];
+  const lectura = lecturaDeTiro({
+    xImpacto: hit.x,
+    xObjetivo: rival.group.position.x,
+    facing: world.cannons[state.active].facing,
+    volumen,
+    centro,
+    anchura,
+  });
+  if (!acerto(lectura, BLAST.radius)) hud.showLectura(lectura);
+
   state.phase = 'pluma';
   // Encuadre entre el crater y donde va a caer la arena: si la camara se queda
   // en el impacto, el jugador no ve lo unico que ha construido este turno.
@@ -809,7 +825,7 @@ new ResizeObserver(resize).observe(stage);
 function updateHud() {
   const { phi, power } = activeAim();
   hud.setShot(state.active === 0 ? 'A' : 'B', Math.round(phi * RAD_TO_DEG), Math.round(power * 100));
-  hud.setWind(state.wind);
+  hud.setWind(state.wind, viento ? viento.pronostico : null);
   for (let i = 0; i < 2; i++) {
     hud.setHp(i, state.players[i].hp);
     hud.setCharges(i, state.players[i].charges);

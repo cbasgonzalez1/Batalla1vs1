@@ -22,6 +22,10 @@ export class Hud {
       ghost: [$('ghost-a'), $('ghost-b')],
       charges: [$('ch-a'), $('ch-b')],
       wind: $('r-wind'),
+      windNext: $('r-wind-next'),
+      lectura: $('lectura'),
+      lfallo: $('l-fallo'),
+      larena: $('l-arena'),
       turn: $('r-turn'),
       angle: $('r-angle'),
       power: $('r-power'),
@@ -78,12 +82,66 @@ export class Hud {
     for (let i = 0; i < pips.length; i++) pips[i].classList.toggle('on', i < n);
   }
 
-  setWind(wind) {
-    const key = wind.toFixed(1);
+  /**
+   * Viento de ahora y, en fantasma, el del turno que viene.
+   *
+   * El pronostico no es una ayuda cosmetica: es lo que convierte el viento en
+   * un reloj — "me quedan tres turnos para empujarle arena encima antes de que
+   * gire". Se puede enseñar porque el PRNG va sembrado y el valor ya esta
+   * calculado, no porque se adivine.
+   */
+  setWind(wind, siguiente = null) {
+    const key = `${wind.toFixed(1)}|${siguiente === null ? '' : siguiente.toFixed(1)}`;
     if (this._last.wind === key) return;
     this._last.wind = key;
-    const arrow = wind >= 0 ? '→' : '←';
-    this.el.wind.textContent = `${arrow} ${Math.abs(wind).toFixed(1)}`;
+
+    const flecha = (v) => (v > 0.05 ? '→' : v < -0.05 ? '←' : '·');
+    this.el.wind.textContent = `${flecha(wind)} ${Math.abs(wind).toFixed(1)}`;
+
+    if (!this.el.windNext) return;
+    this.el.windNext.textContent =
+      siguiente === null
+        ? ''
+        : this.t('pronostico', {
+            flecha: flecha(siguiente),
+            viento: Math.abs(siguiente).toFixed(1),
+          });
+  }
+
+  /**
+   * Medio segundo en grande: cuanto fallaste y que construiste.
+   *
+   * Los dos numeros juntos, y ese es el punto: un fallo de 19 unidades que le
+   * levanta el suelo al rival no es un turno perdido, pero sin decirlo el
+   * jugador no tiene forma de saberlo — a 88 unidades no ve nada de eso.
+   */
+  showLectura(lectura, milisegundos = 1400) {
+    if (!this.el.lectura) return;
+
+    this.el.lfallo.textContent = this.t(lectura.sentido, {
+      distancia: lectura.distancia.toFixed(1),
+    });
+
+    const arena = lectura.arena;
+    this.el.larena.textContent = !arena
+      ? ''
+      : arena.encima
+        ? this.t('arenaEncima', { pico: arena.pico.toFixed(1) })
+        : this.t('arena', {
+            pico: arena.pico.toFixed(1),
+            distancia: arena.distancia.toFixed(0),
+          });
+    this.el.larena.classList.toggle('encima', Boolean(arena?.encima));
+
+    this.el.lectura.classList.add('on');
+    clearTimeout(this._lecturaTimer);
+    this._lecturaTimer = setTimeout(() => this.el.lectura.classList.remove('on'), milisegundos);
+  }
+
+  hideLectura() {
+    if (!this.el.lectura) return;
+    clearTimeout(this._lecturaTimer);
+    this.el.lectura.classList.remove('on');
   }
 
   setShot(turnLabel, angleDeg, powerPct) {

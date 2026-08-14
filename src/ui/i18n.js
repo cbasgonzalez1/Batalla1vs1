@@ -29,6 +29,11 @@ const TEXTOS = {
     pista: 'Arrastra hacia atrás y suelta',
     resumen: '{disparos} disparos · {vida} de vida',
     empate: 'Empate',
+    corto: 'Corto {distancia}',
+    largo: 'Largo {distancia}',
+    arena: 'Arena +{pico} a {distancia}',
+    arenaEncima: 'Arena +{pico} encima',
+    pronostico: 'luego {flecha} {viento}',
   },
   en: {
     titulo: 'Artillery 1v1',
@@ -48,6 +53,11 @@ const TEXTOS = {
     pista: 'Drag back and release',
     resumen: '{disparos} shots · {vida} HP left',
     empate: 'Draw',
+    corto: 'Short {distancia}',
+    largo: 'Long {distancia}',
+    arena: 'Sand +{pico} at {distancia}',
+    arenaEncima: 'Sand +{pico} on target',
+    pronostico: 'next {flecha} {viento}',
   },
 };
 

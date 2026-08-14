@@ -94,6 +94,14 @@ leer ya.
 La pregunta del turno deja de ser *¿acerté?* y pasa a ser **¿gasto este disparo
 en cerrar mi horquilla o en romper la suya?**
 
+El HUD enseña el viento de ahora y, en fantasma, **el del turno siguiente** — se
+puede porque el PRNG va sembrado y ese valor ya está calculado. Eso da el reloj:
+*me quedan tres turnos para empujarle arena encima antes de que gire*.
+
+Y tras cada fallo salen dos números, no uno: `Corto 9,9 · Arena +1,3 a 19`.
+Cuánto fallaste **y qué construiste**. A 88 unidades no ves tu impacto, así que
+sin eso fallar no enseñaba nada y el turno se tiraba a la basura.
+
 **Sin el motion spec todavía.** No hay retroceso del cañón, fogonazo, humo,
 estela, onda expansiva, escombros ni screen shake.
 Lo que sí se mueve es lo que hace falta para jugar: el barrido de cámara
@@ -139,12 +147,13 @@ del documento y los textos salen como toca y que la consola queda limpia.
 ## Tests
 
 ```bash
-pnpm test        # 68 tests, sin navegador
+pnpm test        # 193 tests, sin navegador
 pnpm test:watch
 ```
 
 Cubren el PRNG, la balística, las reglas de combate, la generación y
-destrucción del terreno, y la frontera entre capas. Los números de balance
+destrucción del terreno, la conservación de masa de Sotavento, la deriva del
+viento, el reparto de turnos por equipos, el idioma y la frontera entre capas. Los números de balance
 (46 de daño directo, radio 5,2, escudo 0,28, 3 cargas) están escritos literales
 en `tests/game/combat.test.js`: si alguien los retoca sin querer, el test falla.
 

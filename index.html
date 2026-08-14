@@ -117,6 +117,37 @@
     font-variant-numeric:tabular-nums; letter-spacing:.04em;
   }
 
+  /* El pronostico va en fantasma bajo el viento actual: se lee de un vistazo
+     que el de ahora es solido y el de despues no ha pasado todavia. */
+  #wind i{
+    display:block; margin-top:calc(var(--u)*2); font-style:normal;
+    font-size:calc(var(--u)*16); color:var(--mono); opacity:.55;
+    font-variant-numeric:tabular-nums; letter-spacing:.04em;
+  }
+
+  /* Medio segundo en grande: cuanto fallaste y que construiste. A 88 unidades
+     no ves tu impacto, asi que sin esto un fallo no enseña nada. */
+  #lectura{
+    position:absolute; left:0; right:0; top:38%;
+    text-align:center; pointer-events:none;
+    opacity:0; transform:translateY(calc(var(--u)*8));
+    transition:opacity .18s ease-out, transform .18s ease-out;
+  }
+  #lectura.on{ opacity:1; transform:none; }
+  #lectura b{
+    display:block; font-size:calc(var(--u)*46); font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink);
+    text-shadow:0 calc(var(--u)*3) calc(var(--u)*10) rgba(4,7,12,.95);
+    font-variant-numeric:tabular-nums;
+  }
+  #lectura span{
+    display:block; margin-top:calc(var(--u)*4);
+    font-size:calc(var(--u)*22); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--plasma); font-variant-numeric:tabular-nums;
+    text-shadow:0 calc(var(--u)*2) calc(var(--u)*8) rgba(4,7,12,.9);
+  }
+  #lectura span.encima{ color:var(--ink); }
+
   /* ─────────────────────────────────── lectura de tiro ──────────────── */
   #shotinfo{
     left:calc(var(--u)*28); bottom:calc(var(--u)*34);
@@ -248,7 +279,7 @@
           <div class="charges" id="ch-a"><i class="on">◆</i><i class="on">◆</i><i class="on">◆</i></div>
         </div>
 
-        <div id="wind"><span data-i18n="viento">Viento</span><b id="r-wind">0.0</b></div>
+        <div id="wind"><span data-i18n="viento">Viento</span><b id="r-wind">0.0</b><i id="r-wind-next" title=""></i></div>
 
         <div class="player b">
           <div class="pname"><span class="hpnum" id="hp-b">100</span> <b>B</b></div>
@@ -289,6 +320,8 @@
         <div class="stats" id="v-stats">—</div>
         <button id="again" type="button" data-i18n="revancha">Revancha</button>
       </div>
+
+      <div id="lectura"><b id="l-fallo"></b><span id="l-arena"></span></div>
 
       <div id="hint" data-i18n="pista">Arrastra hacia atrás y suelta</div>
     </div>
