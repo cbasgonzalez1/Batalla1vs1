@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verificar:idioma": "node scripts/verificar-idioma.mjs"
+    "verificar:idioma": "node scripts/verificar-idioma.mjs",
+    "verificar:determinismo": "node scripts/verificar-determinismo.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"

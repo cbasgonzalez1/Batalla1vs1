@@ -26,6 +26,7 @@ import {
 } from './game/combat.js';
 import { Hud } from './ui/hud.js';
 import { idiomaDelNavegador, crearTraductor, aplicarTraduccion } from './ui/i18n.js';
+import { exponerGanchos } from './ui/inspeccion.js';
 
 // El idioma se resuelve una vez, antes de construir nada: el HUD y la pantalla
 // de victoria lo reciben ya decidido.
@@ -766,11 +767,49 @@ startMatch(CONFIG.seed);
 requestAnimationFrame(frame);
 
 // Ganchos para validar sin tocar codigo: window.GAME en la consola.
+// Contrato del bucle de test: render_game_to_text() para leer la partida sin
+// mirar la pantalla, advanceTime(ms) para avanzarla sin depender del reloj.
+exponerGanchos({
+  pasoEnSegundos: FIXED_DT,
+  avanzarPaso: fixedUpdate,
+  dibujar() {
+    updateCamera(0);
+    updateLiveHud();
+    renderer.render(scene, cam.camera);
+  },
+  leerEstado() {
+    const aim = state.aim[state.active];
+    const bajoElCanon = world.cannons[state.active].group.position.x;
+    return {
+      fase: state.phase,
+      activo: state.active,
+      ronda: Math.floor((state.shots[0] + state.shots[1]) / 2) + 1,
+      anguloGrados: aim.phi * RAD_TO_DEG,
+      potencia: aim.power,
+      viento: state.wind,
+      proyectil: state.shot ? { ...state.shot } : null,
+      alturaTerreno: world.terrain.heightAt(state.shot ? state.shot.x : bajoElCanon),
+      pasosDeVuelo: state.flightSteps,
+      pasosAlImpacto: state.impactSteps,
+      reaccionAbierta: state.reaction.open,
+      defensor: state.reaction.defender,
+      ganador: state.phase === 'victory' ? (state.players[0].destroyed ? 1 : 0) : null,
+      jugadores: state.players.map((p, i) => ({
+        vida: p.hp,
+        cargas: p.charges,
+        disparos: state.shots[i],
+        destruido: p.destroyed,
+      })),
+    };
+  },
+});
+
 window.GAME = {
   config: CONFIG,
   state,
   world,
   cam,
+  hud,
   setAssist(v) {
     CONFIG.assistLevel = clamp(v, 0, 1);
     refreshPreview();

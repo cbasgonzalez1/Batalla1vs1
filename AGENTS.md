@@ -78,13 +78,17 @@ consola.
 node "$WEB_GAME_CLIENT" --actions-file "$WEB_GAME_ACTIONS" --url http://localhost:5173
 ```
 
-Las dos variables están en `.env.local` (fuera de git). Apuntan a la skill
-`develop-web-game`, cuyas rutas por defecto son de Codex y aquí no resuelven.
-Playwright sí es dependencia de desarrollo: el cliente hace `import "playwright"`
-y sin el paquete instalado no arranca.
+Las dos variables están en `.env.local` (fuera de git) y apuntan a
+`scripts/`, no a `~/.claude/skills`: Node resuelve `node_modules` desde la
+carpeta del script, así que el cliente de la skill solo encuentra `playwright`
+si vive dentro del proyecto. El cliente escribe `state-N.json` y `shot-N.png` en
+`--screenshot-dir`; no imprime nada por stdout.
+
+Con `pnpm dev` levantado:
 
 ```bash
-node scripts/verificar-idioma.mjs   # con pnpm dev levantado
+pnpm verificar:idioma        # cinco idiomas de dispositivo en un Chromium real
+pnpm verificar:determinismo  # dos pestanas, misma semilla, mismo texto
 ```
 
 ## Idioma
