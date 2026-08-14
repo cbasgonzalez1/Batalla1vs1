@@ -59,6 +59,24 @@ hay dos verdades que mantener sincronizadas y el determinismo deja de servir
 para nada. Si algo no cuadra entre dos móviles, el fallo está en la simulación
 o en el orden de los inputs, nunca en "lo que dijo el servidor".
 
+`server/salas.js` tiene toda la lógica y se prueba sin abrir un socket;
+`server/index.js` es solo transporte. En el servidor SÍ se puede usar
+`Math.random()` y el reloj — el determinismo que importa vive en el navegador, y
+el servidor solo elige códigos de sala y la semilla inicial, que reparte a todos
+antes de empezar.
+
+```bash
+pnpm server            # puerto 8787
+pnpm verificar:sala    # seis clientes reales; SABOTEAR=1 rompe uno a proposito
+```
+
+Los inputs viajan sellados con el paso en que se aplican (`src/game/cola.js`).
+Un input no se ejecuta cuando llega, sino en su paso: así los seis móviles hacen
+lo mismo en el mismo momento aunque los mensajes lleguen en distinto orden. Lo
+que llega tarde **no se aplica** — hacerlo divergiría — y se apunta para poder
+avisar. Cada turno se manda una huella del estado y el servidor avisa si dos
+móviles no coinciden.
+
 ## Convenciones
 
 - Comentarios y nombres en español. Los comentarios explican el porqué de una

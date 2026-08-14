@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "verificar:idioma": "node scripts/verificar-idioma.mjs",
     "verificar:determinismo": "node scripts/verificar-determinismo.mjs",
-    "verificar:sotavento": "node scripts/verificar-sotavento.mjs"
+    "verificar:sotavento": "node scripts/verificar-sotavento.mjs",
+    "server": "node server/index.js",
+    "verificar:sala": "node scripts/verificar-sala.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"
@@ -20,7 +22,8 @@
   "devDependencies": {
     "playwright": "^1.62.1",
     "vite": "^7.1.0",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.10",
+    "ws": "^8.21.3"
   },
   "packageManager": "pnpm@11.5.2"
 }
