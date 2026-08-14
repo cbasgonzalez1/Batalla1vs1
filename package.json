@@ -14,7 +14,8 @@
     "verificar:determinismo": "node scripts/verificar-determinismo.mjs",
     "verificar:sotavento": "node scripts/verificar-sotavento.mjs",
     "server": "node server/index.js",
-    "verificar:sala": "node scripts/verificar-sala.mjs"
+    "verificar:sala": "node scripts/verificar-sala.mjs",
+    "verificar:lobby": "node scripts/verificar-lobby.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"

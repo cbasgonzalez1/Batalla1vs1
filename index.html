@@ -148,6 +148,84 @@
   }
   #lectura span.encima{ color:var(--ink); }
 
+
+  /* ─────────────────────────────────────────────── sala ─────────────── */
+  /* Ocupa la pantalla entera y tapa el juego: mientras se monta la partida
+     no hay nada que mirar detras, y asi el codigo se lee de lejos cuando
+     alguien lo esta dictando en voz alta. */
+  #sala{
+    position:absolute; inset:0; z-index:40;
+    background:var(--ground);
+    display:none; flex-direction:column; align-items:center; justify-content:center;
+    gap:calc(var(--u)*18); padding:calc(var(--u)*24);
+    text-align:center;
+  }
+  #sala.on{ display:flex; }
+
+  #sala h1{
+    font-size:calc(var(--u)*30); font-weight:700; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--mono);
+  }
+
+  /* El codigo es lo unico que hay que leer en voz alta: va enorme y espaciado
+     para que no se confunda una letra al dictarlo. */
+  #s-codigo{
+    font-size:calc(var(--u)*76); font-weight:700; letter-spacing:.22em;
+    color:var(--ink); font-variant-numeric:tabular-nums;
+    text-shadow:0 calc(var(--u)*4) calc(var(--u)*14) rgba(4,7,12,.95);
+  }
+  #s-codigo.vacio{ color:var(--line); }
+
+  #sala .fila{ display:flex; gap:calc(var(--u)*10); flex-wrap:wrap; justify-content:center; }
+
+  #sala input{
+    width:calc(var(--u)*220); padding:calc(var(--u)*12) calc(var(--u)*14);
+    background:var(--plate); border:1px solid var(--line); border-radius:calc(var(--u)*8);
+    color:var(--ink); font-family:var(--f-mono); font-size:calc(var(--u)*26);
+    letter-spacing:.18em; text-align:center; text-transform:uppercase;
+  }
+  #sala input:focus{ outline:none; border-color:var(--plasma); }
+  #sala input::placeholder{ color:var(--mono); letter-spacing:.1em; }
+
+  #sala button{
+    padding:calc(var(--u)*12) calc(var(--u)*20);
+    background:var(--plate-hi); border:1px solid var(--line); border-radius:calc(var(--u)*8);
+    color:var(--ink); font-family:var(--f-mono); font-size:calc(var(--u)*22);
+    letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+    transition:transform .12s cubic-bezier(.22,1,.36,1), border-color .12s;
+  }
+  #sala button:hover{ border-color:var(--mono); }
+  #sala button:active{ transform:scale(.97); }
+  #sala button.principal{ border-color:var(--magma); color:var(--magma); }
+  #sala button.listo{ background:var(--magma); border-color:var(--magma); color:var(--ground); }
+  #sala button:disabled{ opacity:.4; cursor:default; }
+
+  /* Los dos bandos, uno frente a otro: se ve de un vistazo si falta gente en
+     un lado antes de darle a listo. */
+  #s-bandos{ display:flex; gap:calc(var(--u)*20); align-items:flex-start; }
+  #s-bandos .bando{
+    min-width:calc(var(--u)*200); padding:calc(var(--u)*14);
+    background:var(--plate); border:1px solid var(--line); border-radius:calc(var(--u)*10);
+  }
+  #s-bandos .bando h2{
+    font-size:calc(var(--u)*22); letter-spacing:.16em; text-transform:uppercase;
+    color:var(--mono); margin-bottom:calc(var(--u)*10);
+  }
+  #s-bandos .bando.a h2{ color:var(--magma); }
+  #s-bandos .bando.b h2{ color:var(--plasma); }
+  #s-bandos ul{ list-style:none; display:flex; flex-direction:column; gap:calc(var(--u)*6); }
+  #s-bandos li{
+    font-size:calc(var(--u)*22); color:var(--ink);
+    display:flex; align-items:center; justify-content:space-between; gap:calc(var(--u)*8);
+  }
+  #s-bandos li .marca{ color:var(--mono); font-size:calc(var(--u)*18); }
+  #s-bandos li.listo .marca{ color:var(--magma); }
+  #s-bandos li.yo{ font-weight:700; }
+  #s-bandos li.hueco{ color:var(--line); }
+
+  #s-aviso{ font-size:calc(var(--u)*20); color:var(--danger); min-height:calc(var(--u)*24); }
+  #s-pista{ font-size:calc(var(--u)*20); color:var(--mono); letter-spacing:.06em; }
+
   /* ─────────────────────────────────── lectura de tiro ──────────────── */
   #shotinfo{
     left:calc(var(--u)*28); bottom:calc(var(--u)*34);
@@ -326,6 +404,41 @@
       <div id="hint" data-i18n="pista">Arrastra hacia atrás y suelta</div>
     </div>
   </div>
+
+  <div id="sala">
+    <h1 data-i18n="salaTitulo">Jugar con amigos</h1>
+
+    <div id="s-entrada">
+      <div class="fila">
+        <input id="s-nombre" maxlength="16" placeholder="Tu nombre" autocomplete="nickname" spellcheck="false" style="text-transform:none; letter-spacing:.06em">
+      </div>
+      <div class="fila" style="margin-top:calc(var(--u)*14)">
+        <button id="s-crear" class="principal" type="button" data-i18n="crearSala">Crear sala</button>
+      </div>
+      <div class="fila" style="margin-top:calc(var(--u)*14)">
+        <input id="s-codigo-input" maxlength="4" placeholder="CODE" autocomplete="off" spellcheck="false">
+        <button id="s-unir" type="button" data-i18n="unirse">Entrar</button>
+      </div>
+    </div>
+
+    <div id="s-dentro" hidden>
+      <div id="s-codigo" class="vacio">····</div>
+      <div id="s-pista" data-i18n="dictaCodigo">Dicta este código a tus amigos</div>
+
+      <div id="s-bandos" style="margin-top:calc(var(--u)*16)">
+        <div class="bando a"><h2 data-i18n="bandoA">Bando A</h2><ul id="s-lista-a"></ul></div>
+        <div class="bando b"><h2 data-i18n="bandoB">Bando B</h2><ul id="s-lista-b"></ul></div>
+      </div>
+
+      <div class="fila" style="margin-top:calc(var(--u)*16)">
+        <button id="s-cambiar" type="button" data-i18n="cambiarBando">Cambiar de bando</button>
+        <button id="s-listo" class="principal" type="button" data-i18n="estoyListo">Estoy listo</button>
+      </div>
+    </div>
+
+    <div id="s-aviso"></div>
+  </div>
+
   <script type="module" src="/src/main.js"></script>
 </body>
 </html>

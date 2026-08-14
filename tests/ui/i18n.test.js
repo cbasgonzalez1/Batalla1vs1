@@ -101,6 +101,9 @@ describe('traductor', () => {
       'reaccion', 'reaccionAria', 'escudo', 'salto', 'objetivoDestruido',
       'gana', 'revancha', 'pista', 'resumen', 'empate',
       'corto', 'largo', 'arena', 'arenaEncima', 'pronostico',
+      'salaTitulo', 'crearSala', 'unirse', 'dictaCodigo', 'bandoA', 'bandoB',
+      'cambiarBando', 'estoyListo', 'esperando', 'hueco', 'faltaRival',
+      'faltanListos', 'faltaUno', 'sinConexion', 'tuNombre',
     ];
     for (const { idioma, t } of claves) {
       for (const clave of esperadas) {

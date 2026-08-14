@@ -46,6 +46,25 @@ Vida 100. Un impacto directo hace 46 de daño y la metralla cae con la
 distancia hasta 5,2 unidades — un tiro corto puede volarte a ti mismo. Un
 combate con buena puntería por los dos lados dura **6-8 rondas**.
 
+## Jugar con amigos
+
+```bash
+pnpm server     # sala de batalla, puerto 8787
+pnpm dev        # el juego
+```
+
+Abre `?online`, teclea tu nombre y pulsa **Crear sala**: sale un código de
+cuatro letras para dictar por teléfono. Los demás entran con ese código, eligen
+bando y confirman. Hasta **3 por bando**, y los bandos pueden ser desiguales —
+en familia nunca sois pares.
+
+No hay cuentas ni registro: se entra con un código y ya está.
+
+```bash
+pnpm verificar:lobby   # dos navegadores reales entrando a la misma sala
+pnpm verificar:sala    # seis clientes; SABOTEAR=1 rompe uno a proposito
+```
+
 ## Parámetros por URL
 
 | Parámetro | Valores | Qué hace |
@@ -53,6 +72,9 @@ combate con buena puntería por los dos lados dura **6-8 rondas**.
 | `?seed=` | cualquier texto | Semilla del terreno y del viento |
 | `?assist=` | `0` … `1` | Recorte del arco. `1` arco entero, `0` solo 3 puntos |
 | `?biome=` | `dunas`, `placa`, `selva` | Bioma; cambia paleta y color del proyectil |
+| `?online` | — | Abre la pantalla de sala |
+| `?sala=` | código de 4 letras | Entra directo a esa sala |
+| `?servidor=` | `ws://host:puerto` | Otro servidor de salas |
 
 Ejemplo: `http://localhost:5173/?seed=vostok&biome=placa&assist=0.4`
 

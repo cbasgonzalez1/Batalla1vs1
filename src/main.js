@@ -31,6 +31,8 @@ import {
 import { Hud } from './ui/hud.js';
 import { idiomaDelNavegador, crearTraductor, aplicarTraduccion } from './ui/i18n.js';
 import { exponerGanchos } from './ui/inspeccion.js';
+import { crearCliente } from './net/cliente.js';
+import { crearLobby } from './ui/lobby.js';
 
 // El idioma se resuelve una vez, antes de construir nada: el HUD y la pantalla
 // de victoria lo reciben ya decidido.
@@ -885,8 +887,34 @@ exponerGanchos({
   },
 });
 
+// ─────────────────────────────────────────────────────────── jugar en linea
+//
+// Se entra con ?online (sala nueva) o ?sala=CODE (a una concreta). Sin esos
+// parametros el juego arranca en local exactamente como antes: la red no puede
+// estropear la partida de quien no la pide.
+const servidor = params.get('servidor') || `ws://${location.hostname}:8787`;
+const red = crearCliente({ url: servidor });
+
+const lobby = crearLobby({
+  cliente: red,
+  t,
+  alEmpezar(m) {
+    // De momento solo se anuncia: enchufar la alineacion a la maquina de
+    // estados es el paso siguiente, y hasta que este hecho seria mentira
+    // dejar creer que se esta jugando en red.
+    console.log('[sala] empieza', m.semilla, m.alineacion);
+    startMatch(m.semilla);
+  },
+});
+
+if (params.has('online') || params.has('sala')) {
+  lobby.mostrar(params.get('sala'));
+}
+
 window.GAME = {
   config: CONFIG,
+  red,
+  lobby,
   state,
   world,
   cam,
