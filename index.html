@@ -248,7 +248,7 @@
           <div class="charges" id="ch-a"><i class="on">◆</i><i class="on">◆</i><i class="on">◆</i></div>
         </div>
 
-        <div id="wind">Viento<b id="r-wind">0.0</b></div>
+        <div id="wind"><span data-i18n="viento">Viento</span><b id="r-wind">0.0</b></div>
 
         <div class="player b">
           <div class="pname"><span class="hpnum" id="hp-b">100</span> <b>B</b></div>
@@ -258,39 +258,39 @@
       </div>
 
       <div id="shotinfo">
-        <div>Turno <b id="r-turn">A</b></div>
-        <div>Ángulo <b id="r-angle">45°</b></div>
-        <div>Potencia <b id="r-power">55%</b></div>
+        <div><span data-i18n="turno">Turno</span> <b id="r-turn">A</b></div>
+        <div><span data-i18n="angulo">Ángulo</span> <b id="r-angle">45°</b></div>
+        <div><span data-i18n="potencia">Potencia</span> <b id="r-power">55%</b></div>
       </div>
 
-      <button id="scout" type="button" aria-label="Otear al rival">
+      <button id="scout" type="button" data-i18n-aria="otearAria">
         <span class="eye" aria-hidden="true">◎</span>
-        Otear
+        <span data-i18n="otear">Otear</span>
       </button>
 
-      <div id="reaction" role="group" aria-label="Reacción en vuelo">
-        <div class="head">⚡ Reacción <span id="rsecs">0.90s</span></div>
+      <div id="reaction" role="group" data-i18n-aria="reaccionAria">
+        <div class="head">⚡ <span data-i18n="reaccion">Reacción</span> <span id="rsecs">0.90s</span></div>
         <div id="rtimer"><i id="rbar"></i></div>
         <div class="acts">
           <button class="ract" id="r-shield" type="button">
             <span class="ico" aria-hidden="true">◈</span>
-            Escudo
+            <span data-i18n="escudo">Escudo</span>
           </button>
           <button class="ract" id="r-hop" type="button">
             <span class="ico" aria-hidden="true">⤴</span>
-            Salto
+            <span data-i18n="salto">Salto</span>
           </button>
         </div>
       </div>
 
       <div id="victory">
-        <div class="kicker">Objetivo destruido</div>
+        <div class="kicker" data-i18n="objetivoDestruido">Objetivo destruido</div>
         <div class="who" id="v-who">Gana A</div>
         <div class="stats" id="v-stats">—</div>
-        <button id="again" type="button">Revancha</button>
+        <button id="again" type="button" data-i18n="revancha">Revancha</button>
       </div>
 
-      <div id="hint">Arrastra hacia atrás y suelta</div>
+      <div id="hint" data-i18n="pista">Arrastra hacia atrás y suelta</div>
     </div>
   </div>
   <script type="module" src="/src/main.js"></script>

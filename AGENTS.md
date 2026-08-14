@@ -80,5 +80,21 @@ node "$WEB_GAME_CLIENT" --actions-file "$WEB_GAME_ACTIONS" --url http://localhos
 
 Las dos variables están en `.env.local` (fuera de git). Apuntan a la skill
 `develop-web-game`, cuyas rutas por defecto son de Codex y aquí no resuelven.
-Playwright no es dependencia del proyecto: se usa vía `npx`, con Chromium ya
-instalado en `~/.cache/ms-playwright/`.
+Playwright sí es dependencia de desarrollo: el cliente hace `import "playwright"`
+y sin el paquete instalado no arranca.
+
+```bash
+node scripts/verificar-idioma.mjs   # con pnpm dev levantado
+```
+
+## Idioma
+
+Español si el dispositivo está en español, inglés en cualquier otro caso. No hay
+selector: manda el idioma del móvil, que es lo que espera quien abre un enlace y
+se pone a jugar.
+
+Los textos van en `src/ui/i18n.js` y solo ahí. En el marcado se etiquetan con
+`data-i18n` (contenido) y `data-i18n-aria` (etiqueta accesible), dejando el
+español escrito en el HTML como respaldo por si el módulo no carga. Si añades un
+texto y olvidas traducirlo, `tests/ui/i18n.test.js` falla: las dos tablas tienen
+que tener las mismas claves.

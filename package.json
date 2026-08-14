@@ -9,12 +9,14 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "verificar:idioma": "node scripts/verificar-idioma.mjs"
   },
   "dependencies": {
     "three": "^0.180.0"
   },
   "devDependencies": {
+    "playwright": "^1.62.1",
     "vite": "^7.1.0",
     "vitest": "^4.1.10"
   },

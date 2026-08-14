@@ -9,7 +9,11 @@ import { MAX_HP } from '../game/combat.js';
  * cada cuadro porque tiene que ser exacto: es una ventana de reflejos.
  */
 export class Hud {
-  constructor(handlers = {}) {
+  constructor(handlers = {}, t = (clave) => clave) {
+    // El traductor entra por constructor, como el PRNG: el HUD no decide el
+    // idioma, lo recibe ya resuelto.
+    this.t = t;
+
     const $ = (id) => document.getElementById(id);
 
     this.el = {
@@ -104,7 +108,8 @@ export class Hud {
   }
 
   showVictory(winnerIndex, statsText) {
-    this.el.vwho.textContent = winnerIndex === 0 ? 'Gana A' : 'Gana B';
+    const bando = winnerIndex === 0 ? 'A' : 'B';
+    this.el.vwho.textContent = this.t('gana', { bando });
     this.el.vwho.className = `who ${winnerIndex === 0 ? 'a' : 'b'}`;
     this.el.vstats.textContent = statsText;
     this.el.victory.classList.add('on');

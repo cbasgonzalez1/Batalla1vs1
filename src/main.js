@@ -25,6 +25,15 @@ import {
   applyDamage,
 } from './game/combat.js';
 import { Hud } from './ui/hud.js';
+import { idiomaDelNavegador, crearTraductor, aplicarTraduccion } from './ui/i18n.js';
+
+// El idioma se resuelve una vez, antes de construir nada: el HUD y la pantalla
+// de victoria lo reciben ya decidido.
+const idioma = idiomaDelNavegador();
+const t = crearTraductor(idioma);
+document.documentElement.lang = idioma;
+document.title = t('titulo');
+aplicarTraduccion(document, t);
 
 // ───────────────────────────────────────────────────────────── configuracion
 
@@ -481,7 +490,10 @@ function declareVictory(winner, loser) {
     w: CONFIG.camera.victoryWidth,
   };
   cam.tweenTo(state.goal.x, state.goal.y, state.goal.w, 900, easeInOutCubic);
-  hud.showVictory(winner, `${state.shots[winner]} disparos · ${Math.ceil(state.players[winner].hp)} de vida`);
+  hud.showVictory(winner, t('resumen', {
+    disparos: state.shots[winner],
+    vida: Math.ceil(state.players[winner].hp),
+  }));
 }
 
 // ──────────────────────────────────────────────── reaccion en vuelo (plus)
@@ -585,7 +597,7 @@ const hud = new Hud({
   onAgain() {
     startMatch(`${CONFIG.seed}+${state.shots[0] + state.shots[1]}`);
   },
-});
+}, t);
 
 attachDragControl(stage, {
   onStart() {

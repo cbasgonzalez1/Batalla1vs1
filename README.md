@@ -107,6 +107,19 @@ viven la balística y las reglas de combate, y por eso se pueden probar sin
 montar la escena. Lo que dibuja va en `world/` y `art/`; lo que escucha al dedo,
 en `ui/`. La frontera la vigila `tests/arquitectura.test.js`.
 
+## Idioma
+
+Se elige solo: español si el dispositivo está en español, inglés en cualquier
+otro caso. No hay selector. Un móvil en catalán o gallego (`['ca-ES','es-ES']`)
+se queda en español, que para esa familia es mejor elección que el inglés.
+
+```bash
+node scripts/verificar-idioma.mjs   # con pnpm dev levantado
+```
+
+Comprueba en un Chromium real, con cinco idiomas de dispositivo, que el `lang`
+del documento y los textos salen como toca y que la consola queda limpia.
+
 ## Tests
 
 ```bash
