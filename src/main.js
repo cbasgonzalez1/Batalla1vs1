@@ -13,8 +13,8 @@ import { makeDotTexture, makeSkyTexture } from './art/geometry.js';
 import { Terrain } from './world/terrain.js';
 import { buildCannon } from './world/cannon.js';
 import { GameCamera } from './world/gamecamera.js';
-import { TrajectoryArc } from './game/trajectory.js';
-import { attachDragControl } from './game/input.js';
+import { TrajectoryArc } from './world/trajectory.js';
+import { attachDragControl } from './ui/input.js';
 import { FIXED_DT, simulate, step, sweepTerrain, launchVelocity } from './game/ballistics.js';
 import {
   MAX_HP,

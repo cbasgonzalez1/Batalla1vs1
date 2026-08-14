@@ -6,6 +6,7 @@ Prototipo jugable de artillería 1v1 por turnos, vertical, control a un pulgar.
 
 ```bash
 pnpm dev       # servidor local, puerto 5173 fijo (strictPort)
+pnpm test      # vitest, sin navegador
 pnpm build
 pnpm preview   # sirve dist/, no es el servidor de desarrollo
 ```
@@ -17,11 +18,15 @@ crea un lock paralelo y desincroniza las dependencias.
 
 - Vite + JS vanilla + Three.js. NO TypeScript, NO React, NO framework de UI.
 - Capas, de dentro afuera: `src/core/` (puro: rng, mathx, easing, noise) →
-  `src/game/` (simulación) → `src/world/` + `src/art/` (presentación) →
-  `src/main.js` (ensambla y arranca).
-- La dirección no se invierte: nada de `core/` ni `game/` importa Three ni toca
-  el DOM. Si necesitas Three en una de esas capas, la pieza está en la capa
-  equivocada.
+  `src/game/` (simulación: balística y combate) → `src/world/` + `src/art/`
+  (escena) + `src/ui/` (DOM) → `src/main.js` (ensambla y arranca).
+- La dirección no se invierte: `core/` no depende de nadie, y `game/` no importa
+  Three, no toca el DOM y no conoce `world/`, `art/` ni `ui/`. Si necesitas Three
+  en una de esas capas, la pieza está en la capa equivocada — muévela, no
+  relajes la regla.
+- Esto no es documentación: lo vigila `tests/arquitectura.test.js` y falla en
+  rojo. Ese mismo test prohíbe `Math.random()` y la lectura del reloj en
+  `core/` y `game/`.
 
 ## Restricciones duras
 

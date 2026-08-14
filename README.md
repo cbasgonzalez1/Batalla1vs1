@@ -89,18 +89,35 @@ giro del proyectil sobre su eje.
 ```
 src/
   core/      rng (mulberry32), ruido 1D + fBm, easings, utilidades
+  game/      ballistics.js ← integrador a paso fijo, hecho a mano
+             combat.js     ← vida, daño por proximidad, cargas de reacción
   art/       direction.js  ← todos los colores, luces y materiales
              geometry.js   ← caja biselada, texturas de punto y cielo
   world/     terrain.js    ← heightmap + malla extruida + destrucción
              cannon.js     ← vehículo del jugador
              gamecamera.js ← ortográfica con barrido, seguimiento y límites
-  game/      ballistics.js ← integrador a paso fijo, hecho a mano
-             combat.js     ← vida, daño por proximidad, cargas de reacción
              trajectory.js ← arco punteado
-             input.js      ← arrastrar y soltar + pellizco
   ui/        hud.js        ← todo el DOM del HUD
+             input.js      ← arrastrar y soltar + pellizco
   main.js    ensamblado, bucle a paso fijo y máquina de estados
 ```
+
+`core/` no depende de nadie y `game/` no sabe que existe Three ni el DOM: ahí
+viven la balística y las reglas de combate, y por eso se pueden probar sin
+montar la escena. Lo que dibuja va en `world/` y `art/`; lo que escucha al dedo,
+en `ui/`. La frontera la vigila `tests/arquitectura.test.js`.
+
+## Tests
+
+```bash
+pnpm test        # 68 tests, sin navegador
+pnpm test:watch
+```
+
+Cubren el PRNG, la balística, las reglas de combate, la generación y
+destrucción del terreno, y la frontera entre capas. Los números de balance
+(46 de daño directo, radio 5,2, escudo 0,28, 3 cargas) están escritos literales
+en `tests/game/combat.test.js`: si alguien los retoca sin querer, el test falla.
 
 ### Determinismo
 
