@@ -35,6 +35,7 @@ import { crearCliente } from './net/cliente.js';
 import { crearLobby } from './ui/lobby.js';
 import { crearSincronia } from './net/sincronia.js';
 import { crearFranja } from './ui/franja.js';
+import { crearSonidos } from '../src/audio/sonidos.js';
 import {
   crearPartida,
   avanzarTurno,
@@ -527,6 +528,7 @@ function dispararDeVerdad() {
   };
   state.shots[state.active] += 1;
 
+  sonidos.sonar('disparo');
   projectile.position.set(start.x, start.y, CONFIG.playZ);
   projectile.visible = true;
   state.phase = 'flying';
@@ -545,6 +547,7 @@ function onImpact(hit) {
 
   // El crater no borra masa: la levanta. Lo que sale de aqui cae despues, en la
   // fase 'pluma', a sotavento del impacto.
+  sonidos.sonar('impacto');
   const { volumen } = world.terrain.carve(hit.x, hit.y, CONFIG.craterRadius);
   projectile.visible = false;
   state.shot = null;
@@ -614,6 +617,7 @@ function onImpact(hit) {
     else mias.larga = hit.x;
   }
 
+  sonidos.sonar('pluma');
   state.phase = 'pluma';
   // Encuadre entre el crater y donde va a caer la arena: si la camara se queda
   // en el impacto, el jugador no ve lo unico que ha construido este turno.
@@ -678,6 +682,7 @@ function endTurn() {
 }
 
 function declareVictory(winner, loser) {
+  sonidos.sonar('victoria');
   state.phase = 'victory';
   arc.hide();
   const c = world.cannons[loser];
@@ -749,6 +754,7 @@ function useHop() {
 
 function aplicarEscudo() {
   if (!canReact()) return;
+  sonidos.sonar('escudo');
   const i = state.reaction.defender;
   spendCharge();
   state.players[i].shielded = true;
@@ -757,6 +763,7 @@ function aplicarEscudo() {
 
 function aplicarSalto() {
   if (!canReact()) return;
+  sonidos.sonar('salto');
   const i = state.reaction.defender;
   const cannon = world.cannons[i];
   const px = cannon.group.position.x;
@@ -803,6 +810,14 @@ function advanceHops() {
 // ─────────────────────────────────────────────────────────────────── control
 
 let pinchStartZoom = 1;
+
+// El audio esta cableado y esperando los MP3 (ver public/audio/LEEME.md). Los
+// que falten no suenan y ya: el juego no depende de ellos.
+const sonidos = crearSonidos();
+// Los navegadores no dejan sonar nada hasta el primer gesto del jugador.
+for (const evento of ['pointerdown', 'keydown']) {
+  window.addEventListener(evento, () => sonidos.desbloquear(), { once: true });
+}
 
 const franja = crearFranja(document.getElementById('franja'));
 
@@ -979,7 +994,12 @@ function avanzarPluma() {
     }
   }
 
-  if (p.paso >= CONFIG.plumaSteps) endTurn();
+  if (p.paso >= CONFIG.plumaSteps) {
+    // Al terminar de caer, la arena se asienta. Es progresivo: lo que quede
+    // empinado se seguira derrumbando en los turnos siguientes, cada vez menos.
+    world.terrain.reposar();
+    endTurn();
+  }
 }
 
 function updateCamera(dt) {
@@ -1158,6 +1178,7 @@ if (params.has('online') || params.has('sala')) {
 
 window.GAME = {
   config: CONFIG,
+  sonidos,
   red,
   lobby,
   sincronia,

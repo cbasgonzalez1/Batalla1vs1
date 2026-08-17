@@ -32,6 +32,32 @@ const CONTRAST = 5.5;      // expansion de contraste del fBm, ver _generate()
 const SINK = 0.42;         // cuanto se oscurece el fondo de la cara frontal
 const SINK_DEPTH = 14;     // profundidad a la que el oscurecimiento satura
 
+// Angulo de reposo de la arena: por encima de esta pendiente, el monton se
+// derrumba. 34 grados es lo tipico de arena seca.
+//
+// Se compara contra el perfil de la ARENA SUELTA, no contra el del terreno.
+// Es una simplificacion deliberada: arena de verdad sobre una ladera de 72
+// grados resbalaria hasta el fondo, y medido aqui eso vaciaba cada deposito
+// valle abajo — con lo que levantar el suelo del rival, que es el corazon de
+// Sotavento, se volvia imposible. Asi la arena se queda donde cae y solo se
+// derrumba si la apilas de mas, que es la regla que el jugador puede aprender.
+const REPOSO_TANGENTE = Math.tan((34 * Math.PI) / 180);
+// Tope de pasadas por si un perfil raro no converge: mas vale un talud algo
+// empinado que un bucle que se come el cuadro.
+const REPOSO_MAX_PASADAS = 288;
+// La relajacion es difusiva: el movimiento decae geometricamente (9,5 -> 2,05
+// -> 0,49 -> 0,12 u² por tanda de 288 pasadas) y la cola no termina nunca.
+//
+// Por eso el alud es PROGRESIVO: cada turno se dan hasta 288 pasadas y el
+// monton se sigue asentando en los turnos siguientes, cada vez menos. Cuesta
+// unos 20 ms por turno; forzar la convergencia en una sola llamada pedia mas
+// de mil pasadas y un tiron de 100 ms. Y ver la arena asentarse poco a poco se
+// parece mas a la arena de verdad que verla saltar a su posicion final.
+//
+// El umbral corta la cola cuando el movimiento ya es invisible: una milesima
+// de unidad sobre un terreno de 14 de amplitud.
+const REPOSO_UMBRAL = 1e-3;
+
 export class Terrain {
   constructor({
     rng,
@@ -65,6 +91,11 @@ export class Terrain {
     // conservacion tiene que respetar. La AO se queda en simple porque solo
     // pinta. Sigue siendo determinista entre maquinas: IEEE 754 es IEEE 754.
     this.heights = new Float64Array(columns);
+    // Cuanta arena SUELTA hay encima de cada columna. El terreno generado tiene
+    // laderas de hasta 72 grados y esta asentado; solo lo que ha levantado un
+    // cañonazo puede derrumbarse. Sin esta distincion, un alud a 34 grados
+    // aplanaria el campo entero en la primera pasada.
+    this.suelta = new Float64Array(columns);
     this.ao = new Float32Array(columns);
 
     this._generate(rng, minHeight, amplitude, pads, bowlHalfWidth, bowlWeight);
@@ -182,7 +213,10 @@ export class Terrain {
       if (this.heights[i] > bottom) {
         const antes = this.heights[i];
         this.heights[i] = Math.max(this.floorY, bottom);
-        volumen += (antes - this.heights[i]) * this.dx;
+        const quitado = antes - this.heights[i];
+        volumen += quitado * this.dx;
+        // Lo que se lleva el crater incluye la arena suelta que hubiera ahi.
+        this.suelta[i] = Math.max(0, this.suelta[i] - quitado);
       }
     }
 
@@ -225,11 +259,76 @@ export class Terrain {
       const d = this.x0 + i * this.dx - xc;
       const altura = escala * Math.exp(-(d * d) / (2 * sigma * sigma));
       this.heights[i] += altura;
+      this.suelta[i] += altura;
       depositado += altura * this.dx;
     }
 
     if (rehacerMalla && i1 >= i0) this.rebuild(i0 - AO_WINDOW, i1 + AO_WINDOW);
     return { i0, i1, depositado, perdido: volumen - depositado };
+  }
+
+  /**
+   * Deja caer la arena que este mas empinada que su angulo de reposo.
+   *
+   * Hace falta desde que los depositos se apilan: una campana suelta de pico
+   * 1,77 y sigma 2,4 tiene pendiente maxima 0,447 y aguanta sola, pero tres
+   * capas en el mismo sitio llegan a 5,30 y se derrumban.
+   *
+   * La transferencia es COMPLETA, no la mitad. Con media transferencia la
+   * relajacion se vuelve difusiva y necesita miles de pasadas para asentar un
+   * talud: el terreno se quedaria congelado a media caida.
+   *
+   * El barrido alterna sentido en cada pasada. Recorrer siempre de izquierda a
+   * derecha empuja la arena en esa direccion y un campo simetrico acabaria
+   * torcido.
+   *
+   * @returns {{pasadas:number, movido:number, estable:boolean}}
+   */
+  reposar(desde = 0, hasta = this.cols - 1, { rehacerMalla = true } = {}) {
+    const i0 = Math.max(1, desde);
+    const i1 = Math.min(this.cols - 2, hasta);
+    const maxima = REPOSO_TANGENTE * this.dx;
+
+    let pasadas = 0;
+    let movido = 0;
+    let estable = false;
+
+    for (; pasadas < REPOSO_MAX_PASADAS; pasadas++) {
+      let enEstaPasada = 0;
+      const alReves = pasadas % 2 === 1;
+      const inicio = alReves ? i1 : i0;
+      const fin = alReves ? i0 : i1;
+      const salto = alReves ? -1 : 1;
+
+      for (let i = inicio; alReves ? i >= fin : i <= fin; i += salto) {
+        for (const vecino of [i - 1, i + 1]) {
+          if (vecino < 0 || vecino >= this.cols) continue;
+          const exceso = this.suelta[i] - this.suelta[vecino] - maxima;
+          if (exceso <= 0) continue;
+
+          // Solo se derrumba lo que esta suelto: la ladera original aguanta por
+          // empinada que sea, y la arena de encima se sostiene sobre ella.
+          const mitad = Math.min(exceso / 2, this.suelta[i]);
+          if (mitad <= 1e-12) continue;
+
+          // Lo que baja uno lo sube el otro: la masa se conserva exactamente.
+          this.heights[i] -= mitad;
+          this.heights[vecino] += mitad;
+          this.suelta[i] -= mitad;
+          this.suelta[vecino] += mitad;
+          movido += mitad * this.dx;
+          enEstaPasada += mitad;
+        }
+      }
+
+      if (enEstaPasada < REPOSO_UMBRAL) {
+        estable = true;
+        break;
+      }
+    }
+
+    if (rehacerMalla && movido > 0) this.rebuild(i0 - AO_WINDOW, i1 + AO_WINDOW);
+    return { pasadas, movido, estable };
   }
 
   // ------------------------------------------------------------- geometria

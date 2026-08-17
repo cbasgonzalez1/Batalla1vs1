@@ -171,6 +171,27 @@ del temblor de un pulgar. Ahora, dentro de 40 px del arrastre anterior, el dedo
 pesa **cuatro veces menos**. Sin modos y sin botón: la función es continua, así
 que no hay salto al cruzar el borde.
 
+### Aludes
+
+La arena que queda más empinada que su ángulo de reposo (34°) se derrumba. Un
+depósito normal aguanta solo; tres apilados en el mismo punto, no.
+
+Solo se mueve la arena **suelta**: el terreno generado tiene laderas de hasta
+72° y está asentado. Y el reposo se mide contra el perfil de la arena, no contra
+el del terreno — con arena de verdad, un depósito en una ladera resbalaría hasta
+el valle y levantar el suelo del rival, que es el corazón de Sotavento, sería
+imposible.
+
+El alud es **progresivo**: cada turno se dan hasta 288 pasadas y el montón se
+sigue asentando en los siguientes, cada vez menos. Forzar la convergencia de
+golpe pedía más de mil pasadas y un tirón de 100 ms.
+
+### Sonido
+
+Cableado y esperando los ficheros: suelta los MP3 en `public/audio/` con los
+nombres de `public/audio/LEEME.md` y sonarán solos. Los que falten no suenan, sin
+errores ni huecos — el juego es jugable sin ninguno.
+
 **Sin el motion spec todavía.** No hay retroceso del cañón, fogonazo, humo,
 estela, onda expansiva, escombros ni screen shake.
 Lo que sí se mueve es lo que hace falta para jugar: el barrido de cámara

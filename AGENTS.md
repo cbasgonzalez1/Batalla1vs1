@@ -97,6 +97,11 @@ móviles no coinciden.
   dispersa en constantes por fichero.
 - Los valores de arte (paleta, luces, roughness, easings, duraciones) salen de
   `ART.md`. Si vas a inventarte un color o una duración, para y pregunta.
+  **`ART.md` sigue vacío**, así que el motion spec está pendiente de que se
+  rellene: no es un olvido, es que esos valores no me tocan a mí.
+- El sonido está cableado (`src/audio/sonidos.js`) y espera los MP3 en
+  `public/audio/`. Un fichero que falta no suena y ya: nunca un error en consola
+  ni un hueco en la partida.
 
 ## Bucle de test
 
