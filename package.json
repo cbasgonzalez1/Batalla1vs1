@@ -24,6 +24,7 @@
     "verificar:replay": "node scripts/verificar-replay.mjs",
     "verificar:trampas": "node scripts/verificar-trampas.mjs",
     "verificar:efectos": "node scripts/verificar-efectos.mjs",
+    "verificar:avance": "node scripts/verificar-avance.mjs",
     "verificar:fluidez": "node scripts/verificar-fluidez.mjs",
     "capturar": "node scripts/capturar.mjs"
   },

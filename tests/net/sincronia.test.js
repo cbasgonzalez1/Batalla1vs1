@@ -15,8 +15,8 @@ function clienteFalso() {
     recibir(m) {
       for (const fn of oyentes.get(m.tipo) ?? []) fn(m);
     },
-    disparar(paso, anguloDeg, potencia) {
-      this.enviados.push({ tipo: 'disparo', paso, anguloDeg, potencia });
+    disparar(paso, anguloDeg, potencia, avance = 0) {
+      this.enviados.push({ tipo: 'disparo', paso, anguloDeg, potencia, avance });
       return true;
     },
     reaccionar(paso, accion) {
@@ -104,7 +104,7 @@ describe('el disparo', () => {
     sincronia.disparar(45, 0.8);
     cliente.recibir({ v: VERSION, tipo: DICE.input, de: 'a1', accion: ACCION.disparo, anguloDeg: 45, potencia: 0.8 });
 
-    expect(aplicar).toHaveBeenCalledWith({ de: 'a1', anguloDeg: 45, potencia: 0.8 });
+    expect(aplicar).toHaveBeenCalledWith({ de: 'a1', anguloDeg: 45, potencia: 0.8, avance: 0 });
   });
 
   it('el dedo insistente no dispara dos veces', () => {
@@ -187,5 +187,42 @@ describe('modo local', () => {
     expect(sincronia.meToca()).toBe(false);
     sincronia.parar();
     expect(sincronia.meToca()).toBe(true);
+  });
+});
+
+describe('el avance viaja con el disparo', () => {
+  /**
+   * El movimiento no es un mensaje aparte: es un numero mas del disparo.
+   * Mandarlo suelto —o peor, uno por cada paso de oruga— seria cable para nada
+   * y ademas abriria la puerta a que llegue en otro orden.
+   */
+  beforeEach(() => {
+    sincronia.empezar(partidaDe([{ id: 'a1', bando: 'a' }, { id: 'b1', bando: 'b' }]), 'a1');
+  });
+
+  it('se manda junto al angulo y la potencia', () => {
+    sincronia.disparar(45, 0.8, -6.25);
+    expect(cliente.enviados[0]).toMatchObject({ anguloDeg: 45, potencia: 0.8, avance: -6.25 });
+  });
+
+  it('llega al que lo aplica', () => {
+    const aplicar = vi.fn();
+    sincronia.alDisparo(aplicar);
+    sincronia.disparar(45, 0.8, 3.5);
+    cliente.recibir({
+      v: VERSION, tipo: DICE.input, de: 'a1',
+      accion: ACCION.disparo, anguloDeg: 45, potencia: 0.8, avance: 3.5,
+    });
+    expect(aplicar).toHaveBeenCalledWith({ de: 'a1', anguloDeg: 45, potencia: 0.8, avance: 3.5 });
+  });
+
+  it('un disparo viejo sin avance se lee como cero', () => {
+    const aplicar = vi.fn();
+    sincronia.alDisparo(aplicar);
+    cliente.recibir({
+      v: VERSION, tipo: DICE.input, de: 'a1',
+      accion: ACCION.disparo, anguloDeg: 45, potencia: 0.8,
+    });
+    expect(aplicar).toHaveBeenCalledWith({ de: 'a1', anguloDeg: 45, potencia: 0.8, avance: 0 });
   });
 });

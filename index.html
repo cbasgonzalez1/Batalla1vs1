@@ -293,6 +293,48 @@
   }
   #shotinfo b{ color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums; }
 
+  /* ─────────────────────────────────────────── avance ───────────────── */
+  #avance{
+    left:calc(var(--u)*28); bottom:calc(var(--u)*150);
+    display:flex; flex-direction:column; gap:calc(var(--u)*8);
+    pointer-events:none;
+  }
+  #avance .botones{ display:flex; gap:calc(var(--u)*10); }
+  #avance button{
+    pointer-events:auto;
+    width:calc(var(--u)*84); height:calc(var(--u)*84);
+    border-radius:calc(var(--u)*22);
+    background:rgba(17,24,35,.82);
+    border:1px solid var(--line);
+    color:var(--ink); font-size:calc(var(--u)*30); line-height:1;
+    font-family:var(--f-mono);
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .12s cubic-bezier(.34,1.56,.64,1), border-color .12s, opacity .12s;
+  }
+  #avance button:active{ transform:scale(.9); border-color:var(--trazadora); }
+  #avance button:disabled{ opacity:.3; }
+  #avance button:focus-visible{ outline:calc(var(--u)*3) solid var(--fosforo); outline-offset:calc(var(--u)*3); }
+
+  /* El deposito comparte forma con la barra de vida a proposito: una barra que
+     baja siempre quiere decir lo mismo. */
+  #deposito{
+    width:calc(var(--u)*178); height:calc(var(--u)*12);
+    background:rgba(8,12,18,.78);
+    border:1px solid var(--line); border-radius:calc(var(--u)*4);
+    overflow:hidden;
+  }
+  #deposito i{
+    display:block; height:100%; width:100%;
+    background:linear-gradient(180deg,#CFE08A,#8FAF3C 45%,#5F7A22);
+    transition:width .26s cubic-bezier(.33,1,.68,1);
+  }
+  #av-aviso{
+    font-size:calc(var(--u)*17); letter-spacing:.12em; text-transform:uppercase;
+    color:var(--danger); opacity:0; transition:opacity .18s ease;
+    text-shadow:0 calc(var(--u)*2) calc(var(--u)*6) rgba(4,7,12,.9);
+  }
+  #av-aviso.on{ opacity:1; }
+
   /* ───────────────────────────────────── boton otear ────────────────── */
   #scout{
     right:calc(var(--u)*28); bottom:calc(var(--u)*30);
@@ -424,6 +466,18 @@
         <div><span data-i18n="turno">Turno</span> <b id="r-turn">A</b></div>
         <div><span data-i18n="angulo">Ángulo</span> <b id="r-angle">45°</b></div>
         <div><span data-i18n="potencia">Potencia</span> <b id="r-power">55%</b></div>
+      </div>
+
+      <!-- Avance: dos botones y el deposito. Van en el tercio inferior porque
+           es donde llega el pulgar, y a la izquierda para no pelearse con el
+           arrastre de apuntado, que sale del vehiculo hacia atras. -->
+      <div id="avance">
+        <div class="botones">
+          <button id="av-izq" type="button" data-i18n-aria="avanzarIzq">◀</button>
+          <button id="av-der" type="button" data-i18n-aria="avanzarDer">▶</button>
+        </div>
+        <div id="deposito"><i></i></div>
+        <span id="av-aviso" data-i18n="encerrado">Sin paso</span>
       </div>
 
       <button id="scout" type="button" data-i18n-aria="otearAria">

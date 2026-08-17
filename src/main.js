@@ -25,6 +25,7 @@ import { crearViento, flechaDe } from './game/viento.js';
 import { transporte } from './game/sotavento.js';
 import { DIFICULTAD, apuntar as apuntarIA, reaccionar as reaccionarIA } from './game/ia.js';
 import { generarTrampas, chocarCon, resolverChoque, minaEn, nivelDe } from './game/trampas.js';
+import { AVANCE, mover, repostar, encerrado, fraccion as fraccionDeposito } from './game/avance.js';
 import { lecturaDeTiro, acerto } from './game/lectura.js';
 import { codificar, decodificar, semillaDeRevancha } from './game/replay.js';
 import {
@@ -406,6 +407,13 @@ const state = {
   reaction: { open: false, used: false, defender: 1 },
   pluma: null,
   hundimientoMs: 0,
+  // Deposito de cada vehiculo y el avance PEDIDO en este turno. El avance es
+  // local hasta que se dispara: igual que apuntar, mover es una intencion que
+  // no vale nada hasta que sueltas el tiro. Asi el movimiento viaja por el
+  // cable como un solo numero junto al disparo.
+  combustible: [],
+  avance: 0,
+  avanceBloqueado: false,
   shots: [0, 0],
   dragging: false,
   scouting: false,
@@ -584,6 +592,9 @@ function startMatch(seedText, alineacion = ALINEACION_LOCAL) {
   state.players = state.plantel.map(() => newPlayerState());
   state.aim = state.plantel.map(() => ({ phi: 48 * DEG, power: 0.7 }));
   state.shots = state.plantel.map(() => 0);
+  state.combustible = state.plantel.map(() => AVANCE.deposito);
+  state.avance = 0;
+  state.avanceBloqueado = false;
   state.marcas = state.plantel.map(() => ({ corta: null, larga: null }));
   state.historia = [];
   state.phase = 'aiming';
@@ -730,6 +741,96 @@ function applyAim(aimInput) {
   cannon.setAim(slot.phi);
 }
 
+// ─────────────────────────────────────────────────────────────────── avance
+
+/**
+ * A donde llegaria el vehiculo activo con el avance pedido ahora mismo.
+ *
+ * Se recalcula SIEMPRE desde la x de inicio de turno, nunca sumando trocitos.
+ * Es lo que permite que por el cable viaje un solo numero: los seis moviles
+ * llaman a esta misma funcion pura con la misma x y el mismo pedido, y les sale
+ * el mismo sitio. Si fuera incremental, un cuadro perdido en un movil cambiaria
+ * el resultado y la partida se separaria sin que nadie lo viera.
+ */
+function resolverAvance(indice = state.active, pedido = state.avance) {
+  const t = world.terrain;
+  return mover({
+    x: state.plantel[indice].x,
+    pedido,
+    combustible: state.combustible[indice],
+    alturaEn: (x) => t.heightAt(x),
+    minX: t.x0 + 4,
+    maxX: t.x0 + t.width - 4,
+  });
+}
+
+/** Pide mover el vehiculo activo. `delta` en unidades de mundo, con signo. */
+function pedirAvance(delta) {
+  if (state.phase !== 'aiming' || state.dragging) return;
+  if (sincronia.estado.activa && !sincronia.meToca()) return;
+
+  const antes = resolverAvance();
+  state.avance = clamp(state.avance + delta, -60, 60);
+  const ahora = resolverAvance();
+
+  // Si el pedido ya no mueve nada, no se deja crecer: si no, el jugador
+  // acumularia veinte unidades contra una pared y al girarse saldria disparado.
+  if (Math.abs(ahora.recorrido - antes.recorrido) < 1e-9 && Math.sign(delta) === Math.sign(state.avance)) {
+    state.avance = antes.recorrido;
+  }
+  state.avanceBloqueado = ahora.bloqueado;
+
+  colocarActivo(ahora.x);
+  refreshPreview();
+  updateHud();
+}
+
+/** Deja el vehiculo activo en una x, apoyado en el terreno. */
+function colocarActivo(x) {
+  const g = activeCannon().group;
+  g.position.x = x;
+  g.position.y = world.terrain.heightAt(x);
+  const f = aimFraming(state.active);
+  state.goal = f;
+}
+
+/**
+ * Sella el avance del turno: a partir de aqui es la posicion de verdad.
+ *
+ * Se llama justo antes de disparar y con el MISMO numero en todos los moviles,
+ * asi que la boca del cañon queda en el mismo sitio en todos y la trayectoria
+ * sale identica.
+ */
+function comprometerAvance(pedido) {
+  const i = state.active;
+  const r = resolverAvance(i, pedido);
+  state.plantel[i].x = r.x;
+  state.combustible[i] = r.combustible;
+  state.avance = 0;
+  state.avanceBloqueado = false;
+  colocarActivo(r.x);
+
+  // Pisar una mina enterrada mientras te reposicionas. Es lo que hace que las
+  // trampas de pista dejen de ser decorado en cuanto uno puede moverse.
+  const malla = world.trampas.find(
+    (m) => m.datos.viva && m.datos.apoyada && m.datos.tipo === 'mina' && Math.abs(m.datos.x - r.x) <= 2.2,
+  );
+  if (malla) {
+    malla.datos.viva = false;
+    malla.grupo.visible = false;
+    applyDamage(state.players[i], BLAST.maxDamage * 0.55);
+    sonidos.sonar('impacto');
+    efectos.impacto({
+      x: r.x,
+      y: world.terrain.heightAt(r.x),
+      radio: CONFIG.craterRadius * 0.7,
+      daño: BLAST.maxDamage * 0.55,
+    });
+    hud.setHp(i, state.players[i].hp);
+  }
+  return r;
+}
+
 // ────────────────────────────────────────────────────────────────── disparo
 
 /**
@@ -743,13 +844,18 @@ function fire() {
   if (sincronia.estado.activa) {
     if (!sincronia.meToca() || state.phase !== 'aiming') return;
     const mio = activeAim();
-    sincronia.disparar(mio.phi * RAD_TO_DEG, mio.power);
+    // El avance va con el disparo. Como todo lo demas en red, no se aplica
+    // aqui: se aplica cuando vuelve del servidor, tambien para el que lo manda.
+    sincronia.disparar(mio.phi * RAD_TO_DEG, mio.power, resolverAvance().recorrido);
     return;
   }
   dispararDeVerdad();
 }
 
-function dispararDeVerdad() {
+function dispararDeVerdad(avancePedido = state.avance) {
+  // Primero se sella el avance y solo despues se lee la boca: la posicion del
+  // vehiculo es parte del disparo, no algo que pase por su cuenta.
+  const avanceSellado = comprometerAvance(avancePedido).recorrido;
   const start = muzzleState();
   // El arco de prevision y el proyectil real comparten integrador, asi que
   // esta prediccion es exacta: sirve para abrir la ventana de reaccion en el
@@ -778,6 +884,10 @@ function dispararDeVerdad() {
   state.historia.push({
     anguloDeg: apuntado.phi * RAD_TO_DEG,
     potencia: apuntado.power,
+    // Sin esto, una repeticion tiraria desde la posicion inicial y todos los
+    // impactos caerian en otro sitio a partir del primer turno en que alguien
+    // se movio.
+    avance: avanceSellado,
   });
 
   sonidos.sonar('disparo');
@@ -995,6 +1105,10 @@ function endTurn() {
   }
   state.wind = viento.avanzar();
   state.phase = 'aiming';
+  // Reposta el que entra, y el avance pedido se olvida: es de un solo turno.
+  state.combustible[state.active] = repostar(state.combustible[state.active]);
+  state.avance = 0;
+  state.avanceBloqueado = false;
   activeCannon().setAim(activeAim().phi);
   // Barrido al canon activo: 700 ms, easeInOutCubic.
   state.goal = aimFraming(state.active);
@@ -1213,6 +1327,8 @@ function pintarFranja(deposito = null) {
 }
 
 const hud = new Hud({
+  // Un toque mueve 0,45 unidades; manteniendo, unas 8 por segundo.
+  onAvance: (signo) => pedirAvance(signo * 0.45),
   onScoutStart() {
     if (state.phase === 'victory') return;
     state.scouting = true;
@@ -1510,12 +1626,49 @@ new ResizeObserver(resize).observe(stage);
 
 function updateHud() {
   const { phi, power } = activeAim();
+  pintarDeposito();
   hud.setShot(state.active === 0 ? 'A' : 'B', Math.round(phi * RAD_TO_DEG), Math.round(power * 100));
   hud.setWind(state.wind, viento ? viento.pronostico : null);
   for (let i = 0; i < state.plantel.length; i++) {
     hud.setHp(i, state.players[i].hp);
     hud.setCharges(i, state.players[i].charges);
   }
+}
+
+/**
+ * Deposito del vehiculo activo, y el aviso de encerrado.
+ *
+ * El aviso existe porque sin el, apretar el boton y que no pase nada se lee
+ * como que el juego esta roto. Que sea el rival quien te ha construido una
+ * pared de arena delante es informacion, no un fallo.
+ */
+function pintarDeposito() {
+  if (!world.terrain || !state.plantel.length) return;
+  const i = state.active;
+  const t = world.terrain;
+
+  // Se pinta lo PREVISTO, no lo sellado. El deposito solo se descuenta de
+  // verdad al disparar —mover es una intencion, igual que apuntar—, pero una
+  // barra que no baja mientras aprietas el boton no informa de nada: el
+  // jugador tiene que ver lo que le va a costar antes de comprometerse.
+  const previsto = resolverAvance(i);
+  const sinPaso =
+    state.phase === 'aiming' &&
+    encerrado({
+      // Y desde donde va a QUEDAR, no desde donde queria llegar: si el pedido
+      // se recorto por falta de deposito, mirar la x pedida daba avisos de
+      // "sin paso" en mitad de un campo abierto.
+      x: previsto.x,
+      combustible: previsto.combustible,
+      alturaEn: (x) => t.heightAt(x),
+      minX: t.x0 + 4,
+      maxX: t.x0 + t.width - 4,
+    });
+  // El aviso es solo para estar ENCERRADO de verdad. Encenderlo tambien cuando
+  // el ultimo empujon choco contra una cuesta lo dejaba puesto en mitad del
+  // campo abierto —bastaba con que hubiera un talud a la derecha— y un aviso
+  // que sale siempre deja de ser un aviso.
+  hud.setAvance(fraccionDeposito(previsto.combustible), sinPaso);
 }
 
 /** Lo que cambia cada cuadro: vida tras un impacto y reloj de reaccion. */
@@ -1622,7 +1775,7 @@ function reproducir(turnos) {
       state.reproduciendo = { ...turno.reaccion };
     }
 
-    dispararDeVerdad();
+    dispararDeVerdad(turno.avance ?? 0);
     setTimeout(siguiente, 200);
   };
 
@@ -1695,13 +1848,13 @@ const red = crearCliente({ url: servidor });
 const sincronia = crearSincronia({ cliente: red });
 
 // El disparo que llega del servidor —el propio incluido— es el que se ejecuta.
-sincronia.alDisparo(({ anguloDeg, potencia }) => {
+sincronia.alDisparo(({ anguloDeg, potencia, avance }) => {
   const slot = activeAim();
   slot.phi = clamp(anguloDeg * DEG, MIN_PHI, MAX_PHI);
   slot.power = clamp(potencia, 0, 1);
   activeCannon().setAim(slot.phi);
   refreshPreview();
-  dispararDeVerdad();
+  dispararDeVerdad(avance ?? 0);
 });
 
 const lobby = crearLobby({
@@ -1753,6 +1906,15 @@ window.GAME = {
   stepSim(n = 1) {
     for (let i = 0; i < n; i++) fixedUpdate();
     return { fase: state.phase, pasos: state.flightSteps };
+  },
+  /** Pide avanzar el vehiculo activo, en unidades de mundo con signo. */
+  avanzar(delta) {
+    pedirAvance(delta);
+    return { pedido: state.avance, x: activeCannon().group.position.x, ...resolverAvance() };
+  },
+  /** Deposito de cada vehiculo, para las verificaciones. */
+  get combustible() {
+    return [...state.combustible];
   },
   /** Apunta el canon activo por codigo, para pruebas reproducibles. */
   aim(phiDeg, power) {

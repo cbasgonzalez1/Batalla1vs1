@@ -80,11 +80,16 @@ for (let turno = 0; turno < 4; turno++) {
   const nombre = eA.meToca ? 'Ana' : 'Bea';
 
   await quien.evaluate(
-    ([angulo, potencia]) => {
+    ([angulo, potencia, pasos]) => {
+      // Se mueve ANTES de disparar, y solo en su pantalla: el avance viaja con
+      // el disparo. Si el otro movil no lo aplicara igual, la boca del cañon
+      // quedaria en sitios distintos y el perfil del terreno se separaria al
+      // segundo impacto. Es la prueba de que el movimiento va sincronizado.
+      for (let i = 0; i < Math.abs(pasos); i++) window.GAME.avanzar(Math.sign(pasos) * 0.45);
       window.GAME.aim(angulo, potencia);
       window.GAME.fire();
     },
-    [38 + turno * 4, 0.66 + turno * 0.04]
+    [38 + turno * 4, 0.66 + turno * 0.04, turno % 2 === 0 ? 6 : -4]
   );
 
   // Hay que esperar a que el disparo LLEGUE a los dos antes de avanzar el

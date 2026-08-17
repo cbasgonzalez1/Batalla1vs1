@@ -124,8 +124,8 @@ export function crearCliente({
 
     listo: (valor = true) => enviar(mensaje(PIDE.listo, { listo: valor })),
 
-    disparar: (paso, anguloDeg, potencia) =>
-      enviar(mensaje(PIDE.input, { paso, accion: 'disparo', anguloDeg, potencia })),
+    disparar: (paso, anguloDeg, potencia, avance = 0) =>
+      enviar(mensaje(PIDE.input, { paso, accion: 'disparo', anguloDeg, potencia, avance })),
 
     reaccionar: (paso, accion) => enviar(mensaje(PIDE.input, { paso, accion })),
 

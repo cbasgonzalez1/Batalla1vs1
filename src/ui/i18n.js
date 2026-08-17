@@ -51,6 +51,9 @@ const TEXTOS = {
     faltaUno: 'Falta 1 por confirmar',
     sinConexion: 'Sin conexión con el servidor',
     tuNombre: 'Tu nombre',
+    avanzarIzq: 'Avanzar a la izquierda',
+    avanzarDer: 'Avanzar a la derecha',
+    encerrado: 'Sin paso',
   },
   en: {
     titulo: 'Artillery 1v1',
@@ -92,6 +95,9 @@ const TEXTOS = {
     faltaUno: '1 still to confirm',
     sinConexion: 'No connection to the server',
     tuNombre: 'Your name',
+    avanzarIzq: 'Move left',
+    avanzarDer: 'Move right',
+    encerrado: 'Blocked in',
   },
 };
 

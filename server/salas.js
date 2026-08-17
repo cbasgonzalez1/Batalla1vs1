@@ -238,6 +238,7 @@ export function atender(salas, sesion, bruto) {
             accion: bruto.accion,
             anguloDeg: bruto.anguloDeg,
             potencia: bruto.potencia,
+            avance: bruto.avance,
           })
         ),
       ];

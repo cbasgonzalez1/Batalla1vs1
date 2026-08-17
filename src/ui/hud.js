@@ -32,6 +32,10 @@ export class Hud {
       angle: $('r-angle'),
       power: $('r-power'),
       scout: $('scout'),
+      avIzq: $('av-izq'),
+      avDer: $('av-der'),
+      deposito: $('deposito')?.querySelector('i'),
+      avAviso: $('av-aviso'),
       reaction: $('reaction'),
       rbar: $('rbar'),
       rsecs: $('rsecs'),
@@ -63,6 +67,37 @@ export class Hud {
     scout.addEventListener('keydown', (e) => { if (e.key === ' ' || e.key === 'Enter') down(e); });
     scout.addEventListener('keyup', up);
     scout.addEventListener('blur', up);
+
+    // Avance: mantener pulsado mueve. Se repite con un intervalo y no con
+    // requestAnimationFrame para que el vehiculo recorra lo mismo en un movil
+    // de 60 Hz que en uno de 120 — el avance es una decision del jugador, no
+    // una carrera de cuadros.
+    const repetir = (boton, signo) => {
+      if (!boton) return;
+      let tic = null;
+      const parar = () => {
+        if (tic !== null) clearInterval(tic);
+        tic = null;
+        boton.classList.remove('on');
+      };
+      const arrancar = (e) => {
+        swallow(e);
+        if (tic !== null) return;
+        boton.classList.add('on');
+        handlers.onAvance?.(signo);
+        tic = setInterval(() => handlers.onAvance?.(signo), 55);
+      };
+      boton.addEventListener('pointerdown', arrancar);
+      for (const evento of ['pointerup', 'pointercancel', 'pointerleave', 'blur']) {
+        boton.addEventListener(evento, parar);
+      }
+      boton.addEventListener('keydown', (e) => {
+        if (e.key === ' ' || e.key === 'Enter') arrancar(e);
+      });
+      boton.addEventListener('keyup', parar);
+    };
+    repetir(this.el.avIzq, -1);
+    repetir(this.el.avDer, +1);
 
     this.el.shield.addEventListener('pointerdown', (e) => { swallow(e); handlers.onShield?.(); });
     this.el.hop.addEventListener('pointerdown', (e) => { swallow(e); handlers.onHop?.(); });
@@ -149,6 +184,22 @@ export class Hud {
       tarjeta.classList.toggle('turno', i === activo);
       tarjeta.classList.toggle('fuera', Boolean(destruidos[i]));
     });
+  }
+
+  /**
+   * Deposito de avance del vehiculo activo.
+   * @param {number} fraccion 0 a 1
+   * @param {boolean} encerrado si no puede moverse a ningun lado
+   */
+  setAvance(fraccion, encerrado) {
+    const clave = `${Math.round(fraccion * 100)}|${encerrado}`;
+    if (this._last.avance === clave) return;
+    this._last.avance = clave;
+    if (this.el.deposito) this.el.deposito.style.width = `${Math.max(0, fraccion) * 100}%`;
+    if (this.el.avAviso) this.el.avAviso.classList.toggle('on', Boolean(encerrado));
+    const vacio = fraccion <= 0.001;
+    if (this.el.avIzq) this.el.avIzq.disabled = vacio;
+    if (this.el.avDer) this.el.avDer.disabled = vacio;
   }
 
   setHp(index, hp) {

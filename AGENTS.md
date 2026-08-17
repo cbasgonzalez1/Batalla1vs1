@@ -89,6 +89,33 @@ que llega tarde **no se aplica** — hacerlo divergiría — y se apunta para po
 avisar. Cada turno se manda una huella del estado y el servidor avisa si dos
 móviles no coinciden.
 
+## Avanzar: la decisión del turno
+
+Cada turno se puede mover el blindado antes de disparar (`src/game/avance.js`).
+Hay un depósito que se gasta por distancia, se paga más caro cuesta arriba y no
+sube de cierta pendiente. Se repone en parte cada turno, así que moverse es una
+elección y no un desplazamiento gratis.
+
+Engancha con Sotavento, que es lo importante: la arena que amontonas deja de ser
+relieve y pasa a ser un **muro**. Con bastante altura delante, el rival se queda
+encerrado en su hoyo. Es la primera vez que construir terreno tiene una
+consecuencia directa sobre el otro jugador.
+
+Dos reglas que no se pueden relajar:
+
+- **`mover()` es idempotente.** Se le pasa siempre la x de inicio de turno y el
+  desplazamiento pedido, nunca un incremento. Por eso el movimiento viaja por el
+  cable como un solo número junto al disparo: los seis móviles lo recalculan y
+  les sale lo mismo. Si fuera incremental, un cuadro perdido en un móvil movería
+  el tanque a otro sitio.
+- **Mover es una intención hasta que disparas**, igual que apuntar. El depósito
+  no se descuenta y la posición no es autoritativa hasta `comprometerAvance()`.
+  En red eso significa que tampoco el que se mueve lo aplica antes del eco.
+
+El avance también va en el replay (campo `M` del enlace). Sin él, una repetición
+tiraría desde la posición inicial y todos los impactos caerían en otro sitio a
+partir del primer turno en que alguien se movió.
+
 ## Convenciones
 
 - Comentarios y nombres en español. Los comentarios explican el porqué de una

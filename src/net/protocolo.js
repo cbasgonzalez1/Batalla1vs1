@@ -36,7 +36,7 @@ export const DICE = {
 
 /** Acciones de juego que un jugador puede mandar. */
 export const ACCION = {
-  disparo: 'disparo',   // { anguloDeg, potencia }
+  disparo: 'disparo',   // { anguloDeg, potencia, avance }
   escudo: 'escudo',
   salto: 'salto',
 };
@@ -110,12 +110,21 @@ export function validar(bruto) {
       return { ok: false, motivo: 'accion desconocida' };
     }
     if (bruto.accion === ACCION.disparo) {
-      const { anguloDeg, potencia } = bruto;
+      const { anguloDeg, potencia, avance } = bruto;
       if (!Number.isFinite(anguloDeg) || anguloDeg < 0 || anguloDeg > 180) {
         return { ok: false, motivo: 'angulo fuera de rango' };
       }
       if (!Number.isFinite(potencia) || potencia < 0 || potencia > 1) {
         return { ok: false, motivo: 'potencia fuera de rango' };
+      }
+      // El avance viaja con el disparo y no como mensaje aparte: es lo que el
+      // jugador ha decidido durante SU turno, y no hay nadie simulando
+      // mientras. Un mensaje por cada paso de oruga seria cable para nada.
+      // El limite es generoso a proposito —lo que de verdad recorta es el
+      // deposito, y eso lo recalcula cada movil con la misma funcion pura—;
+      // esto solo cierra la puerta a un numero absurdo.
+      if (avance !== undefined && (!Number.isFinite(avance) || Math.abs(avance) > 200)) {
+        return { ok: false, motivo: 'avance fuera de rango' };
       }
     }
   }

@@ -60,7 +60,12 @@ export function crearSincronia({ cliente, retardo = RETARDO_PASOS }) {
     if (m.accion === ACCION.disparo) {
       // Abre turno: se aplica al llegar y el contador de vuelo vuelve a cero.
       estado.esperandoEco = false;
-      manejadores.disparo?.({ de: m.de, anguloDeg: m.anguloDeg, potencia: m.potencia });
+      manejadores.disparo?.({
+        de: m.de,
+        anguloDeg: m.anguloDeg,
+        potencia: m.potencia,
+        avance: m.avance ?? 0,
+      });
       return;
     }
 
@@ -107,11 +112,11 @@ export function crearSincronia({ cliente, retardo = RETARDO_PASOS }) {
      * mismo que ven los otros, y una desincronia se nota enseguida en vez de
      * esconderse detras de un caso especial.
      */
-    disparar(anguloDeg, potencia) {
+    disparar(anguloDeg, potencia, avance = 0) {
       if (!estado.activa) return false;
       if (estado.esperandoEco) return false;
       estado.esperandoEco = true;
-      return cliente.disparar(0, anguloDeg, potencia);
+      return cliente.disparar(0, anguloDeg, potencia, avance);
     },
 
     /** Manda una reaccion agendada con margen para el viaje. */

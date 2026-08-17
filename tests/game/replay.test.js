@@ -111,3 +111,51 @@ describe('semilla de revancha', () => {
     expect(semillaDeRevancha('a', 4)).toBe(semillaDeRevancha('a', 4));
   });
 });
+
+describe('el avance del turno', () => {
+  /**
+   * Sin guardar el avance, una repeticion tiraria desde la posicion inicial y
+   * a partir del primer turno en que alguien se movio los impactos caerian en
+   * otro sitio. La repeticion dejaria de ser la misma partida.
+   */
+  it('va y vuelve', () => {
+    const ida = { semilla: 'x', turnos: [{ anguloDeg: 45, potencia: 0.8, avance: 6.4 }] };
+    expect(decodificar(codificar(ida)).turnos[0].avance).toBeCloseTo(6.4, 6);
+  });
+
+  it('con signo', () => {
+    const ida = { semilla: 'x', turnos: [{ anguloDeg: 45, potencia: 0.8, avance: -4.2 }] };
+    expect(decodificar(codificar(ida)).turnos[0].avance).toBeCloseTo(-4.2, 6);
+  });
+
+  it('un turno sin moverse no ocupa nada de mas', () => {
+    const quieto = codificar({ semilla: 'x', turnos: [{ anguloDeg: 45, potencia: 0.8 }] });
+    const conCero = codificar({ semilla: 'x', turnos: [{ anguloDeg: 45, potencia: 0.8, avance: 0 }] });
+    expect(conCero).toBe(quieto);
+  });
+
+  it('convive con la reaccion en el mismo turno', () => {
+    const ida = {
+      semilla: 'x',
+      turnos: [{ anguloDeg: 45, potencia: 0.8, avance: 3, reaccion: { tipo: 'salto', paso: 210 } }],
+    };
+    const vuelta = decodificar(codificar(ida)).turnos[0];
+    expect(vuelta.avance).toBeCloseTo(3, 6);
+    expect(vuelta.reaccion).toEqual({ tipo: 'salto', paso: 210 });
+  });
+
+  it('un enlace de antes del avance sigue valiendo', () => {
+    // Los campos extra van etiquetados por su letra, no por su posicion.
+    const viejo = decodificar('vostok~19b-mc-S5m');
+    expect(viejo.turnos[0].reaccion).toEqual({ tipo: 'salto', paso: 202 });
+    expect(viejo.turnos[0].avance).toBeUndefined();
+  });
+
+  it('un campo con letra desconocida no cuela', () => {
+    expect(decodificar('x~19b-mc-Z12')).toBeNull();
+  });
+
+  it('un avance absurdo no cuela', () => {
+    expect(decodificar('x~19b-mc-Mzzzz')).toBeNull();
+  });
+});

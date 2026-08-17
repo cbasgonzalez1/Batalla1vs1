@@ -12,7 +12,7 @@
  * Formato, pensado para sobrevivir a que alguien lo pegue en un WhatsApp:
  *
  *   semilla~turno.turno.turno
- *   turno = ANGULO-POTENCIA[-Rpaso]
+ *   turno = ANGULO-POTENCIA[-Mavance][-Rpaso]
  *
  * Los numeros van en base 36 y en enteros (angulo x10, potencia x1000), que es
  * la precision con la que el juego los usa. Un turno ocupa 5 o 6 caracteres.
@@ -26,6 +26,13 @@ export const SEPARADOR_CAMPO = '-';
 
 const REACCIONES = { escudo: 'E', salto: 'S' };
 const REACCION_INVERSA = { E: 'escudo', S: 'salto' };
+
+// El avance lleva signo y base 36 no lo admite, asi que se guarda desplazado.
+// El campo solo aparece si el jugador se movio: un combate sin moverse ocupa
+// exactamente lo mismo que antes de que existiera el avance.
+const AVANCE_SESGO = 1000;
+const AVANCE_MAX = 900;   // 90 unidades de mundo, muy por encima de lo posible
+const marcaAvance = (avance) => `M${aBase36(Math.round(avance * 10) + AVANCE_SESGO)}`;
 
 const aBase36 = (n) => Math.max(0, Math.round(n)).toString(36);
 const deBase36 = (t) => {
@@ -42,6 +49,9 @@ export function codificar({ semilla, turnos = [] }) {
   const cuerpo = turnos
     .map((t) => {
       const campos = [aBase36(t.anguloDeg * 10), aBase36(t.potencia * 1000)];
+      if (Number.isFinite(t.avance) && Math.abs(t.avance) >= 0.05) {
+        campos.push(marcaAvance(t.avance));
+      }
       if (t.reaccion && REACCIONES[t.reaccion.tipo]) {
         campos.push(REACCIONES[t.reaccion.tipo] + aBase36(t.reaccion.paso));
       }
@@ -81,11 +91,24 @@ export function decodificar(texto) {
     const turno = { anguloDeg: angulo / 10, potencia: potencia / 1000 };
     if (turno.anguloDeg > 180 || turno.potencia > 1) return null;
 
-    if (campos[2]) {
-      const tipo = REACCION_INVERSA[campos[2][0]];
-      const paso = deBase36(campos[2].slice(1));
-      if (!tipo || paso === null) return null;
-      turno.reaccion = { tipo, paso };
+    // Los campos extra van etiquetados por su letra, no por su posicion: asi
+    // un turno con avance y sin reaccion —o al reves— se lee igual, y un
+    // enlace de antes de que existiera el avance sigue valiendo.
+    for (const campo of campos.slice(2)) {
+      if (!campo) continue;
+      if (campo[0] === 'M') {
+        const bruto = deBase36(campo.slice(1));
+        if (bruto === null) return null;
+        const avance = (bruto - AVANCE_SESGO) / 10;
+        if (Math.abs(avance) > AVANCE_MAX / 10) return null;
+        turno.avance = avance;
+      } else if (REACCION_INVERSA[campo[0]]) {
+        const paso = deBase36(campo.slice(1));
+        if (paso === null) return null;
+        turno.reaccion = { tipo: REACCION_INVERSA[campo[0]], paso };
+      } else {
+        return null;
+      }
     }
 
     turnos.push(turno);

@@ -12,7 +12,10 @@ const URL = process.env.URL ?? 'http://localhost:5173';
 const TURNOS = Number(process.env.TURNOS ?? 6);
 const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
-const nav = await chromium.launch();
+// Seis contextos WebGL a la vez. Sin GL de verdad, Chromium pinta por software
+// y la pagina se estrangula tanto que la sala tarda mas de treinta segundos en
+// aparecer: el guion se cae por tiempo y parece un fallo del lobby.
+const nav = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=gl-egl'] });
 const errores = [];
 
 async function abrir(nombre) {
