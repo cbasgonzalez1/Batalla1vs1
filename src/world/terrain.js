@@ -98,6 +98,14 @@ export class Terrain {
     this.suelta = new Float64Array(columns);
     this.ao = new Float32Array(columns);
 
+    // Hundimiento del crater: la fisica baja el terreno de golpe —tiene que
+    // ser instantanea o el proyectil siguiente veria un suelo a medio caer—
+    // pero la malla lo dibuja bajando en 180 ms. `lift` es lo que la malla
+    // suma por encima de la altura de verdad, y solo la malla lo mira.
+    this.lift = new Float64Array(columns);
+    this.lift0 = new Float64Array(columns);
+    this.hundiendo = null;
+
     this._generate(rng, minHeight, amplitude, pads, bowlHalfWidth, bowlWeight);
 
     this.crest = new THREE.Color(biome.crest);
@@ -195,9 +203,16 @@ export class Terrain {
    * baja hasta la parte inferior del circulo. Devuelve el rango tocado, que
    * la fase de animacion necesitara para interpolar el hundimiento.
    */
-  carve(cx, cy, r, { rehacerMalla = true } = {}) {
+  carve(cx, cy, r, { rehacerMalla = true, hundimiento = false } = {}) {
     const i0 = Math.max(0, Math.floor((cx - r - this.x0) / this.dx));
     const i1 = Math.min(this.cols - 1, Math.ceil((cx + r - this.x0) / this.dx));
+
+    if (hundimiento) {
+      // Un crater cancela el hundimiento del anterior: si el turno pasado
+      // quedo a medio bajar, se asienta ya. Nunca hay dos a la vez.
+      this.lift.fill(0);
+      this.lift0.fill(0);
+    }
 
     // La masa que sale del crater no se destruye: la recoge quien llame para
     // volver a soltarla a sotavento. Se mide lo que REALMENTE se quita, que no
@@ -217,12 +232,39 @@ export class Terrain {
         volumen += quitado * this.dx;
         // Lo que se lleva el crater incluye la arena suelta que hubiera ahi.
         this.suelta[i] = Math.max(0, this.suelta[i] - quitado);
+        if (hundimiento) {
+          this.lift0[i] = quitado;
+          this.lift[i] = quitado;
+        }
       }
     }
+
+    if (hundimiento) this.hundiendo = { i0, i1 };
 
     // La AO mira a los vecinos, asi que hay que refrescar mas ancho que el crater.
     if (rehacerMalla) this.rebuild(i0 - AO_WINDOW, i1 + AO_WINDOW);
     return { i0, i1, volumen };
+  }
+
+  /**
+   * Baja la malla hacia la altura que la fisica ya tiene.
+   *
+   * @param {number} k 0 = como estaba antes del impacto, 1 = asentado del todo
+   * @returns {boolean} si queda hundimiento por animar
+   */
+  avanzarHundimiento(k) {
+    const h = this.hundiendo;
+    if (!h) return false;
+
+    const resto = 1 - Math.min(1, Math.max(0, k));
+    for (let i = h.i0; i <= h.i1; i++) this.lift[i] = this.lift0[i] * resto;
+    this.rebuild(h.i0 - AO_WINDOW, h.i1 + AO_WINDOW);
+
+    if (resto <= 0) {
+      this.hundiendo = null;
+      return false;
+    }
+    return true;
   }
 
   /**
@@ -376,15 +418,23 @@ export class Terrain {
     this.topGeo.setIndex(tIdx);
   }
 
+  /**
+   * Altura que DIBUJA la malla: la de la fisica mas el hundimiento pendiente.
+   * Fuera de una animacion de crater `lift` es cero y las dos coinciden.
+   * Nadie de `game/` puede llamar a esto.
+   */
+  _visual(i) {
+    return this.heights[i] + this.lift[i];
+  }
+
   /** Oclusion de horizonte barata: cuanto cielo tapan los vecinos. */
   _computeAO(i) {
-    const h = this.heights;
-    const hi = h[i];
+    const hi = this._visual(i);
     let maxSlope = 0;
     for (let k = 1; k <= AO_WINDOW; k++) {
       const d = k * this.dx;
-      const sl = (h[Math.max(0, i - k)] - hi) / d;
-      const sr = (h[Math.min(this.cols - 1, i + k)] - hi) / d;
+      const sl = (this._visual(Math.max(0, i - k)) - hi) / d;
+      const sr = (this._visual(Math.min(this.cols - 1, i + k)) - hi) / d;
       if (sl > maxSlope) maxSlope = sl;
       if (sr > maxSlope) maxSlope = sr;
     }
@@ -407,7 +457,7 @@ export class Terrain {
 
     for (let i = i0; i <= i1; i++) {
       const x = this.x0 + i * this.dx;
-      const h = this.heights[i];
+      const h = this._visual(i);
       const ao = this.ao[i];
       const span = h - this.baseY;
 
@@ -436,8 +486,8 @@ export class Terrain {
       }
 
       // --- superficie superior
-      const hl = this.heights[Math.max(0, i - 1)];
-      const hr = this.heights[Math.min(this.cols - 1, i + 1)];
+      const hl = this._visual(Math.max(0, i - 1));
+      const hr = this._visual(Math.min(this.cols - 1, i + 1));
       const dhdx = (hr - hl) / (2 * this.dx);
       const nlen = Math.hypot(dhdx, 1);
       const nx = -dhdx / nlen;

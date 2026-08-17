@@ -71,6 +71,92 @@ export function makeDotTexture(accentCss, rimCss = '#0A0D14') {
   return tex;
 }
 
+/**
+ * Mancha blanda con caida cuadratica: humo, polvo, chispa y trazadora salen
+ * todos de aqui. Es blanca a proposito — el color lo pone cada particula, asi
+ * que una sola textura sirve para los dos sistemas y no hay que subir mas.
+ */
+export function makeSoftTexture(dureza = 0.0) {
+  const size = 64;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const c = size / 2;
+
+  const g = ctx.createRadialGradient(c, c, 0, c, c, c);
+  g.addColorStop(0, 'rgba(255,255,255,1)');
+  g.addColorStop(clamp(dureza, 0, 0.9), 'rgba(255,255,255,1)');
+  g.addColorStop(0.55, 'rgba(255,255,255,0.55)');
+  g.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, size, size);
+
+  return texturaDe(canvas);
+}
+
+/**
+ * Fogonazo de boca: nucleo hirviendo y seis chorros.
+ *
+ * Los chorros no son adorno. Un canon con freno de boca escupe de lado, y esa
+ * estrella asimetrica es lo que distingue el disparo de una simple luz que se
+ * enciende. Dura 70 ms, asi que la forma tiene que llegar en cuatro cuadros.
+ */
+export function makeFlashTexture() {
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const c = size / 2;
+
+  ctx.translate(c, c);
+  ctx.globalCompositeOperation = 'lighter';
+
+  // Chorros: mas largos a los lados que arriba y abajo, como el freno de boca.
+  const rayos = [
+    [0, 1.0], [Math.PI, 1.0],
+    [Math.PI / 2, 0.52], [-Math.PI / 2, 0.52],
+    [Math.PI / 4, 0.72], [-Math.PI / 4, 0.72],
+    [(3 * Math.PI) / 4, 0.72], [(-3 * Math.PI) / 4, 0.72],
+  ];
+  for (const [ang, largo] of rayos) {
+    ctx.save();
+    ctx.rotate(ang);
+    const g = ctx.createLinearGradient(0, 0, c * largo, 0);
+    g.addColorStop(0, 'rgba(255,255,255,0.95)');
+    g.addColorStop(0.35, 'rgba(255,236,190,0.45)');
+    g.addColorStop(1, 'rgba(255,180,90,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, -c * 0.09);
+    ctx.lineTo(c * largo, 0);
+    ctx.lineTo(0, c * 0.09);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Nucleo: blanco al rojo, mas pequeño que los chorros.
+  const nucleo = ctx.createRadialGradient(0, 0, 0, 0, 0, c * 0.42);
+  nucleo.addColorStop(0, 'rgba(255,255,255,1)');
+  nucleo.addColorStop(0.4, 'rgba(255,230,160,0.9)');
+  nucleo.addColorStop(1, 'rgba(255,120,40,0)');
+  ctx.fillStyle = nucleo;
+  ctx.beginPath();
+  ctx.arc(0, 0, c * 0.42, 0, Math.PI * 2);
+  ctx.fill();
+
+  return texturaDe(canvas);
+}
+
+function texturaDe(canvas) {
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  return tex;
+}
+
 /** Fondo: degradado vertical del bioma como textura de escena. */
 export function makeSkyTexture(stops) {
   const canvas = document.createElement('canvas');

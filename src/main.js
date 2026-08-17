@@ -8,8 +8,12 @@ import {
   MATERIALS,
   PROJECTILE_RIM,
   projectileAccent,
+  esGranGuerra,
 } from './art/direction.js';
 import { makeDotTexture, makeSkyTexture } from './art/geometry.js';
+import { crearEfectos } from './art/efectos.js';
+import { crearFondo } from './art/fondo.js';
+import { crearCalidad, NIVELES } from './art/calidad.js';
 import { Terrain } from './world/terrain.js';
 import { buildCannon } from './world/cannon.js';
 import { GameCamera } from './world/gamecamera.js';
@@ -61,8 +65,10 @@ aplicarTraduccion(document, t);
 const params = new URLSearchParams(location.search);
 
 const CONFIG = {
-  seed: params.get('seed') || 'kerch-01',
-  biome: params.get('biome') || 'dunas',
+  seed: params.get('seed') || 'alamein-01',
+  // El teatro decide paleta Y epoca: en el Somme y en Flandes se combate con
+  // rombos de la Gran Guerra, en los demas con blindados de torreta.
+  biome: params.get('biome') || 'alamein',
 
   camera: {
     elevationDeg: 15,
@@ -108,6 +114,10 @@ const CONFIG = {
   // ninguna y el juego es el de siempre.
   trampas: params.has('trampas') ? clamp(parseFloat(params.get('trampas')), 0, 1) : 0.5,
 
+  // ?calidad=alta|media|baja|minima clava el nivel de pintado. Sin el, el juego
+  // lo ajusta solo mirando lo que tarda cada cuadro.
+  calidad: params.get('calidad'),
+
   craterRadius: 2.6,
   // La pluma dura 1,4 s: lo que tarda la arena en verse caer sin que el turno
   // se haga largo. Se suelta en 12 tandas, no de golpe.
@@ -118,11 +128,15 @@ const CONFIG = {
 const MIN_PHI = 2 * DEG;
 const MAX_PHI = 170 * DEG;
 
+// Hundimiento del crater, ART.md seccion 5. Solo dibujo: la fisica ya bajo.
+const HUNDIMIENTO_MS = 180;
+
 // ─────────────────────────────────────────────────────────────────── montaje
 
 const stage = document.getElementById('stage');
-const biome = BIOMES[CONFIG.biome] ?? BIOMES.dunas;
+const biome = BIOMES[CONFIG.biome] ?? BIOMES.alamein;
 const accent = projectileAccent(biome);
+const granGuerra = esGranGuerra(biome);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -182,18 +196,29 @@ scene.add(arc.points);
 const projectile = new THREE.Group();
 projectile.visible = false;
 
-const shellCore = new THREE.Mesh(
-  new THREE.SphereGeometry(0.34, 20, 14),
-  new THREE.MeshStandardMaterial({
-    color: 0xffffff,
-    emissive: accent.hex,
-    emissiveIntensity: 1.9,
-    roughness: 0.35,
-    metalness: 0.0,
-  }),
-);
+// El proyectil es un OBUS, no una bola: cuerpo cilindrico y ojiva. Se orienta
+// con la velocidad, que es lo que hace un proyectil estabilizado de verdad y
+// ademas deja leer de un vistazo si el tiro sube o baja.
+const shellMat = new THREE.MeshStandardMaterial({
+  color: 0xffffff,
+  emissive: accent.hex,
+  emissiveIntensity: 1.9,
+  roughness: 0.35,
+  metalness: 0.0,
+});
+
+const cuerpoGeo = new THREE.CylinderGeometry(0.19, 0.19, 0.5, 12);
+cuerpoGeo.rotateZ(-Math.PI / 2);
+const shellCore = new THREE.Mesh(cuerpoGeo, shellMat);
 shellCore.castShadow = true;
 projectile.add(shellCore);
+
+const ojivaGeo = new THREE.ConeGeometry(0.19, 0.34, 12);
+ojivaGeo.rotateZ(-Math.PI / 2);
+ojivaGeo.translate(0.42, 0, 0);
+const ojiva = new THREE.Mesh(ojivaGeo, shellMat);
+ojiva.castShadow = true;
+projectile.add(ojiva);
 
 // Halo con el anillo oscuro de la direccion de arte: garantiza que el
 // proyectil se separe del terreno por VALOR, no solo por tono.
@@ -212,61 +237,145 @@ halo.scale.setScalar(1.5);
 projectile.add(halo);
 scene.add(projectile);
 
+// ── efectos ──────────────────────────────────────────────────────────────
+// El azar de la decoracion cuelga de su propio hilo con semilla y se
+// resiembra en cada partida. No es determinismo de simulacion —el humo no
+// decide nada— sino que una repeticion se VEA igual: una repeticion con el
+// humo en otro sitio se siente como otra partida distinta.
+let azarDecorado = mulberry32(hashSeed(`${CONFIG.seed}:decorado`));
+const movimientoReducido =
+  typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const efectos = crearEfectos({
+  escena: scene,
+  rng: () => azarDecorado(),
+  acento: accent.hex,
+  z: CONFIG.playZ,
+  movimientoReducido,
+});
+
 /**
- * El cuerpo de cada trampa.
+ * El cuerpo de cada trampa, con material de la epoca.
  *
- * Se leen por SILUETA antes que por color: esfera erizada la mina, aspa el
- * deflector, bloque el muro. En un movil pequeño y con el campo comprimido, la
- * forma llega antes que el tono.
+ * Se leen por SILUETA antes que por color, y la silueta cambia segun este en
+ * el aire o apoyada en el suelo: lo que cuelga en la trayectoria es distinto
+ * de lo que estorba en la pista, y el jugador tiene que saber cual es cual sin
+ * pensarlo.
+ *
+ *   mina, en el aire  -> mina de contacto con cuernos
+ *   mina, en la pista -> mina terrestre de plato, medio enterrada
+ *   deflector         -> placa de blindaje inclinada (nunca va al suelo)
+ *   muro, en el aire  -> casamata de hormigon con tronera
+ *   muro, en la pista -> erizo checo
  */
 function construirTrampa(trampa) {
   const grupo = new THREE.Group();
   grupo.position.set(trampa.x, trampa.y, CONFIG.playZ);
 
-  const material = new THREE.MeshStandardMaterial({
-    color: trampa.tipo === 'mina' ? 0xd93b3b : trampa.tipo === 'deflector' ? 0x9fd6e8 : 0x6c6f78,
-    roughness: trampa.tipo === 'deflector' ? 0.18 : 0.7,
-    metalness: 0,
-    emissive: trampa.tipo === 'mina' ? 0x5a0f0f : 0x000000,
-    emissiveIntensity: 1,
-  });
+  const material = new THREE.MeshStandardMaterial(
+    trampa.tipo === 'mina'
+      ? { color: 0x3f4247, roughness: 0.72, metalness: 0, emissive: 0x4a0f0f, emissiveIntensity: 0.7 }
+      : trampa.tipo === 'deflector'
+        ? { ...MATERIALS.metal, color: 0x9aa4ad, roughness: 0.28 }
+        : { ...MATERIALS.hormigon },
+  );
 
-  if (trampa.tipo === 'mina') {
-    const nucleo = new THREE.Mesh(new THREE.IcosahedronGeometry(trampa.radio * 0.62, 0), material);
-    grupo.add(nucleo);
-    // Puas: es lo que la distingue de un proyectil a simple vista.
+  if (trampa.tipo === 'mina' && !trampa.apoyada) {
+    // Mina de contacto: esfera con cuernos. Es la unica cosa del campo que se
+    // parece a una mina naval, y por eso no hace falta explicarla.
+    grupo.add(new THREE.Mesh(new THREE.IcosahedronGeometry(trampa.radio * 0.6, 1), material));
     for (let i = 0; i < 8; i++) {
       const angulo = (i / 8) * Math.PI * 2;
-      const pua = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.7, 5), material);
-      pua.position.set(Math.cos(angulo) * trampa.radio * 0.7, Math.sin(angulo) * trampa.radio * 0.7, 0);
-      pua.rotation.z = angulo - Math.PI / 2;
-      grupo.add(pua);
-    }
-  } else if (trampa.tipo === 'deflector') {
-    // Aspa: dos palas cruzadas, que ademas giran para que se vea que esta vivo.
-    for (const giro of [Math.PI / 4, -Math.PI / 4]) {
-      const pala = new THREE.Mesh(
-        new THREE.BoxGeometry(trampa.radio * 2.1, 0.34, 0.9),
-        material,
+      const cuerno = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.11, 0.62, 6), material);
+      cuerno.position.set(
+        Math.cos(angulo) * trampa.radio * 0.72,
+        Math.sin(angulo) * trampa.radio * 0.72,
+        0,
       );
-      pala.rotation.z = giro;
-      grupo.add(pala);
+      cuerno.rotation.z = angulo - Math.PI / 2;
+      grupo.add(cuerno);
     }
-  } else {
-    const bloque = new THREE.Mesh(
-      new THREE.BoxGeometry(trampa.radio * 1.5, trampa.radio * 2.2, 1.2),
+  } else if (trampa.tipo === 'mina') {
+    // Mina terrestre: plato bajo, apenas asomando. Que casi no se vea es el
+    // punto — se pisa, no se esquiva de lejos.
+    const plato = new THREE.Mesh(
+      new THREE.CylinderGeometry(trampa.radio * 0.8, trampa.radio * 0.9, 0.42, 14),
       material,
     );
-    grupo.add(bloque);
+    grupo.add(plato);
+    const placa = new THREE.Mesh(
+      new THREE.CylinderGeometry(trampa.radio * 0.45, trampa.radio * 0.45, 0.18, 12),
+      new THREE.MeshStandardMaterial({ color: 0x8d3a2a, roughness: 0.8, metalness: 0 }),
+    );
+    placa.position.y = 0.26;
+    grupo.add(placa);
+  } else if (trampa.tipo === 'deflector') {
+    // Placa de blindaje inclinada. El rebote no es magia: es lo que hace una
+    // plancha a 45 grados con un proyectil que llega plano, y cualquiera que
+    // haya oido hablar de blindaje inclinado se lo cree sin que se lo cuenten.
+    const placa = new THREE.Mesh(
+      new THREE.BoxGeometry(trampa.radio * 2.2, 0.3, 1.5),
+      material,
+    );
+    placa.rotation.z = Math.PI / 4;
+    grupo.add(placa);
+    // Bastidor: dos vigas que la sostienen y le dan volumen contra el cielo.
+    for (const lado of [-1, 1]) {
+      const viga = new THREE.Mesh(
+        new THREE.BoxGeometry(0.22, trampa.radio * 1.5, 0.22),
+        new THREE.MeshStandardMaterial({ ...MATERIALS.metal }),
+      );
+      viga.position.set(lado * trampa.radio * 0.62, -lado * trampa.radio * 0.62, 0);
+      grupo.add(viga);
+    }
+  } else if (!trampa.apoyada) {
+    // Casamata: mas ancha que alta y con el techo en talud, que es como se
+    // hacian para que el tiro resbalase. Un cubo a secas se leia como una caja
+    // flotando en el cielo.
+    const cuerpo = new THREE.Mesh(
+      new THREE.BoxGeometry(trampa.radio * 2.3, trampa.radio * 1.3, 1.6),
+      material,
+    );
+    grupo.add(cuerpo);
+    const techo = new THREE.Mesh(
+      new THREE.CylinderGeometry(trampa.radio * 0.95, trampa.radio * 1.15, 0.7, 4),
+      material,
+    );
+    techo.position.y = trampa.radio * 0.95;
+    techo.rotation.y = Math.PI / 4;
+    grupo.add(techo);
+    // Tronera: la ranura negra. Es lo que la distingue de un peñasco.
+    const tronera = new THREE.Mesh(
+      new THREE.BoxGeometry(trampa.radio * 1.7, 0.4, 0.4),
+      new THREE.MeshStandardMaterial({ color: 0x0d0f13, roughness: 1, metalness: 0 }),
+    );
+    tronera.position.set(0, 0.1, 0.82);
+    grupo.add(tronera);
+  } else {
+    // Erizo checo: tres vigas cruzadas en aspa. Nada dice "aqui no pasa un
+    // tanque" tan rapido como esa forma, pero solo si se ven las TRES: con las
+    // vigas giradas tambien en Y, dos quedaban de canto y parecian palos
+    // sueltos tirados por el suelo.
+    const viga = new THREE.BoxGeometry(0.34, trampa.radio * 2.4, 0.34);
+    const acero = new THREE.MeshStandardMaterial({ ...MATERIALS.metal });
+    for (const a of [0, Math.PI / 3, (2 * Math.PI) / 3]) {
+      const barra = new THREE.Mesh(viga, acero);
+      barra.rotation.z = a;
+      grupo.add(barra);
+    }
   }
 
-  for (const hijo of grupo.children) hijo.castShadow = true;
+  for (const hijo of grupo.children) {
+    hijo.castShadow = true;
+    hijo.receiveShadow = true;
+  }
   return { datos: trampa, grupo, material };
 }
 
 // ─────────────────────────────────────────────────────────────────── estado
 
 const world = { terrain: null, cannons: [], shields: [], trampas: [] };
+let fondo = null;
 
 const state = {
   phase: 'aiming',   // aiming | flying | pluma | victory
@@ -291,6 +400,7 @@ const state = {
   impactSteps: Infinity,
   reaction: { open: false, used: false, defender: 1 },
   pluma: null,
+  hundimientoMs: 0,
   shots: [0, 0],
   dragging: false,
   scouting: false,
@@ -344,6 +454,14 @@ function buildWorld(seedText) {
   world.shields.length = 0;
 
   const rng = mulberry32(hashSeed(seedText));
+  azarDecorado = mulberry32(hashSeed(`${seedText}:decorado`));
+  efectos.limpiar();
+
+  // El fondo cuelga de su propio hilo de azar: cambiar el relieve del campo no
+  // puede cambiar el horizonte, o cada revancha pareceria otro sitio.
+  if (fondo) scene.remove(fondo.grupo);
+  fondo = crearFondo({ rng: mulberry32(hashSeed(`${seedText}:fondo`)), biome });
+  scene.add(fondo.grupo);
 
   world.terrain = new Terrain({
     rng,
@@ -375,7 +493,9 @@ function buildWorld(seedText) {
   }
 
   for (const spec of state.plantel) {
-    const c = buildCannon(spec);
+    // La epoca la manda el teatro, no el jugador: los dos bandos combaten con
+    // el material de la guerra en la que estan.
+    const c = buildCannon({ ...spec, granGuerra });
     c.group.position.set(spec.x, world.terrain.heightAt(spec.x), CONFIG.cannonZ);
 
     // Cupula de escudo, oculta salvo cuando se gasta una carga. Lleva el color
@@ -643,7 +763,23 @@ function dispararDeVerdad() {
   });
 
   sonidos.sonar('disparo');
+
+  // La pieza retrocede y escupe: fogonazo, humo y casquillo. Todo esto es
+  // reloj de pared y no toca la simulacion — si el movil se atasca y se pierde
+  // el fogonazo, el tiro sale exactamente igual.
+  const canon = activeCannon();
+  canon.retroceder();
+  const rapidez = Math.hypot(start.vx, start.vy) || 1;
+  efectos.disparo({
+    x: start.x,
+    y: start.y,
+    dx: start.vx / rapidez,
+    dy: start.vy / rapidez,
+    retroceso: 0.6 + apuntado.power * 0.6,
+  });
+
   projectile.position.set(start.x, start.y, CONFIG.playZ);
+  projectile.rotation.z = Math.atan2(start.vy, start.vx);
   projectile.visible = true;
   state.phase = 'flying';
   arc.hide();
@@ -697,7 +833,13 @@ function onImpact(hit) {
   // El crater no borra masa: la levanta. Lo que sale de aqui cae despues, en la
   // fase 'pluma', a sotavento del impacto.
   sonidos.sonar('impacto');
-  const { volumen } = world.terrain.carve(hit.x, hit.y, CONFIG.craterRadius);
+  // `hundimiento` no cambia el terreno: la fisica ya lo tiene bajado a su
+  // altura nueva desde este mismo instante. Lo unico que retrasa es el DIBUJO,
+  // 180 ms, para que el crater se vea abrirse en vez de aparecer.
+  const { volumen } = world.terrain.carve(hit.x, hit.y, CONFIG.craterRadius, {
+    hundimiento: true,
+  });
+  state.hundimientoMs = 0;
   projectile.visible = false;
   state.shot = null;
   closeReaction();
@@ -711,13 +853,25 @@ function onImpact(hit) {
   }
 
   // La metralla alcanza a los dos: un tiro corto puede volarte a ti mismo.
+  let mayorDaño = 0;
   for (let i = 0; i < state.plantel.length; i++) {
     const t = targetPoint(world.cannons[i]);
     const raw = damageAt(hit.x, hit.y, t.x, t.y);
     if (raw > 0) applyDamage(state.players[i], raw);
+    if (raw > mayorDaño) mayorDaño = raw;
     state.players[i].shielded = false;
     world.shields[i].visible = false;
   }
+
+  // Onda, escombros, polvo y sacudida. La sacudida va con el daño que acaba de
+  // hacer: si un roce sacude igual que un pepinazo, la sacudida deja de contar
+  // nada y solo es ruido.
+  efectos.impacto({
+    x: hit.x,
+    y: hit.y,
+    radio: CONFIG.craterRadius,
+    daño: mayorDaño,
+  });
 
   // Con equipos, la partida no acaba porque caiga uno: acaba cuando un bando
   // entero se queda sin nadie.
@@ -1149,7 +1303,6 @@ function fixedUpdate() {
     const px = s.x;
     const py = s.y;
     step(s, state.wind, FIXED_DT);
-    shellCore.rotation.z -= 0.14; // giro sobre su eje
 
     // Trampas: pueden detonar el tiro donde estan, devolverlo o tragarselo.
     const choque = golpearTrampa(s, px, py);
@@ -1170,6 +1323,10 @@ function fixedUpdate() {
       return endTurn();
     }
     projectile.position.set(s.x, s.y, CONFIG.playZ);
+    // Un obus estabilizado va siempre de morro: orientarlo con la velocidad
+    // deja leer si el tiro sube o baja sin mirar el arco.
+    projectile.rotation.z = Math.atan2(s.vy, s.vx);
+    efectos.estela(s.x, s.y, FIXED_DT);
     return;
   }
 
@@ -1229,6 +1386,14 @@ function updateCamera(dt) {
   }
   cam.update(dt);
   trackShadow();
+  fondo?.seguir(cam.cx);
+
+  // Las particulas se dibujan con gl_PointSize, que va en pixeles. Con camara
+  // ortografica el zoom no las escala solo, asi que hay que decirle cuantos
+  // pixeles mide una unidad de mundo AHORA — si no, el humo de un plano
+  // abierto sale del tamaño del de un primer plano.
+  const altoMundo = cam.camera.top - cam.camera.bottom;
+  if (altoMundo > 0) efectos.setEscala(renderer.domElement.height / altoMundo);
 }
 
 function frame(now) {
@@ -1243,20 +1408,73 @@ function frame(now) {
     accumulator -= FIXED_DT;
   }
 
+  // Todo lo decorativo va con el reloj de pared, no con el paso fijo. Si el
+  // navegador se atasca se pierde humo, nunca simulacion.
+  for (const c of world.cannons) c.animar(dt);
+  efectos.actualizar(dt);
+  cam.setSacudida(efectos.sacudida.x, efectos.sacudida.y);
+
+  if (world.terrain?.hundiendo) {
+    state.hundimientoMs += dt * 1000;
+    world.terrain.avanzarHundimiento(easeOutCubic(Math.min(1, state.hundimientoMs / HUNDIMIENTO_MS)));
+  }
+
   updateCamera(dt);
   updateLiveHud();
   renderer.render(scene, cam.camera);
+
+  // Lo que se mide es el HUECO entre cuadros, no el tiempo de JavaScript de
+  // este. `renderer.render` encola trabajo y vuelve enseguida: cronometrarlo
+  // daria dos milisegundos incluso con la GPU ahogada, que es justo el caso
+  // que hay que detectar. El hueco si lo recoge.
+  calidad.cuadro(dt * 1000);
 }
 
 // ───────────────────────────────────────────────────────────────── pantalla
+
+/**
+ * Calidad de pintado, ajustada sola.
+ *
+ * Medido: en un ordenador con GPU vieja y el lienzo a 1800x3200, cada cuadro
+ * costaba 50 ms —20 imagenes por segundo— y el reparto era PLANO, asi que no
+ * era un tiron sino el coste normal de pintar cinco millones y medio de
+ * pixeles con sombra suave. Lo unico que se toca es eso: pixeles y sombra.
+ * Nunca la simulacion, para que un movil viejo y uno nuevo jueguen la misma
+ * partida aunque uno la vea mas borrosa.
+ */
+let topeDePixeles = NIVELES[0].pixeles;
+
+const calidad = crearCalidad({
+  fijo: CONFIG.calidad,
+  aplicar(nivel) {
+    topeDePixeles = nivel.pixeles;
+    if (nivel.sombras === 0) {
+      renderer.shadowMap.enabled = false;
+      key.castShadow = false;
+    } else {
+      renderer.shadowMap.enabled = true;
+      key.castShadow = true;
+      key.shadow.radius = nivel.radio;
+      if (key.shadow.mapSize.x !== nivel.sombras) {
+        key.shadow.mapSize.set(nivel.sombras, nivel.sombras);
+        // El mapa ya reservado conserva su tamaño: hay que tirarlo para que
+        // Three lo reconstruya con el nuevo.
+        key.shadow.map?.dispose();
+        key.shadow.map = null;
+      }
+    }
+    renderer.shadowMap.needsUpdate = true;
+    resize();
+  },
+});
 
 function resize() {
   const w = stage.clientWidth;
   const h = stage.clientHeight;
   if (!w || !h) return;
 
+  renderer.setPixelRatio(Math.min(devicePixelRatio, topeDePixeles));
   renderer.setSize(w, h, false);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   arc.setPixelRatio(renderer.getPixelRatio());
   cam.setAspect(w / h);
 
@@ -1495,6 +1713,11 @@ window.GAME = {
   world,
   cam,
   hud,
+  scene,
+  efectos,
+  biome,
+  calidad,
+  renderer,
   setAssist(v) {
     CONFIG.assistLevel = clamp(v, 0, 1);
     refreshPreview();

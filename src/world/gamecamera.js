@@ -28,6 +28,17 @@ export class GameCamera {
     this.follow = null;
     this.zoom = 1; // multiplicador manual (rueda / pellizco)
     this.bounds = null; // { minX, maxX } del mundo
+    // Sacudida de impacto. Va aparte de cx/cy a proposito: si se sumara al
+    // centro, el seguimiento suavizado perseguiria la sacudida y la camara se
+    // quedaria desplazada cuando terminase.
+    this.shakeX = 0;
+    this.shakeY = 0;
+  }
+
+  /** Desplazamiento de este cuadro, en unidades de mundo. Solo dibuja. */
+  setSacudida(dx, dy) {
+    this.shakeX = dx;
+    this.shakeY = dy;
   }
 
   /** Limites del mundo: impiden encuadrar el vacio de mas alla del terreno. */
@@ -131,6 +142,12 @@ export class GameCamera {
         : Math.min(Math.max(cx, minX + halfW), maxX - halfW);
     }
 
+    // La sacudida se suma AQUI, despues del recorte a los limites del mundo:
+    // asi puede asomar un dedo de vacio en el borde durante 260 ms, que es
+    // justo lo que hace que un impacto en la esquina se sienta.
+    cx += this.shakeX;
+    const cy2 = this.cy + this.shakeY;
+
     const c = this.camera;
     c.left = -halfW;
     c.right = halfW;
@@ -138,9 +155,9 @@ export class GameCamera {
     c.bottom = -halfH;
 
     const dist = 320; // en ortografica no cambia el tamano, solo el recorte
-    c.position.set(cx, this.cy + Math.sin(this.elev) * dist, Math.cos(this.elev) * dist);
+    c.position.set(cx, cy2 + Math.sin(this.elev) * dist, Math.cos(this.elev) * dist);
     c.up.set(0, 1, 0);
-    c.lookAt(cx, this.cy, 0);
+    c.lookAt(cx, cy2, 0);
     c.updateProjectionMatrix();
   }
 }

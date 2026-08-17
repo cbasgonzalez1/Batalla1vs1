@@ -94,3 +94,66 @@ describe('destruccion', () => {
     expect(columnasDistintas(a, b)).toBe(0);
   });
 });
+
+describe('hundimiento del crater', () => {
+  /**
+   * El crater se dibuja bajando en 180 ms, pero la fisica no espera a que la
+   * animacion termine. Si esperase, un proyectil disparado justo despues del
+   * impacto anterior chocaria contra un suelo a medio caer y dos moviles con
+   * distinta tasa de cuadros veirian trayectorias distintas. Todo lo que hace
+   * `hundimiento` es retrasar el DIBUJO.
+   */
+  it('las alturas de la fisica bajan al instante', () => {
+    const t = construir('hundir');
+    const antes = t.heightAt(0);
+    t.carve(0, antes, 3, { hundimiento: true });
+    expect(t.heightAt(0)).toBeLessThan(antes);
+  });
+
+  it('la malla arranca dibujando el terreno de antes', () => {
+    const t = construir('hundir');
+    const i = Math.round((0 - t.x0) / t.dx);
+    const antes = t.heights[i];
+    t.carve(0, t.heightAt(0), 3, { hundimiento: true });
+    // La fisica ya bajo; el dibujo sigue arriba, que es la diferencia.
+    expect(t.heights[i]).toBeLessThan(antes);
+    expect(t._visual(i)).toBeCloseTo(antes, 9);
+  });
+
+  it('al terminar la animacion, dibujo y fisica coinciden', () => {
+    const t = construir('hundir');
+    t.carve(0, t.heightAt(0), 3, { hundimiento: true });
+    expect(t.avanzarHundimiento(0.5)).toBe(true);
+    expect(t.avanzarHundimiento(1)).toBe(false);
+    for (let i = 0; i < t.cols; i++) expect(t._visual(i)).toBe(t.heights[i]);
+    expect(t.hundiendo).toBeNull();
+  });
+
+  it('un crater nuevo cancela el hundimiento del anterior', () => {
+    // Si no, quedarian dos animaciones sumandose y el terreno dibujado se
+    // separaria del de verdad mas y mas.
+    const t = construir('hundir');
+    t.carve(-10, t.heightAt(-10), 3, { hundimiento: true });
+    t.avanzarHundimiento(0.3);
+    t.carve(20, t.heightAt(20), 3, { hundimiento: true });
+    const i = Math.round((-10 - t.x0) / t.dx);
+    expect(t._visual(i)).toBe(t.heights[i]);
+  });
+
+  it('sin pedirlo, carve no deja nada pendiente de dibujar', () => {
+    const t = construir('hundir');
+    t.carve(0, t.heightAt(0), 3);
+    expect(t.hundiendo).toBeNull();
+    expect(t.avanzarHundimiento(0.5)).toBe(false);
+  });
+
+  it('el volumen levantado es el mismo se anime o no', () => {
+    // Sotavento lleva la cuenta de la masa: si el hundimiento tocara el
+    // volumen devuelto, la arena que cae dejaria de cuadrar.
+    const a = construir('masa');
+    const b = construir('masa');
+    const conAnimacion = a.carve(5, a.heightAt(5), 3, { hundimiento: true }).volumen;
+    const sinAnimacion = b.carve(5, b.heightAt(5), 3).volumen;
+    expect(conAnimacion).toBe(sinAnimacion);
+  });
+});

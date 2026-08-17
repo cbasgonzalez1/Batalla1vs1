@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="theme-color" content="#0A0D14">
+<!-- Va en linea a proposito: sin icono el navegador pide /favicon.ico, se lleva
+     un 404 y ese 404 aparecia en las verificaciones como si fuera un fallo del
+     juego. Es un obus con su trazadora. -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A0D14'/%3E%3Cpath d='M13 9h7l5 7-5 7h-7z' fill='%23FF7A1A'/%3E%3Crect x='5' y='14' width='8' height='4' rx='2' fill='%234FD8FF'/%3E%3C/svg%3E">
 <title>Artillería 1v1 — prototipo</title>
 <style>
   :root{
@@ -13,8 +17,8 @@
     --line:#26303F;
     --ink:#EEF3F9;
     --mono:#7F8DA0;
-    --magma:#FF6B2C;
-    --plasma:#16E0FF;
+    --trazadora:#FF7A1A;
+    --fosforo:#4FD8FF;
     --danger:#FF3B4E;
     --f-mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
   }
@@ -49,7 +53,11 @@
   @media (max-aspect-ratio: 1080/1920){
     #stage{ width:100vw; height:auto; }
   }
-  #stage canvas{ display:block; width:100%; height:100%; }
+  /* SOLO el lienzo de WebGL, que cuelga directo de #stage. Con `#stage canvas`
+     esta regla alcanzaba tambien a #franja —y le ganaba por especificidad, id +
+     tipo contra id pelado—, asi que la franja del terreno se estiraba a
+     pantalla completa y pintaba el perfil borroso encima del cielo. */
+  #stage > canvas{ display:block; width:100%; height:100%; }
 
   .hud{ position:absolute; inset:0; pointer-events:none; }
   .hud > *{ position:absolute; }
@@ -69,8 +77,8 @@
   }
   .player.b .pname{ justify-content:flex-end; }
   .pname b{ font-weight:700; }
-  .player.a .pname b{ color:var(--magma); }
-  .player.b .pname b{ color:var(--plasma); }
+  .player.a .pname b{ color:var(--trazadora); }
+  .player.b .pname b{ color:var(--fosforo); }
   .pname .hpnum{ color:var(--ink); font-weight:700; font-variant-numeric:tabular-nums; }
 
   .bar{
@@ -84,15 +92,18 @@
   .bar .ghost{
     position:absolute; inset:0 auto 0 0; height:100%;
     background:var(--danger); opacity:.55; width:100%;
-    transition:width .5s cubic-bezier(.22,1,.36,1) .18s;
+    /* ART.md §5: el fantasma espera 400 ms y luego baja en 260 ms con
+       easeOutCubic. El retardo es lo que enseña CUANTO acabas de perder: sin
+       el, las dos barras bajan a la vez y el golpe no se ve. */
+    transition:width .26s cubic-bezier(.33,1,.68,1) .4s;
   }
   .bar .fill{
     position:absolute; inset:0 auto 0 0; height:100%; width:100%;
     border-radius:calc(var(--u)*3);
-    transition:width .16s cubic-bezier(.33,1,.68,1);
+    transition:width .26s cubic-bezier(.33,1,.68,1);
   }
-  .player.a .bar .fill{ background:linear-gradient(180deg,#FFA774,var(--magma) 45%,#C7401A); }
-  .player.b .bar .fill{ background:linear-gradient(180deg,#7DEEFF,var(--plasma) 45%,#0090B8); }
+  .player.a .bar .fill{ background:linear-gradient(180deg,#FFA774,var(--trazadora) 45%,#C7401A); }
+  .player.b .bar .fill{ background:linear-gradient(180deg,#7DEEFF,var(--fosforo) 45%,#0090B8); }
   .player.b .bar .ghost,
   .player.b .bar .fill{ inset:0 0 0 auto; }
 
@@ -102,8 +113,8 @@
   }
   .player.b .charges{ justify-content:flex-end; }
   .charges i{ font-style:normal; color:#2E3949; }
-  .player.a .charges i.on{ color:var(--magma); }
-  .player.b .charges i.on{ color:var(--plasma); }
+  .player.a .charges i.on{ color:var(--trazadora); }
+  .player.b .charges i.on{ color:var(--fosforo); }
 
   /* La franja: el campo entero comprimido arriba del todo. Da topologia, no
      solucion de tiro — el muestreo es basto a proposito. */
@@ -120,7 +131,7 @@
   .lado#lado-b .player{ align-items:flex-end; }
   .lado .player{ display:flex; flex-direction:column; gap:calc(var(--u)*4); }
   .player.turno .pname{ color:var(--ink); }
-  .player.turno .bar{ box-shadow:0 0 0 1px var(--magma); }
+  .player.turno .bar{ box-shadow:0 0 0 1px var(--trazadora); }
   .player.fuera{ opacity:.35; }
 
   #wind{
@@ -161,7 +172,7 @@
   #lectura span{
     display:block; margin-top:calc(var(--u)*4);
     font-size:calc(var(--u)*22); letter-spacing:.1em; text-transform:uppercase;
-    color:var(--plasma); font-variant-numeric:tabular-nums;
+    color:var(--fosforo); font-variant-numeric:tabular-nums;
     text-shadow:0 calc(var(--u)*2) calc(var(--u)*8) rgba(4,7,12,.9);
   }
   #lectura span.encima{ color:var(--ink); }
@@ -172,7 +183,7 @@
     margin-top:calc(var(--u)*8); background:transparent;
     border:1px solid var(--line); color:var(--mono);
   }
-  #compartir.hecho{ color:var(--magma); border-color:var(--magma); }
+  #compartir.hecho{ color:var(--trazadora); border-color:var(--trazadora); }
 
 
   /* ─────────────────────────────────────────────── sala ─────────────── */
@@ -210,7 +221,7 @@
     color:var(--ink); font-family:var(--f-mono); font-size:calc(var(--u)*26);
     letter-spacing:.18em; text-align:center; text-transform:uppercase;
   }
-  #sala input:focus{ outline:none; border-color:var(--plasma); }
+  #sala input:focus{ outline:none; border-color:var(--fosforo); }
   #sala input::placeholder{ color:var(--mono); letter-spacing:.1em; }
 
   #sala button{
@@ -222,8 +233,8 @@
   }
   #sala button:hover{ border-color:var(--mono); }
   #sala button:active{ transform:scale(.97); }
-  #sala button.principal{ border-color:var(--magma); color:var(--magma); }
-  #sala button.listo{ background:var(--magma); border-color:var(--magma); color:var(--ground); }
+  #sala button.principal{ border-color:var(--trazadora); color:var(--trazadora); }
+  #sala button.listo{ background:var(--trazadora); border-color:var(--trazadora); color:var(--ground); }
   #sala button:disabled{ opacity:.4; cursor:default; }
 
   /* Los dos bandos, uno frente a otro: se ve de un vistazo si falta gente en
@@ -237,15 +248,15 @@
     font-size:calc(var(--u)*22); letter-spacing:.16em; text-transform:uppercase;
     color:var(--mono); margin-bottom:calc(var(--u)*10);
   }
-  #s-bandos .bando.a h2{ color:var(--magma); }
-  #s-bandos .bando.b h2{ color:var(--plasma); }
+  #s-bandos .bando.a h2{ color:var(--trazadora); }
+  #s-bandos .bando.b h2{ color:var(--fosforo); }
   #s-bandos ul{ list-style:none; display:flex; flex-direction:column; gap:calc(var(--u)*6); }
   #s-bandos li{
     font-size:calc(var(--u)*22); color:var(--ink);
     display:flex; align-items:center; justify-content:space-between; gap:calc(var(--u)*8);
   }
   #s-bandos li .marca{ color:var(--mono); font-size:calc(var(--u)*18); }
-  #s-bandos li.listo .marca{ color:var(--magma); }
+  #s-bandos li.listo .marca{ color:var(--trazadora); }
   #s-bandos li.yo{ font-weight:700; }
   #s-bandos li.hueco{ color:var(--line); }
 
@@ -280,7 +291,7 @@
   }
   #scout .eye{ font-size:calc(var(--u)*34); line-height:1; }
   #scout:active, #scout.on{ transform:scale(.94); color:var(--ink); border-color:#3C4B60; }
-  #scout:focus-visible{ outline:calc(var(--u)*3) solid var(--plasma); outline-offset:calc(var(--u)*4); }
+  #scout:focus-visible{ outline:calc(var(--u)*3) solid var(--fosforo); outline-offset:calc(var(--u)*4); }
 
   /* ──────────────────────────────── panel de reaccion ───────────────── */
   #reaction{
@@ -322,7 +333,7 @@
   }
   .ract .ico{ font-size:calc(var(--u)*38); line-height:1; }
   .ract:active{ transform:scale(.95); border-color:#4A5B72; }
-  .ract:focus-visible{ outline:calc(var(--u)*3) solid var(--plasma); outline-offset:calc(var(--u)*3); }
+  .ract:focus-visible{ outline:calc(var(--u)*3) solid var(--fosforo); outline-offset:calc(var(--u)*3); }
   .ract[disabled]{ opacity:.32; pointer-events:none; }
 
   /* ──────────────────────────────────────── victoria ────────────────── */
@@ -340,8 +351,8 @@
     font-size:calc(var(--u)*104); font-weight:900; letter-spacing:-.02em; line-height:1;
     text-transform:uppercase;
   }
-  #victory .who.a{ color:var(--magma); }
-  #victory .who.b{ color:var(--plasma); }
+  #victory .who.a{ color:var(--trazadora); }
+  #victory .who.b{ color:var(--fosforo); }
   #victory .stats{
     margin-top:calc(var(--u)*6); font-size:calc(var(--u)*22); color:var(--mono);
     letter-spacing:.1em; text-transform:uppercase;
@@ -356,7 +367,7 @@
     transition:transform .14s cubic-bezier(.34,1.56,.64,1);
   }
   #again:active{ transform:scale(.95); }
-  #again:focus-visible{ outline:calc(var(--u)*3) solid var(--plasma); outline-offset:calc(var(--u)*4); }
+  #again:focus-visible{ outline:calc(var(--u)*3) solid var(--fosforo); outline-offset:calc(var(--u)*4); }
 
   #hint{
     left:0; right:0; bottom:calc(var(--u)*150); text-align:center;
