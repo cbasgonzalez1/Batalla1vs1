@@ -18,9 +18,8 @@ todo lo demás:
    los remaches. Todo el modelado se decide mirando el contorno.
 
 Realismo hasta donde ayuda —las paletas salen de frentes reales y cada teatro
-trae su época—; se para donde estorba: dos blindados históricos serían dos
-manchas verde-gris indistinguibles, así que la identidad de bando la lleva una
-banda de reconocimiento saturada.
+trae su época—; se para donde estorba: si los dos bandos fueran fieles de verdad
+serían dos manchas verde-gris indistinguibles en pantalla.
 
 ---
 
@@ -53,17 +52,24 @@ que además es lo que hace un blindado pintado con mate antirreflejo.
 
 | Código | Uso | Color | Roughness |
 |---|---|---|---|
-| M01 | Casco bando A, caqui aliado | `#79803C` | 0.66 |
-| M02 | Casco bando B, gris de campaña | `#55666F` | 0.66 |
+| M01 | Casco bando A, caqui aliado | `#838B3A` | 0.66 |
+| M02 | Casco bando B, gris de campaña | `#47616F` | 0.66 |
 | M03 | Óptica (periscopio) | `#54718C` | 0.16 |
 | M04 | Acero pintado (tubo, herrajes) | `#8E8A7C` | 0.34 |
 | M05 | Oruga | `#2E3238` | 0.90 |
 | M06 | Lona, sacos, cajas | `#B0A173` | 0.94 |
 | M07 | Hormigón (casamata, dientes de dragón) | `#9D9A90` | 0.92 |
 
-**Banda de reconocimiento** — bando A `#E4572E`, bando B `#2FB8D9`,
-roughness 0.55. No es fiel en el tono y es a propósito: es lo que hace que a 4 cm
-de alto sepas de quién es el tanque antes de leer el HUD.
+**No hay banda de reconocimiento.** Hubo una, saturada, cruzando el casco de
+cada bando, y se quitó: a la escala de juego se leía como una pegatina puesta
+encima, no como pintura. La identidad de bando la lleva **solo el color del
+casco**, y por eso M01 y M02 están apartados en tono *y* en valor — caqui cálido
+y claro contra gris azulado frío y oscuro. Los dos siguen siendo colores de
+campaña reales; lo que se hizo fue coger los dos extremos del rango en vez de
+dos vecinos.
+
+Comprobado con los dos vehículos en el mismo encuadre en los seis teatros,
+incluido Stalingrado, que es el peor caso porque su propio terreno ya es gris.
 
 Terreno: roughness **0.94**, extrusión **4.2 u**, bisel **0.30 u**.
 

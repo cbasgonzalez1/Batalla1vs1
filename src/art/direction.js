@@ -9,11 +9,11 @@
  * lee en un movil a un palmo de la cara es la FORMA, no los remaches.
  *
  * Realismo hasta donde ayuda: las paletas salen de frentes reales y cada
- * teatro trae la epoca que le toca. Y se para donde estorba: dos blindados
- * historicos de verdad serian dos manchas verde-gris indistinguibles en
- * pantalla, asi que la identidad de bando la lleva una banda de reconocimiento
- * saturada. Los ejercitos de verdad tambien pintaban bandas para no dispararse
- * entre ellos; aqui es lo mismo, un poco mas chillon.
+ * teatro trae la epoca que le toca. La identidad de bando la lleva el color
+ * del casco y nada mas — hubo una banda de reconocimiento saturada cruzando el
+ * vehiculo y se quito porque a esta escala se leia como una pegatina puesta
+ * encima. Los dos caquis estan apartados en tono y en valor para poder
+ * sostenerlo solos.
  */
 
 // --- Luz (plancha 01, seccion 01) --------------------------------------
@@ -41,10 +41,16 @@ export const LIGHT = {
 // Un blindado de verdad esta pintado con mate antirreflejo: la falta de
 // especular no es una renuncia tecnica, es lo que hacian.
 export const MATERIALS = {
-  // M01/M02: la masa del vehiculo. Caqui contra gris de campaña, los dos
-  // desaturados a proposito para que la banda de reconocimiento cante.
-  chassisA: { color: 0x79803c, roughness: 0.66, metalness: 0.0 }, // caqui aliado
-  chassisB: { color: 0x55666f, roughness: 0.66, metalness: 0.0 }, // gris de campaña
+  // M01/M02: la masa del vehiculo, y lo UNICO que distingue un bando del otro.
+  //
+  // Hubo una banda de reconocimiento saturada cruzando el casco y se quito: a
+  // esta escala se leia como una pegatina puesta encima, no como pintura. Sin
+  // ella, la separacion la tienen que dar los dos colores solos, asi que estan
+  // apartados en tono Y en valor — caqui calido y claro contra gris azulado
+  // frio y oscuro. Los dos siguen siendo colores de campaña de verdad; lo que
+  // se ha hecho es coger los dos extremos del rango en vez de dos vecinos.
+  chassisA: { color: 0x838b3a, roughness: 0.66, metalness: 0.0 }, // caqui aliado
+  chassisB: { color: 0x47616f, roughness: 0.66, metalness: 0.0 }, // gris de campaña
   // M03: optica. Uso escaso, solo para un specular puntual en el periscopio.
   gloss:    { color: 0x54718c, roughness: 0.16, metalness: 0.0 },
   // M04: acero pintado del tubo y los herrajes.
@@ -57,13 +63,6 @@ export const MATERIALS = {
   hormigon: { color: 0x9d9a90, roughness: 0.92, metalness: 0.0 },
 };
 
-// Banda de reconocimiento. NO es historicamente exacta en el tono; es lo que
-// hace que a 4 cm de alto en pantalla sepas de quien es el tanque antes de
-// leer el HUD. Todo lo demas del vehiculo puede ser fiel; esto no.
-export const BANDA = {
-  a: { color: 0xe4572e, roughness: 0.55, metalness: 0.0 },
-  b: { color: 0x2fb8d9, roughness: 0.55, metalness: 0.0 },
-};
 
 // Bisel de referencia a 1080 px de ancho: 10-12 px. A 30 unidades de mundo
 // visibles, 1 unidad = 36 px, asi que el bisel vive en ~0.30 unidades.

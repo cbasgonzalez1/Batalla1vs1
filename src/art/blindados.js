@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { roundedBoxGeometry } from './geometry.js';
-import { MATERIALS, BANDA, BEVEL } from './direction.js';
+import { MATERIALS, BEVEL } from './direction.js';
 
 /**
  * Los dos blindados del juego, uno por epoca.
@@ -30,25 +30,24 @@ export const BOCA = Object.freeze({ x: 2.25, y: 0.06 });
 
 /**
  * @param {object} opciones
- * @param {object} opciones.chassis  material de casco del bando
- * @param {'a'|'b'} opciones.bando   de que lado es, para la banda
+ * @param {object} opciones.chassis  material de casco del bando. Es lo unico
+ *   que distingue un bando de otro: no hay banda de reconocimiento.
  * @param {boolean} opciones.granGuerra
  * @returns {{casco: THREE.Group, arma: THREE.Group}} el arma va sin colocar:
  *   quien la monte la cuelga del pivote.
  */
-export function construirBlindado({ chassis, bando, granGuerra }) {
-  const mats = crearMateriales(chassis, bando);
+export function construirBlindado({ chassis, granGuerra }) {
+  const mats = crearMateriales(chassis);
   return granGuerra ? rombo(mats) : torreta(mats);
 }
 
-function crearMateriales(chassis, bando) {
+function crearMateriales(chassis) {
   return {
     casco: new THREE.MeshStandardMaterial({ ...chassis }),
     oruga: new THREE.MeshStandardMaterial({ ...MATERIALS.rubber }),
     acero: new THREE.MeshStandardMaterial({ ...MATERIALS.metal }),
     optica: new THREE.MeshStandardMaterial({ ...MATERIALS.gloss }),
     lona: new THREE.MeshStandardMaterial({ ...MATERIALS.lona }),
-    banda: new THREE.MeshStandardMaterial({ ...(bando === 'b' ? BANDA.b : BANDA.a) }),
   };
 }
 
@@ -103,11 +102,6 @@ function torreta(mats) {
   // Guardabarros: una lamina fina sobre la oruga, que corta la silueta.
   for (const z of [0.9, -0.9]) {
     pieza(casco, roundedBoxGeometry(2.6, 0.1, 0.34, 0.05, 3), mats.casco, -0.05, 0.66, z);
-  }
-
-  // Banda de reconocimiento en el faldon. Lo unico saturado del vehiculo.
-  for (const z of [0.79, -0.79]) {
-    pieza(casco, roundedBoxGeometry(0.9, 0.2, 0.06, 0.03, 3), mats.banda, -0.6, 0.98, z);
   }
 
   // Impedimenta: una caja de lona atada atras. Un tanque limpio parece un
@@ -240,15 +234,6 @@ function rombo(mats) {
   // compite con el rombo y lo estropea.
   pieza(casco, roundedBoxGeometry(0.8, 0.42, 0.9, 0.1, 4), mats.casco, 0.42, 2.3, 0);
   pieza(casco, roundedBoxGeometry(0.14, 0.2, 0.46, 0.04, 3), mats.optica, 0.8, 2.32, 0);
-
-  // Banda de reconocimiento: tres franjas verticales en el costado. En 1918 se
-  // pintaban de verdad, para que la propia infanteria no le tirara encima.
-  // Van por DELANTE de la banda de oruga (z 1.30 contra 0.96-1.26): pintadas
-  // sobre la plancha quedaban tapadas por la cadena y solo asomaban astillas.
-  for (const dx of [0, 0.28, 0.56]) {
-    pieza(casco, roundedBoxGeometry(0.12, 1.35, 0.05, 0.02, 2), mats.banda, 0.5 - dx, 1.05, 1.3);
-    pieza(casco, roundedBoxGeometry(0.12, 1.35, 0.05, 0.02, 2), mats.banda, 0.5 - dx, 1.05, -1.6);
-  }
 
   // Silenciador tumbado en el techo: la tuberia gorda que llevaban encima.
   const escape = new THREE.CylinderGeometry(0.12, 0.12, 1.6, 10);
