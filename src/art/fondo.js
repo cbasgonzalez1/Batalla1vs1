@@ -32,10 +32,14 @@ import { makeNoise1D, fbm1D } from '../core/noise.js';
 // una cresta de fondo a 30 unidades no se lee como lejania, se lee como un muro
 // gris, y en un primer plano tapa media pantalla. Estas asoman justo por encima
 // del terreno, que es donde se mira.
+// `parada` es la parada del cielo con la que se mezcla cada capa: la 2 y la 3
+// son las de cerca del horizonte, que es donde estan estas crestas. Mezclar
+// con la parada alta —el cenit— tiraba el horizonte a un tono que no existia
+// en ninguna otra parte del cuadro.
 const CAPAS = [
-  { fraccion: 0.86, escalaX: 0.05, altura: 11, base: 13, mezclaCielo: 0.82, parada: 1 },
-  { fraccion: 0.68, escalaX: 0.08, altura: 8, base: 9, mezclaCielo: 0.62, parada: 1 },
-  { fraccion: 0.44, escalaX: 0.13, altura: 6, base: 5, mezclaCielo: 0.38, parada: 2 },
+  { fraccion: 0.86, escalaX: 0.05, altura: 11, base: 13, mezclaCielo: 0.74, parada: 3 },
+  { fraccion: 0.68, escalaX: 0.08, altura: 8, base: 9, mezclaCielo: 0.5, parada: 3 },
+  { fraccion: 0.44, escalaX: 0.13, altura: 6, base: 5, mezclaCielo: 0.28, parada: 2 },
 ];
 
 // Los postes van en la capa intermedia: en la cercana quedarian por debajo de
@@ -56,7 +60,11 @@ export function crearFondo({ rng, biome }) {
   grupo.name = 'fondo';
 
   const cielo = biome.sky.map((css) => new THREE.Color(css));
-  const suelo = new THREE.Color(biome.deep);
+  // Se parte del color del CUERPO del terreno, no del socavon, y se mezcla con
+  // el cielo del horizonte. Partiendo del socavon —que es el tono mas oscuro y
+  // mas saturado— las crestas del desierto salian malva: marron oscuro contra
+  // azul da violeta, y el horizonte no pegaba con la arena de delante.
+  const suelo = new THREE.Color(biome.body);
   const capas = [];
 
   for (const [indice, capa] of CAPAS.entries()) {

@@ -96,9 +96,19 @@ móviles no coinciden.
 - La configuración numérica vive en el objeto `CONFIG` de `src/main.js`, no
   dispersa en constantes por fichero.
 - Los valores de arte (paleta, luces, roughness, easings, duraciones) salen de
-  `ART.md`. Si vas a inventarte un color o una duración, para y pregunta.
-  **`ART.md` sigue vacío**, así que el motion spec está pendiente de que se
-  rellene: no es un olvido, es que esos valores no me tocan a mí.
+  `ART.md`, que está completo y es la fuente de verdad. Si vas a inventarte un
+  color o una duración, para y pregunta. Si cambias uno, cámbialo **también**
+  ahí: un número de arte que solo existe en el código deja de ser una decisión y
+  pasa a ser un accidente.
+- Tema: duelo de artillería de la Gran Guerra y la Segunda, contado con la
+  simpleza de Angry Birds 2 y Mario Kart Tour. Dos reglas que mandan sobre el
+  resto: **la sombra es más fría, no más oscura** —bajar el valor deja el juego
+  sombrío, girar el tono hacia el cielo lo mantiene vivo— y **silueta antes que
+  detalle**.
+- El pintado se ajusta solo (`src/art/calidad.js`) hasta que el cuadro cabe en
+  16,7 ms. Solo toca densidad de píxeles y sombra: nunca efectos, nunca trampas
+  y nunca la física, porque dos móviles distintos tienen que jugar la misma
+  partida. `?calidad=alta|media|baja|minima` lo clava para medir.
 - El sonido está cableado (`src/audio/sonidos.js`) y espera los MP3 en
   `public/audio/`. Un fichero que falta no suena y ya: nunca un error en consola
   ni un hueco en la partida.

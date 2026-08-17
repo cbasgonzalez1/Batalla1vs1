@@ -17,15 +17,21 @@
  */
 
 // --- Luz (plancha 01, seccion 01) --------------------------------------
+// El relleno y el rebote suben mucho respecto al primer montaje (0,34 y 0,42).
+// Con aquello, todo lo que no daba la key caia a un gris sucio y el juego se
+// veia sombrio y sin sitio. Los dos juegos de referencia no tienen ni una sola
+// zona apagada: la sombra ahi es MAS FRIA, no mas oscura. Eso es lo que hacen
+// estos numeros.
 export const LIGHT = {
-  keyColor: 0xffe3a8,        // key calida 5200 K
-  keyIntensity: 2.35,
+  keyColor: 0xffe9bd,        // key calida 5200 K
+  keyIntensity: 2.4,
   keyAzimuthDeg: -45,        // desde la izquierda
   keyElevationDeg: 48,
-  fillColor: 0x6e8fb8,       // relleno frio
-  fillIntensity: 0.34,
-  bounceSky: 0x8fb4d8,       // hemisferica: cielo frio
-  bounceIntensity: 0.42,     // el suelo lo pone el teatro
+  fillColor: 0x86a8cc,       // relleno frio
+  fillIntensity: 0.5,
+  bounceSky: 0xa8c8e6,       // hemisferica: cielo frio
+  bounceIntensity: 0.85,     // el suelo lo pone el teatro
+  exposicion: 1.06,          // un pelo por encima de 1: el mediotono sube
   shadowOpacityHint: 0.3,
   shadowRadius: 5,
 };
@@ -92,13 +98,13 @@ export const BIOMES = {
     era: GRAN_GUERRA,
     // Creta removida bajo cielo cerrado. Es el campo mas claro que hay: la
     // tiza del Somme salia blanca de las trincheras y se veia desde el aire.
-    crest: 0xe8e4d6,
-    body: 0xb9b29b,
-    deep: 0x6f6a57,
-    bounceGround: 0xc4bda6,
+    crest: 0xf3efe0,
+    body: 0xcfc6ac,
+    deep: 0x9c9078,
+    bounceGround: 0xd6ccb2,
     projectile: 'trazadora',
     ui: 'fosforo',
-    sky: ['#3a4351', '#5d6875', '#8c9399', '#c3c2b8'],
+    sky: ['#7c93b4', '#9db4ce', '#c4d3e0', '#e8edf0'],
   },
   flandes: {
     id: 'flandes',
@@ -107,13 +113,13 @@ export const BIOMES = {
     era: GRAN_GUERRA,
     // Barro y niebla de cloro. El verde amarillento no es un capricho de
     // paleta: es el color con el que se describia el gas en los partes.
-    crest: 0x8e9a4c,
-    body: 0x5c6535,
-    deep: 0x333823,
-    bounceGround: 0x6b7040,
+    crest: 0xc2ce72,
+    body: 0x8c9b47,
+    deep: 0x5f6b34,
+    bounceGround: 0x93a24c,
     projectile: 'fosforo',
     ui: 'trazadora',
-    sky: ['#2a2a18', '#4c4a22', '#8a8236', '#c9be60'],
+    sky: ['#5e7a46', '#88a055', '#bcc66b', '#e4e39a'],
   },
   alamein: {
     id: 'alamein',
@@ -122,13 +128,13 @@ export const BIOMES = {
     era: SEGUNDA,
     // Desierto occidental al amanecer, que es cuando se atacaba: el sol bajo
     // por detras te dejaba en silueta y te delataba.
-    crest: 0xf0c878,
-    body: 0xd69a4a,
-    deep: 0x8a5326,
-    bounceGround: 0xc08a4a,
+    crest: 0xfbe1a0,
+    body: 0xe8a94e,
+    deep: 0xb87438,
+    bounceGround: 0xe0a755,
     projectile: 'fosforo',
     ui: 'trazadora',
-    sky: ['#2a2136', '#573a48', '#a0604c', '#efa968'],
+    sky: ['#2e7fb8', '#5fa9d6', '#9fcde6', '#f2dfae'],
   },
   rzhev: {
     id: 'rzhev',
@@ -137,13 +143,13 @@ export const BIOMES = {
     era: SEGUNDA,
     // Nieve batida sobre el Volga. Campo frio y claro: la trazadora ambar es
     // lo unico calido en pantalla y por eso no se pierde nunca.
-    crest: 0xe4f0f8,
-    body: 0xa8c8de,
-    deep: 0x4e7793,
-    bounceGround: 0x9ec4dc,
+    crest: 0xfbfdff,
+    body: 0xc6dcee,
+    deep: 0x8aa8c4,
+    bounceGround: 0xc2d8ea,
     projectile: 'trazadora',
     ui: 'fosforo',
-    sky: ['#101a2a', '#22405c', '#4c7d9e', '#a6ccde'],
+    sky: ['#3c6fa8', '#6e9bc8', '#a8c6e0', '#dce9f2'],
   },
   stalingrado: {
     id: 'stalingrado',
@@ -153,13 +159,13 @@ export const BIOMES = {
     // Escombro de hormigon bajo una ciudad ardiendo. El campo mas oscuro del
     // juego: el proyectil va en blanco-azul para que no se confunda con el
     // rescoldo del horizonte.
-    crest: 0x6e6b6c,
-    body: 0x454246,
-    deep: 0x25232a,
-    bounceGround: 0x4a3a38,
+    crest: 0xb9b0a6,
+    body: 0x8a8078,
+    deep: 0x5d554f,
+    bounceGround: 0x8b7a6a,
     projectile: 'fosforo',
     ui: 'trazadora',
-    sky: ['#0c0a0e', '#241419', '#4e2420', '#93482a'],
+    sky: ['#5a2418', '#963a1e', '#d9722c', '#f5b45c'],
   },
   ardenas: {
     id: 'ardenas',
@@ -169,13 +175,13 @@ export const BIOMES = {
     // Diciembre, de noche y con niebla. El cielo no aclara por abajo: es el
     // unico teatro donde la silueta del terreno se lee contra la nada, que es
     // justo lo que hizo posible la ofensiva.
-    crest: 0x8e9aa8,
-    body: 0x5d6874,
-    deep: 0x333b47,
-    bounceGround: 0x525d69,
+    crest: 0xe4eef4,
+    body: 0xa8bccb,
+    deep: 0x6e8496,
+    bounceGround: 0xa2b6c6,
     projectile: 'trazadora',
     ui: 'fosforo',
-    sky: ['#05070c', '#0a1018', '#131c28', '#22303f'],
+    sky: ['#2a3e5c', '#4e6b8e', '#84a3be', '#c6d6e0'],
   },
 };
 

@@ -14,6 +14,7 @@ import { makeDotTexture, makeSkyTexture } from './art/geometry.js';
 import { crearEfectos } from './art/efectos.js';
 import { crearFondo } from './art/fondo.js';
 import { crearCalidad, NIVELES } from './art/calidad.js';
+import { crearAtrezo } from './art/atrezo.js';
 import { Terrain } from './world/terrain.js';
 import { buildCannon } from './world/cannon.js';
 import { GameCamera } from './world/gamecamera.js';
@@ -143,7 +144,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.NeutralToneMapping ?? THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0;
+renderer.toneMappingExposure = LIGHT.exposicion;
 stage.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -376,6 +377,7 @@ function construirTrampa(trampa) {
 
 const world = { terrain: null, cannons: [], shields: [], trampas: [] };
 let fondo = null;
+let atrezo = null;
 
 const state = {
   phase: 'aiming',   // aiming | flying | pluma | victory
@@ -491,6 +493,18 @@ function buildWorld(seedText) {
     scene.add(malla.grupo);
     world.trampas.push(malla);
   }
+
+  // Decorado del teatro: sacos, alambrada, tocones y el hito del sitio. Sale
+  // de su propio hilo de azar para que cambiar el relieve no mueva la iglesia.
+  if (atrezo) scene.remove(atrezo.grupo);
+  atrezo = crearAtrezo({
+    rng: mulberry32(hashSeed(`${seedText}:atrezo`)),
+    biome,
+    alturaEn: (x) => world.terrain.heightAt(x),
+    anchoMundo: CONFIG.world.width,
+    separacionCanones: CONFIG.cannonX * 2,
+  });
+  scene.add(atrezo.grupo);
 
   for (const spec of state.plantel) {
     // La epoca la manda el teatro, no el jugador: los dos bandos combaten con
@@ -845,12 +859,13 @@ function onImpact(hit) {
   closeReaction();
 
   // Reasentar los vehiculos: si el crater les quito el suelo se quedarian
-  // flotando sobre el hueco.
+  // flotando sobre el hueco. El decorado, igual.
   for (let i = 0; i < state.plantel.length; i++) {
     if (state.players[i].hop) continue;
     const g = world.cannons[i].group;
     g.position.y = world.terrain.heightAt(g.position.x);
   }
+  atrezo?.reasentar();
 
   // La metralla alcanza a los dos: un tiro corto puede volarte a ti mismo.
   let mayorDaño = 0;
@@ -1363,6 +1378,7 @@ function avanzarPluma() {
       const g = world.cannons[i].group;
       g.position.y = world.terrain.heightAt(g.position.x);
     }
+    atrezo?.reasentar();
   }
 
   if (p.paso >= CONFIG.plumaSteps) {

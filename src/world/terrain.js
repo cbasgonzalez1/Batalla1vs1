@@ -24,13 +24,47 @@ import { lerp, smoothstep } from '../core/mathx.js';
 
 const ROWS = 18;           // filas verticales de la cara frontal
 const ROW_BIAS = 2.1;      // concentra filas cerca de la superficie
-const BAND_DEPTH = 1.5;    // grosor de la banda "cuerpo" en unidades de mundo
 const AO_WINDOW = 26;      // columnas a cada lado para la oclusion de horizonte
-const AO_STRENGTH = 0.62;
-const AO_FADE_DEPTH = 4.5; // la AO se disuelve a esta profundidad en la cara
 const CONTRAST = 5.5;      // expansion de contraste del fBm, ver _generate()
-const SINK = 0.42;         // cuanto se oscurece el fondo de la cara frontal
-const SINK_DEPTH = 14;     // profundidad a la que el oscurecimiento satura
+
+// --- Como se pinta la cara frontal ------------------------------------------
+//
+// La cara frontal es la MITAD DE LA PANTALLA. Estaba resuelta como un
+// degradado que se hundia hasta casi el negro, y el resultado era que el juego
+// entero se veia sombrio: por muy alegre que fuera el cielo, debajo habia una
+// masa oscura sin forma ocupando el cuadro.
+//
+// Ahora se pinta por ESTRATOS: tres franjas de color plano con el borde
+// marcado, como el suelo de un juego de plataformas. Es mas barato de leer y
+// mucho mas alegre, y ademas da escala — se ve cuanto ha excavado un crater
+// porque se ve cuantas capas ha atravesado.
+const COSTRA = 0.55;       // grosor de la costra clara justo bajo la cresta
+//
+// El brillo alterna a proposito de una franja a la siguiente. Con un degradado
+// monotono el subsuelo volvia a ser una mancha plana por muchos estratos que
+// tuviera; alternando, cada linea entre franjas se VE, y eso es lo que
+// convierte los treinta metros de tierra de debajo en roca en capas en vez de
+// en un fondo marron.
+const ESTRATOS = [
+  // Las franjas van apretadas en las primeras 18 unidades porque ESO es lo que
+  // se ve jugando: con el encuadre de apuntado, del borde de la cresta al
+  // fondo de la pantalla hay unos 17 metros de tierra. Lo de mas abajo solo
+  // asoma al abrir plano, y por eso va con franjas mas gruesas.
+  { hasta: COSTRA, mezcla: 0.0, brillo: 1.16 },  // costra: cresta aclarada
+  { hasta: 1.7, mezcla: 0.1, brillo: 1.04 },
+  { hasta: 3.2, mezcla: 0.28, brillo: 0.93 },
+  { hasta: 5.4, mezcla: 0.2, brillo: 1.09 },     // veta clara
+  { hasta: 8.4, mezcla: 0.52, brillo: 0.9 },
+  { hasta: 12.5, mezcla: 0.36, brillo: 1.06 },
+  { hasta: 18.0, mezcla: 0.7, brillo: 0.88 },
+  { hasta: 26.0, mezcla: 0.5, brillo: 1.04 },
+  { hasta: 40.0, mezcla: 0.86, brillo: 0.87 },
+  { hasta: Infinity, mezcla: 0.66, brillo: 1.0 },
+];
+const AO_STRENGTH = 0.34;  // era 0.62: ensuciaba de gris toda la ladera
+const AO_FADE_DEPTH = 3.2; // la AO se disuelve a esta profundidad en la cara
+const SINK = 0.14;         // era 0.42, y se comia la mitad inferior del cuadro
+const SINK_DEPTH = 26;     // profundidad a la que el oscurecimiento satura
 
 // Angulo de reposo de la arena: por encima de esta pendiente, el monton se
 // derrumba. 34 grados es lo tipico de arena seca.
@@ -470,19 +504,29 @@ export class Terrain {
         fPos[k + 1] = h - depth;
         fPos[k + 2] = this.zFront;
 
-        // estrato: cuerpo cerca de la superficie, socavon abajo
-        const band = smoothstep(BAND_DEPTH * 0.55, BAND_DEPTH * 1.25, depth);
-        tmp.copy(this.body).lerp(this.deep, band);
+        // Estrato: franja plana, no degradado. El borde entre dos franjas es
+        // duro a proposito — es lo que hace que el suelo se lea como suelo y
+        // no como una sombra grande.
+        let capa = ESTRATOS[ESTRATOS.length - 1];
+        for (const e of ESTRATOS) {
+          if (depth <= e.hasta) {
+            capa = e;
+            break;
+          }
+        }
+        // La costra sale de la cresta aclarada; el resto, del cuerpo al hondo.
+        if (capa.mezcla === 0) tmp.copy(this.crest);
+        else tmp.copy(this.body).lerp(this.deep, capa.mezcla);
 
         // la AO solo muerde cerca de la superficie; el fondo ya es oscuro
         const aoMix = lerp(1, ao, 1 - smoothstep(0, AO_FADE_DEPTH, depth));
-        // ...y el fondo se hunde en valor para que retroceda y la banda de
-        // accion (cresta + primeros metros) se lea contra el.
-        const sink = 1 - SINK * smoothstep(BAND_DEPTH, SINK_DEPTH, depth);
-        const shade = aoMix * sink;
-        fCol[k + 0] = tmp.r * shade;
-        fCol[k + 1] = tmp.g * shade;
-        fCol[k + 2] = tmp.b * shade;
+        // ...y el fondo se hunde un poco en valor para que retroceda, sin
+        // llegar a apagarse: apagarlo era lo que ponia el juego sombrio.
+        const sink = 1 - SINK * smoothstep(COSTRA, SINK_DEPTH, depth);
+        const shade = aoMix * sink * capa.brillo;
+        fCol[k + 0] = Math.min(1, tmp.r * shade);
+        fCol[k + 1] = Math.min(1, tmp.g * shade);
+        fCol[k + 2] = Math.min(1, tmp.b * shade);
       }
 
       // --- superficie superior
