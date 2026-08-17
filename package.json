@@ -18,7 +18,9 @@
     "verificar:lobby": "node scripts/verificar-lobby.mjs",
     "verificar:red": "node scripts/verificar-partida-red.mjs",
     "verificar:3v3": "node scripts/verificar-3v3.mjs",
-    "verificar:fase2": "node scripts/verificar-fase2.mjs"
+    "verificar:fase2": "node scripts/verificar-fase2.mjs",
+    "verificar:ia": "node scripts/verificar-ia.mjs",
+    "verificar:partida-ia": "node scripts/verificar-partida-ia.mjs"
   },
   "dependencies": {
     "three": "^0.180.0",

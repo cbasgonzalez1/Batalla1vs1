@@ -72,6 +72,8 @@ pnpm verificar:lobby   # dos navegadores reales entrando a la misma sala
 pnpm verificar:red     # dos navegadores jugando cuatro turnos de verdad
 pnpm verificar:3v3     # seis navegadores, tres por bando
 pnpm verificar:fase2   # que la franja se pinta y el vernier afina 4x
+pnpm verificar:ia      # que la dificultad significa algo, en terreno real
+pnpm verificar:partida-ia  # una partida entera contra la maquina
 pnpm verificar:sala    # seis clientes; SABOTEAR=1 rompe uno a proposito
 ```
 
@@ -185,6 +187,30 @@ imposible.
 El alud es **progresivo**: cada turno se dan hasta 288 pasadas y el montón se
 sigue asentando en los siguientes, cada vez menos. Forzar la convergencia de
 golpe pedía más de mil pasadas y un tirón de 100 ms.
+
+### Jugar contra la máquina
+
+`?ia=facil`, `?ia=normal` o `?ia=dificil` y el bando B lo lleva el ordenador.
+Medido sobre 60 combates en terreno real con viento:
+
+| Dificultad | Fallo mediano | Aciertan |
+|---|---|---|
+| fácil | 6,0 u | 45 % |
+| normal | 3,1 u | 70 % |
+| difícil | 1,4 u | 95 % |
+
+La IA usa `simulate()` como oráculo, o sea la misma función que mueve el
+proyectil de verdad: no hay una física para ella y otra para ti. **Barre** la
+potencia en vez de bisecarla, porque el alcance no crece de forma monótona —
+pasado cierto punto el proyectil se sale del mundo y no impacta nunca.
+
+El fallo se mete desplazando el objetivo, no toqueteando la potencia: así falla
+corta o larga, como una persona, en vez de con un ángulo raro que se ve de lejos
+que es de máquina. Y con distribución normal, porque los fallos humanos se
+agrupan cerca del blanco.
+
+Todo su azar sale del PRNG sembrado, así que una partida contra la IA es tan
+reproducible como una entre personas.
 
 ### Sonido
 

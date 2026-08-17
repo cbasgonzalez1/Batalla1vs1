@@ -18,6 +18,7 @@ import { attachDragControl } from './ui/input.js';
 import { FIXED_DT, simulate, step, sweepTerrain, launchVelocity } from './game/ballistics.js';
 import { crearViento, flechaDe } from './game/viento.js';
 import { transporte } from './game/sotavento.js';
+import { DIFICULTAD, apuntar as apuntarIA, reaccionar as reaccionarIA } from './game/ia.js';
 import { lecturaDeTiro, acerto } from './game/lectura.js';
 import {
   MAX_HP,
@@ -96,6 +97,10 @@ const CONFIG = {
 
   // 1 = arco completo hasta el impacto. 0 = solo los tres primeros puntos.
   assistLevel: params.has('assist') ? clamp(parseFloat(params.get('assist')), 0, 1) : 1,
+
+  // ?ia=facil|normal|dificil hace que la maquina lleve el bando B. Sin el
+  // parametro no hay IA y el juego se comporta como siempre.
+  ia: params.get('ia'),
 
   craterRadius: 2.6,
   // La pluma dura 1,4 s: lo que tarda la arena en verse caer sin que el turno
@@ -679,6 +684,7 @@ function endTurn() {
   cam.tweenTo(state.goal.x, state.goal.y, state.goal.w, 700, easeInOutCubic);
   refreshPreview();
   updateHud();
+  turnoDeLaMaquina();
 }
 
 function declareVictory(winner, loser) {
@@ -711,6 +717,24 @@ function declareVictory(winner, loser) {
 }
 
 // ──────────────────────────────────────────────── reaccion en vuelo (plus)
+
+/** La maquina decide si gasta carga, con la misma info que tendria una persona. */
+function reaccionDeLaMaquina() {
+  if (errorIA === null || sincronia.estado.activa) return;
+  const defensor = state.reaction.defender;
+  if (bandoDe(defensor) !== 'b') return;
+
+  const decision = reaccionarIA({
+    distanciaPrevista: Math.abs(predictImpactX() - world.cannons[defensor].group.position.x),
+    radioLetal: BLAST.radius,
+    cargas: state.players[defensor].charges,
+    rng: state.turnRng,
+    error: errorIA,
+  });
+
+  if (decision === 'salto') aplicarSalto();
+  else if (decision === 'escudo') aplicarEscudo();
+}
 
 function openReaction() {
   state.reaction.open = true;
@@ -940,6 +964,7 @@ function fixedUpdate() {
       state.impactSteps - state.flightSteps <= REACTION.windowSteps
     ) {
       openReaction();
+      reaccionDeLaMaquina();
     }
 
     const px = s.x;
@@ -1123,6 +1148,46 @@ exponerGanchos({
     };
   },
 });
+
+// ───────────────────────────────────────────────────────────────────── ia
+//
+// La maquina juega el bando B cuando se pide por URL. Toda su aleatoriedad sale
+// del turnRng sembrado, asi que una partida contra la IA es tan reproducible
+// como una entre personas.
+
+const errorIA = DIFICULTAD[CONFIG.ia] ?? (CONFIG.ia ? DIFICULTAD.normal : null);
+const leTocaALaMaquina = () =>
+  errorIA !== null && !sincronia.estado.activa && bandoDe(state.active) === 'b';
+
+/** Piensa y dispara. Se llama al empezar su turno, con un respiro para que se vea. */
+function turnoDeLaMaquina() {
+  if (!leTocaALaMaquina() || state.phase !== 'aiming') return;
+
+  const canon = activeCannon();
+  const rival = world.cannons[rivalesDe(state.active)[0] ?? 0];
+  const tiro = apuntarIA({
+    origen: muzzleState(),
+    objetivo: rival.group.position.x,
+    viento: state.wind,
+    terreno: world.terrain,
+    velocidad: CONFIG.speed,
+    rng: state.turnRng,
+    error: errorIA,
+  });
+
+  const slot = activeAim();
+  slot.phi = clamp(tiro.anguloDeg * DEG, MIN_PHI, MAX_PHI);
+  slot.power = clamp(tiro.potencia, 0, 1);
+  canon.setAim(slot.phi);
+  refreshPreview();
+  updateHud();
+
+  // Un respiro antes de tirar: sin el, la maquina dispara en el mismo cuadro en
+  // que le toca y el jugador no llega a ver de donde vino el tiro.
+  setTimeout(() => {
+    if (leTocaALaMaquina() && state.phase === 'aiming') dispararDeVerdad();
+  }, 700);
+}
 
 // ─────────────────────────────────────────────────────────── jugar en linea
 //
