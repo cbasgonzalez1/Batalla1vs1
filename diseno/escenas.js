@@ -55,16 +55,45 @@ function colorEstrato(t, e) {
  * Devuelve tambien donde cayeron, porque el agua del crater tiene que ir EN el
  * crater: una elipse de agua sobre terreno llano se lee como un papel tirado.
  */
-function perfilTerreno(t, rng, x0, x1) {
+function perfilTerreno(t, rng, x0, x1, comp = 'abierto') {
   const pts = [];
-  const craters = [-6 + rng() * 3, 2 + rng() * 4, 9 + rng() * 3];
+  const craters = comp === 'zanja'
+    ? [-4.5 + rng() * 2, 1 + rng() * 3, 6.5 + rng() * 2]
+    : [-6 + rng() * 3, 2 + rng() * 4, 9 + rng() * 3];
   for (let x = x0; x <= x1 + 0.01; x += 0.25) {
     let y = 3.4
       + Math.sin(x * 0.19 + 1.1) * 1.5
       + Math.sin(x * 0.47 + 4.0) * 0.55
       + Math.sin(x * 1.03 + 2.2) * 0.16;
+
+    if (comp === 'ruina') {
+      // Loma central: los dos emplazamientos quedan en laderas opuestas y el
+      // hito se planta en la cresta. La loma no colisiona con el proyectil —el
+      // decorado nunca lo hace— pero obliga a mirar por encima de algo.
+      y += Math.max(0, Math.cos((x / 8.5) * Math.PI * 0.5)) ** 2 * 2.0;
+      y -= Math.max(0, 1 - Math.abs(x - 13.4) / 5) * 0.5;
+      y -= Math.max(0, 1 - Math.abs(x + 13.4) / 5) * 0.5;
+    }
+
+    if (comp === 'zanja') {
+      y = 3.0 + Math.sin(x * 0.21 + 0.6) * 0.75 + Math.sin(x * 0.9 + 2.2) * 0.2;
+      // Trinchera de verdad: se BAJA el mapa de alturas en un tramo con paredes
+      // de mucha pendiente y se levanta el labio con la tierra excavada. Una
+      // caja encima del suelo no es una trinchera, es una valla
+      // (docs/ESCENARIOS.md §3.1).
+      // El foso tiene que ser MAS ANCHO que la pieza que va dentro. Con 5 u de
+      // ancho y un casco de 6,4 el blindado se apoya en los dos labios, tapa las
+      // paredes y la trinchera desaparece: se ve un tanque en terreno llano.
+      for (const px of [-13.4, 13.4]) {
+        const d = Math.abs(x - px);
+        if (d < 2.8) y -= 1.7;
+        else if (d < 4.4) y -= 1.7 * (0.5 + 0.5 * Math.cos(((d - 2.8) / 1.6) * Math.PI));
+        else if (d < 5.8) y += 0.95 * Math.sin(((5.8 - d) / 1.4) * Math.PI);
+      }
+    }
+
     // plataformas de tiro: el canon no se apoya en una cuesta
-    for (const px of [-13.4, 13.4]) {
+    if (comp !== 'zanja') for (const px of [-13.4, 13.4]) {
       const d = Math.abs(x - px);
       if (d < 3.2) y += (3.2 - d) * 0.12 * (1 - d / 3.2);
     }
@@ -197,6 +226,26 @@ function cajas(x, y, t, rng) {
   return s;
 }
 
+/**
+ * Entibado de la trinchera: tablones verticales de ANCHURA DESIGUAL contra la
+ * pared. Iguales se leen como una valla de jardin, que es el fallo clasico de
+ * esta pieza.
+ */
+function entibado(cx, suelo, t, rng) {
+  const c = tenir(MATERIA.madera, t);
+  let s = '';
+  let x = cx - 3.5;
+  while (x < cx + 3.5) {
+    const w = 0.28 + rng() * 0.24;
+    const y = suelo(x + w / 2);
+    s += objeto([caja(x, y, w * 0.86, 1.5 + rng() * 0.4, 0.04)], c, 0.06);
+    x += w;
+  }
+  // viga transversal y poste de esquina, que es lo que la sujeta
+  s += objeto([caja(cx - 3.6, suelo(cx) + 1.52, 7.2, 0.2, 0.06)], oscuro(c), 0.07);
+  return s;
+}
+
 // ── hitos ─────────────────────────────────────────────────────────────────
 
 /** Borde superior astillado: zigzag de dientes, nunca una recta ni un arco. */
@@ -208,7 +257,7 @@ function astillado(x0, x1, y, dientes, amp) {
   return pts;
 }
 
-function hito(t, x, suelo) {
+function hito(t, x, suelo, k = 1) {
   const piedra = tenir(t.hito === 'isba' ? MATERIA.madera : MATERIA.hormigon, t);
   const y = suelo;
   let s = '';
@@ -216,13 +265,13 @@ function hito(t, x, suelo) {
 
   if (t.hito === 'tocon') {
     // Flandes: el tocon gigante es el mismo modulo a escala 3,5x
-    s += tocon(x, y, 3.5, t, mulberry32(7));
+    s += tocon(x, y, 3.5 * k, t, mulberry32(7));
     s += escombro(x + 2.4, 1.1);
     return s;
   }
 
-  const alto = t.hito === 'chimenea' ? 7.4 : t.hito === 'torre' ? 6.6 : 3.4;
-  const ancho = t.hito === 'chimenea' ? 0.9 : t.hito === 'torre' ? 1.7 : 3.0;
+  const alto = (t.hito === 'chimenea' ? 7.4 : t.hito === 'torre' ? 6.6 : 3.4) * k;
+  const ancho = (t.hito === 'chimenea' ? 0.9 : t.hito === 'torre' ? 1.7 : 3.0) * k;
 
   // muro principal, con el remate astillado
   const remate = astillado(x - ancho, x + ancho, y + alto, 5, 0.42);
@@ -273,10 +322,10 @@ function crestas(t, x0, x1) {
 // del tamano de una chincheta y la plancha no ensenaba lo que se va a ver.
 const X0 = -19, X1 = 19;
 
-export function escena(clave, { bandoA, bandoB, fichaA, fichaB }) {
+export function escena(clave, { bandoA, bandoB, fichaA, fichaB, composicion = 'abierto', piezaA, piezaB }) {
   const t = TEATROS[clave];
-  const rng = mulberry32(semilla(clave));
-  const perfil = perfilTerreno(t, mulberry32(semilla(`${clave}:suelo`)), X0, X1);
+  const rng = mulberry32(semilla(`${clave}:${composicion}`));
+  const perfil = perfilTerreno(t, mulberry32(semilla(`${clave}:suelo`)), X0, X1, composicion);
   let s = '';
 
   // 1. cielo — cuatro bandas planas, mas claro cerca del horizonte
@@ -310,10 +359,15 @@ export function escena(clave, { bandoA, bandoB, fichaA, fichaB }) {
   s += camino(polilinea(perfil), { fill: 'none', stroke: mezcla(t.socavon, '#000', 0.3), 'stroke-width': 0.1 });
 
   // 4. hito y decorado
-  const xh = -3 + rng() * 5;
-  s += hito(t, xh, alturaEn(perfil, xh));
-
   const suelo = (x) => alturaEn(perfil, x);
+  // En la composicion de ruina el hito manda: va en la cresta, centrado, y
+  // ocupa el tope del 25-40 % del ancho que permite ARTE.md §3.
+  const xh = composicion === 'ruina' ? 0.6 : -3 + rng() * 5;
+  // 1,15 y no mas: sobre la loma el hito ya arranca 2 u mas arriba, y a 1,5 se
+  // sale por el borde superior del encuadre. El tope del 25-40 % del ancho de
+  // ARTE.md §3 se mide en ancho, pero el que se pasa siempre es el alto.
+  s += hito(t, xh, suelo(xh), composicion === 'ruina' ? 1.15 : 1);
+
   s += alambrada(-8.4, 4, t, mulberry32(semilla(`${clave}:alambre`)), suelo);
   // Agrupados de dos o tres, nunca repartidos: tocones a espaciado regular
   // parecen un huerto y no un bosque astillado (docs/ESCENARIOS.md §3.6).
@@ -331,19 +385,26 @@ export function escena(clave, { bandoA, bandoB, fichaA, fichaB }) {
     s += charco(cx, fondo + 0.02, 1.5, t);
   }
 
-  // 5. los dos blindados, cada uno con su parapeto de sacos
+  // 5. las dos piezas, cada una con su parapeto de sacos
+  if (composicion === 'zanja') {
+    s += entibado(-13.4, suelo, t, mulberry32(semilla(`${clave}:entibado`)));
+    s += entibado(13.4, suelo, t, mulberry32(semilla(`${clave}:entibado2`)));
+  }
   const colocar = (x, ficha, base, voltear) => {
-    const y = alturaEn(perfil, x);
-    return grupo(construir(ficha, { base }), {
+    const y = suelo(x);
+    const arte = piezaA ? (voltear ? piezaB : piezaA)(base, false) : construir(ficha, { base });
+    return grupo(arte, {
       transform: `translate(${x} ${y.toFixed(2)})${voltear ? ' scale(-1 1)' : ''}`,
     });
   };
-  s += colocar(-13.8, fichaA, bandoA, false);
-  s += colocar(13.8, fichaB, bandoB, true);
-  // El parapeto va DELANTE del canon, no detras: puesto detras lo tapa el
-  // propio blindado y el jugador nunca lo ve (ARTE.md §13).
-  s += parapeto(-10.6, suelo(-10.6) - 0.12, t, rng);
-  s += parapeto(10.6, suelo(10.6) - 0.12, t, rng);
+  s += colocar(-13.4, fichaA, bandoA, false);
+  s += colocar(13.4, fichaB, bandoB, true);
+  // El parapeto va DELANTE del canon, no detras: puesto detras lo tapa la
+  // propia pieza y el jugador nunca lo ve (ARTE.md §13). En la zanja va en el
+  // labio, que es justo donde lo pone quien cava una trinchera.
+  const lp = composicion === 'zanja' ? 5.1 : 2.8;
+  s += parapeto(-13.4 + lp, suelo(-13.4 + lp) - 0.12, t, rng, composicion === 'zanja' ? 2.6 : 3.2);
+  s += parapeto(13.4 - lp, suelo(13.4 - lp) - 0.12, t, rng, composicion === 'zanja' ? 2.6 : 3.2);
 
   // 6. primer plano: silueta oscura casi plana. Se tine hacia el socavon del
   // teatro, no hacia el negro: un primer plano gris o pardo neutro es el mismo

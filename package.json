@@ -27,7 +27,8 @@
     "verificar:avance": "node scripts/verificar-avance.mjs",
     "verificar:fluidez": "node scripts/verificar-fluidez.mjs",
     "capturar": "node scripts/capturar.mjs",
-    "planchas": "node diseno/planchas.mjs"
+    "planchas": "node diseno/planchas.mjs",
+    "propuestas": "node diseno/propuestas.mjs"
   },
   "dependencies": {
     "three": "^0.180.0",
