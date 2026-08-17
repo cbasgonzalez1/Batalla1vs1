@@ -74,6 +74,26 @@ pnpm verificar:3v3     # seis navegadores, tres por bando
 pnpm verificar:sala    # seis clientes; SABOTEAR=1 rompe uno a proposito
 ```
 
+## Desplegar
+
+Un solo contenedor: el servidor de salas sirve también el juego ya compilado.
+Eso significa un único dominio que configurar, el WebSocket va al mismo origen
+y detrás de HTTPS pasa a `wss` sin tocar nada.
+
+```bash
+docker build -t batalla1vs1 .
+docker run -p 8787:8787 batalla1vs1
+```
+
+En **Dokploy**: aplicación nueva de tipo Dockerfile apuntando a este repo,
+puerto interno `8787`, dominio con HTTPS y **WebSocket habilitado en el proxy**
+(Traefik lo hace solo, pero conviene comprobarlo: sin eso la sala conecta y se
+cae en cuanto empieza a hablar). No hace falta base de datos, ni volúmenes, ni
+variables de entorno — salvo `PUERTO` si te conviene otro.
+
+El estado vive en memoria: al reiniciar el contenedor se pierden las salas
+abiertas. Es a propósito, no hay nada que valga la pena persistir.
+
 ## Parámetros por URL
 
 | Parámetro | Valores | Qué hace |

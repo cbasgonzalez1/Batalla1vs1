@@ -1053,7 +1053,22 @@ exponerGanchos({
 // Se entra con ?online (sala nueva) o ?sala=CODE (a una concreta). Sin esos
 // parametros el juego arranca en local exactamente como antes: la red no puede
 // estropear la partida de quien no la pide.
-const servidor = params.get('servidor') || `ws://${location.hostname}:8787`;
+/**
+ * A donde conectarse.
+ *
+ * En produccion el servidor sirve tambien el juego, asi que la sala esta en el
+ * mismo origen: eso da wss automatico detras de HTTPS y ni un dominio que
+ * configurar. En desarrollo el juego lo sirve Vite en su propio puerto y el
+ * servidor vive aparte, de ahi la excepcion.
+ */
+function urlDelServidor() {
+  const forzado = params.get('servidor');
+  if (forzado) return forzado;
+  if (location.port === '5173') return `ws://${location.hostname}:8787`;
+  return `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}`;
+}
+
+const servidor = urlDelServidor();
 const red = crearCliente({ url: servidor });
 
 const sincronia = crearSincronia({ cliente: red });

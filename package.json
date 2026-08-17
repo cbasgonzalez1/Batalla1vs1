@@ -20,13 +20,13 @@
     "verificar:3v3": "node scripts/verificar-3v3.mjs"
   },
   "dependencies": {
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "playwright": "^1.62.1",
     "vite": "^7.1.0",
-    "vitest": "^4.1.10",
-    "ws": "^8.21.3"
+    "vitest": "^4.1.10"
   },
   "packageManager": "pnpm@11.5.2"
 }

@@ -23,6 +23,17 @@ async function abrir(nombre) {
   return pg;
 }
 
+/** Espera a que los dos cumplan una condicion, o se rinde. */
+async function esperarA(paginas, condicion, ms) {
+  const limite = Date.now() + ms;
+  while (Date.now() < limite) {
+    const todos = await Promise.all(paginas.map(estado));
+    if (todos.every(condicion)) return true;
+    await esperar(80);
+  }
+  return false;
+}
+
 const estado = (pg) =>
   pg.evaluate(() => {
     const G = window.GAME;
@@ -76,9 +87,16 @@ for (let turno = 0; turno < 4; turno++) {
     [38 + turno * 4, 0.66 + turno * 0.04]
   );
 
-  // Se deja correr el vuelo y la pluma en los dos.
-  for (const pg of [ana, bea]) await pg.evaluate(() => window.advanceTime(6000));
-  await esperar(500);
+  // Hay que esperar a que el disparo LLEGUE a los dos antes de avanzar el
+  // tiempo: el que aun no lo ha recibido avanzaria en vano y se quedaria un
+  // turno atras. Es un fallo del guion, no del juego, y ya mordio una vez.
+  await esperarA([ana, bea], (e) => e.fase === 'flying' || e.ronda > eA.ronda, 4000);
+  for (let intento = 0; intento < 12; intento++) {
+    for (const pg of [ana, bea]) await pg.evaluate(() => window.advanceTime(1000));
+    await esperar(120);
+    const ahora = await Promise.all([ana, bea].map(estado));
+    if (ahora.every((e) => e.fase === 'aiming') && new Set(ahora.map((e) => e.ronda)).size === 1) break;
+  }
 
   const a = await estado(ana);
   const b = await estado(bea);

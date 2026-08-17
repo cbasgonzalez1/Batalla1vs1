@@ -68,7 +68,19 @@ antes de empezar.
 ```bash
 pnpm server            # puerto 8787
 pnpm verificar:sala    # seis clientes reales; SABOTEAR=1 rompe uno a proposito
+pnpm verificar:red     # dos navegadores jugando de verdad
+pnpm verificar:3v3     # seis navegadores, tres por bando
 ```
+
+En producción el servidor sirve **también** el juego desde `dist/`, así que hay
+un solo origen: el WebSocket no necesita CORS y detrás de HTTPS pasa a `wss`
+solo. El cliente lo detecta mirando el puerto — el 5173 es Vite en desarrollo y
+solo ahí busca el servidor aparte. Un contenedor, un dominio, sin base de datos.
+
+Cuidado al escribir estas verificaciones: los guiones tienen que **esperar a que
+el disparo llegue a todos** antes de avanzar el tiempo. Si no, el que aún no lo
+ha recibido avanza en vano, se queda un turno atrás y el resultado parece una
+desincronía del juego cuando el roto es el guion. Ha pasado dos veces.
 
 Los inputs viajan sellados con el paso en que se aplican (`src/game/cola.js`).
 Un input no se ejecuta cuando llega, sino en su paso: así los seis móviles hacen
