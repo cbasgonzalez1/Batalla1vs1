@@ -19,7 +19,7 @@ import { easeOutExpo, easeOutBack } from '../core/easing.js';
  * de teatro no cambie ni un milimetro la balistica.
  */
 
-// Motion spec, ART.md seccion 5: el tubo se hunde casi de golpe y vuelve
+// Movimiento, ARTE.md seccion 14: el tubo se hunde casi de golpe y vuelve
 // despacio pasandose un pelo. El retroceso corto es lo que da PESO al disparo;
 // si se ve viajar hacia atras parece un muelle, no una pieza de artilleria.
 const RETROCESO_MS = 90;

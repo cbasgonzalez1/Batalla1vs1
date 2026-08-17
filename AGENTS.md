@@ -123,15 +123,17 @@ partir del primer turno en que alguien se movió.
 - La configuración numérica vive en el objeto `CONFIG` de `src/main.js`, no
   dispersa en constantes por fichero.
 - Los valores de arte (paleta, luces, roughness, easings, duraciones) salen de
-  `ART.md`, que está completo y es la fuente de verdad. Si vas a inventarte un
+  `ARTE.md`, que es la ÚNICA fuente de verdad de arte. Si vas a inventarte un
   color o una duración, para y pregunta. Si cambias uno, cámbialo **también**
   ahí: un número de arte que solo existe en el código deja de ser una decisión y
   pasa a ser un accidente.
-- Tema: duelo de artillería de la Gran Guerra y la Segunda, contado con la
-  simpleza de Angry Birds 2 y Mario Kart Tour. Dos reglas que mandan sobre el
-  resto: **la sombra es más fría, no más oscura** —bajar el valor deja el juego
-  sombrío, girar el tono hacia el cielo lo mantiene vivo— y **silueta antes que
-  detalle**.
+- Estilo: **cartoon vectorial** tipo Angry Birds / Rayman Origins. Las seis
+  reglas invariables de `ARTE.md` §1 no se negocian: contorno, tres tonos, luz
+  fija arriba-izquierda, sombra de contacto, esquinas redondeadas y cero
+  degradados. Y **silueta antes que detalle**: 3 a 6 formas por objeto.
+- `ARTE.md` §9 marca el invariante que no se toca al cambiar arte: la boca del
+  arma en la misma coordenada en todos los vehículos. Lo vigila
+  `tests/world/cannon.test.js`.
 - El pintado se ajusta solo (`src/art/calidad.js`) hasta que el cuadro cabe en
   16,7 ms. Solo toca densidad de píxeles y sombra: nunca efectos, nunca trampas
   y nunca la física, porque dos móviles distintos tienen que jugar la misma

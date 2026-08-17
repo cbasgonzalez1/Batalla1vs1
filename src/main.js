@@ -130,7 +130,7 @@ const CONFIG = {
 const MIN_PHI = 2 * DEG;
 const MAX_PHI = 170 * DEG;
 
-// Hundimiento del crater, ART.md seccion 5. Solo dibujo: la fisica ya bajo.
+// Hundimiento del crater, ARTE.md seccion 14. Solo dibujo: la fisica ya bajo.
 const HUNDIMIENTO_MS = 180;
 
 // ─────────────────────────────────────────────────────────────────── montaje

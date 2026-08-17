@@ -6,7 +6,7 @@ import { mkdirSync } from 'node:fs';
  *
  * Es la unica forma honesta de revisar arte: leer los hex del fichero no dice
  * si la trazadora se ve contra el terreno, y una direccion de arte que solo
- * existe en el ART.md no existe.
+ * existe en el ARTE.md no existe.
  */
 
 const URL = process.env.URL ?? 'http://localhost:5173';

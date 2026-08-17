@@ -28,7 +28,7 @@ import { easeOutExpo, easeOutQuad } from '../core/easing.js';
  * particula, que serian doscientas llamadas.
  */
 
-// Motion spec, ART.md seccion 5. Milisegundos.
+// Movimiento, ARTE.md seccion 14. Milisegundos.
 export const TIEMPOS = {
   fogonazo: 70,
   humoBoca: 900,
