@@ -41,6 +41,7 @@ export class Hud {
       vwho: $('v-who'),
       vstats: $('v-stats'),
       again: $('again'),
+      compartir: $('compartir'),
       hint: $('hint'),
     };
 
@@ -66,6 +67,23 @@ export class Hud {
     this.el.shield.addEventListener('pointerdown', (e) => { swallow(e); handlers.onShield?.(); });
     this.el.hop.addEventListener('pointerdown', (e) => { swallow(e); handlers.onHop?.(); });
     this.el.again.addEventListener('pointerdown', (e) => { swallow(e); handlers.onAgain?.(); });
+
+    // Copiar el enlace del combate. Se confirma en el propio boton: un mensaje
+    // aparte, en la pantalla de victoria, seria ruido justo cuando el jugador
+    // esta mirando el resultado.
+    this.el.compartir?.addEventListener('pointerdown', async (e) => {
+      swallow(e);
+      const enlace = handlers.onCompartir?.();
+      if (!enlace) return;
+      try {
+        await navigator.clipboard?.writeText(enlace);
+        this.el.compartir.textContent = this.t('copiado');
+        this.el.compartir.classList.add('hecho');
+      } catch {
+        // Sin permiso de portapapeles no se puede hacer mas; el enlace sigue
+        // estando en window.GAME.enlaceDeRepeticion().
+      }
+    });
   }
 
   /**
@@ -242,6 +260,10 @@ export class Hud {
   }
 
   hideVictory() {
+    if (this.el.compartir) {
+      this.el.compartir.textContent = this.t('compartir');
+      this.el.compartir.classList.remove('hecho');
+    }
     this.el.victory.classList.remove('on');
   }
 

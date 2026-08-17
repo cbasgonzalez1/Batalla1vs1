@@ -20,6 +20,7 @@ import { crearViento, flechaDe } from './game/viento.js';
 import { transporte } from './game/sotavento.js';
 import { DIFICULTAD, apuntar as apuntarIA, reaccionar as reaccionarIA } from './game/ia.js';
 import { lecturaDeTiro, acerto } from './game/lectura.js';
+import { codificar, decodificar, semillaDeRevancha } from './game/replay.js';
 import {
   MAX_HP,
   BLAST,
@@ -224,6 +225,10 @@ const state = {
   plantel: [],
   // Por jugador: la x mas corta y la mas larga que ha logrado. Es su horquilla.
   marcas: [],
+  // Todos los tiros del combate, para poder repetirlo en otro dispositivo.
+  historia: [],
+  combate: 1,
+  reproduciendo: null,
   shot: null,
   flightSteps: 0,
   impactSteps: Infinity,
@@ -367,6 +372,7 @@ function startMatch(seedText, alineacion = ALINEACION_LOCAL) {
   state.aim = state.plantel.map(() => ({ phi: 48 * DEG, power: 0.7 }));
   state.shots = state.plantel.map(() => 0);
   state.marcas = state.plantel.map(() => ({ corta: null, larga: null }));
+  state.historia = [];
   state.phase = 'aiming';
   state.active = 0;
   state.shot = null;
@@ -532,6 +538,14 @@ function dispararDeVerdad() {
     defender: defensorMasExpuesto(predicted.hit ? predicted.hit.x : muzzleState().x),
   };
   state.shots[state.active] += 1;
+
+  // Se apunta el tiro para poder repetir el combate. Es lo unico que hace falta
+  // guardar: el terreno y el viento se reconstruyen desde la semilla.
+  const apuntado = activeAim();
+  state.historia.push({
+    anguloDeg: apuntado.phi * RAD_TO_DEG,
+    potencia: apuntado.power,
+  });
 
   sonidos.sonar('disparo');
   projectile.position.set(start.x, start.y, CONFIG.playZ);
@@ -718,6 +732,12 @@ function declareVictory(winner, loser) {
 
 // ──────────────────────────────────────────────── reaccion en vuelo (plus)
 
+/** Deja la reaccion apuntada en el tiro que la provoco. */
+function anotarReaccion(tipo) {
+  const turno = state.historia.at(-1);
+  if (turno && !turno.reaccion) turno.reaccion = { tipo, paso: state.flightSteps };
+}
+
 /** La maquina decide si gasta carga, con la misma info que tendria una persona. */
 function reaccionDeLaMaquina() {
   if (errorIA === null || sincronia.estado.activa) return;
@@ -778,6 +798,7 @@ function useHop() {
 
 function aplicarEscudo() {
   if (!canReact()) return;
+  anotarReaccion('escudo');
   sonidos.sonar('escudo');
   const i = state.reaction.defender;
   spendCharge();
@@ -787,6 +808,7 @@ function aplicarEscudo() {
 
 function aplicarSalto() {
   if (!canReact()) return;
+  anotarReaccion('salto');
   sonidos.sonar('salto');
   const i = state.reaction.defender;
   const cannon = world.cannons[i];
@@ -889,8 +911,14 @@ const hud = new Hud({
   },
   onShield: useShield,
   onHop: useHop,
+  onCompartir: () => enlaceDeRepeticion(),
+
   onAgain() {
-    startMatch(`${CONFIG.seed}+${state.shots[0] + state.shots[1]}`);
+    // Semilla explicita: antes salia del numero de disparos del combate
+    // anterior, asi que ni una revancha se podia repetir sin volver a jugar
+    // toda la partida previa.
+    state.combate += 1;
+    startMatch(semillaDeRevancha(CONFIG.seed, state.combate));
   },
 }, t);
 
@@ -951,6 +979,14 @@ function fixedUpdate() {
     // Las reacciones llegan selladas con su paso de vuelo y se aplican ahi, ni
     // antes ni despues. Es lo que hace que los seis moviles vean el mismo salto
     // en el mismo instante.
+    // Repeticion: la reaccion vuelve a ocurrir en el paso exacto en que ocurrio.
+    if (state.reproduciendo && state.flightSteps >= state.reproduciendo.paso) {
+      const { tipo } = state.reproduciendo;
+      state.reproduciendo = null;
+      if (tipo === 'escudo') aplicarEscudo();
+      else aplicarSalto();
+    }
+
     for (const entrada of sincronia.consumir(state.flightSteps)) {
       if (entrada.accion === ACCION.escudo) aplicarEscudo();
       else if (entrada.accion === ACCION.salto) aplicarSalto();
@@ -1105,7 +1141,15 @@ function updateLiveHud() {
 // ────────────────────────────────────────────────────────────────── arranque
 
 resize();
-startMatch(CONFIG.seed);
+
+const repeticion = decodificar(params.get('replay'));
+if (repeticion) {
+  CONFIG.seed = repeticion.semilla;
+  startMatch(repeticion.semilla);
+  reproducir(repeticion.turnos);
+} else {
+  startMatch(CONFIG.seed);
+}
 requestAnimationFrame(frame);
 
 // Ganchos para validar sin tocar codigo: window.GAME en la consola.
@@ -1148,6 +1192,51 @@ exponerGanchos({
     };
   },
 });
+
+// ────────────────────────────────────────────────────────────────── repetir
+//
+// ?replay=<codigo> vuelve a jugar un combate guardado. La simulacion es
+// determinista, asi que con la semilla y los tiros basta: el terreno, el viento
+// y cada crater salen solos.
+
+/** El combate que se esta jugando, listo para pegar en un mensaje. */
+function enlaceDeRepeticion() {
+  const codigo = codificar({ semilla: CONFIG.seed, turnos: state.historia });
+  const url = new URL(location.href);
+  url.searchParams.delete('seed');
+  url.searchParams.set('replay', codigo);
+  return url.toString();
+}
+
+/** Reproduce los tiros uno tras otro, esperando a que cada uno termine. */
+function reproducir(turnos) {
+  let indice = 0;
+
+  const siguiente = () => {
+    if (indice >= turnos.length) return;
+    if (state.phase !== 'aiming') {
+      setTimeout(siguiente, 120);
+      return;
+    }
+
+    const turno = turnos[indice++];
+    const slot = activeAim();
+    slot.phi = clamp(turno.anguloDeg * DEG, MIN_PHI, MAX_PHI);
+    slot.power = clamp(turno.potencia, 0, 1);
+    activeCannon().setAim(slot.phi);
+    refreshPreview();
+
+    // La reaccion del original se vuelve a aplicar en su mismo paso de vuelo.
+    if (turno.reaccion) {
+      state.reproduciendo = { ...turno.reaccion };
+    }
+
+    dispararDeVerdad();
+    setTimeout(siguiente, 200);
+  };
+
+  setTimeout(siguiente, 600);
+}
 
 // ───────────────────────────────────────────────────────────────────── ia
 //
@@ -1244,6 +1333,8 @@ if (params.has('online') || params.has('sala')) {
 window.GAME = {
   config: CONFIG,
   sonidos,
+  /** Enlace para repetir este combate en otro dispositivo. */
+  enlaceDeRepeticion,
   red,
   lobby,
   sincronia,

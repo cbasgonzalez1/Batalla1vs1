@@ -74,6 +74,7 @@ pnpm verificar:3v3     # seis navegadores, tres por bando
 pnpm verificar:fase2   # que la franja se pinta y el vernier afina 4x
 pnpm verificar:ia      # que la dificultad significa algo, en terreno real
 pnpm verificar:partida-ia  # una partida entera contra la maquina
+pnpm verificar:replay  # se juega, se copia el enlace y se reproduce
 pnpm verificar:sala    # seis clientes; SABOTEAR=1 rompe uno a proposito
 ```
 
@@ -107,6 +108,8 @@ abiertas. Es a propósito, no hay nada que valga la pena persistir.
 | `?online` | — | Abre la pantalla de sala |
 | `?sala=` | código de 4 letras | Entra directo a esa sala |
 | `?servidor=` | `ws://host:puerto` | Otro servidor de salas |
+| `?ia=` | `facil`, `normal`, `dificil` | La máquina lleva el bando B |
+| `?replay=` | código del enlace | Repite un combate guardado |
 
 Ejemplo: `http://localhost:5173/?seed=vostok&biome=placa&assist=0.4`
 
@@ -211,6 +214,20 @@ agrupan cerca del blanco.
 
 Todo su azar sale del PRNG sembrado, así que una partida contra la IA es tan
 reproducible como una entre personas.
+
+### Repetir un combate
+
+Al ganar aparece **Copiar enlace**: pega ese enlace y el combate se vuelve a
+jugar entero, tiro a tiro, en cualquier dispositivo. Cuatro turnos ocupan 64
+caracteres.
+
+Se puede porque la simulación es determinista: no hace falta guardar el terreno,
+ni las vidas, ni dónde cayó cada proyectil. Con la semilla y la lista de tiros,
+cualquier móvil lo reconstruye — y sale idéntico, no parecido.
+
+La **revancha** también usa semilla explícita (`vostok#2`, `vostok#3`). Antes
+derivaba del número de disparos del combate anterior, así que no había forma de
+volver a una revancha sin repetir toda la partida previa.
 
 ### Sonido
 

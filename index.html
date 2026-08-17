@@ -166,6 +166,14 @@
   }
   #lectura span.encima{ color:var(--ink); }
 
+  /* El enlace del combate: discreto al lado de la revancha, porque no es lo
+     que uno quiere pulsar justo despues de ganar. */
+  #compartir{
+    margin-top:calc(var(--u)*8); background:transparent;
+    border:1px solid var(--line); color:var(--mono);
+  }
+  #compartir.hecho{ color:var(--magma); border-color:var(--magma); }
+
 
   /* ─────────────────────────────────────────────── sala ─────────────── */
   /* Ocupa la pantalla entera y tapa el juego: mientras se monta la partida
@@ -411,6 +419,7 @@
         <div class="who" id="v-who">Gana A</div>
         <div class="stats" id="v-stats">—</div>
         <button id="again" type="button" data-i18n="revancha">Revancha</button>
+        <button id="compartir" type="button" data-i18n="compartir">Copiar enlace</button>
       </div>
 
       <div id="lectura"><b id="l-fallo"></b><span id="l-arena"></span></div>

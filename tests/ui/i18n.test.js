@@ -99,7 +99,7 @@ describe('traductor', () => {
     const esperadas = [
       'titulo', 'viento', 'turno', 'angulo', 'potencia', 'otear', 'otearAria',
       'reaccion', 'reaccionAria', 'escudo', 'salto', 'objetivoDestruido',
-      'gana', 'revancha', 'pista', 'resumen', 'empate',
+      'gana', 'revancha', 'compartir', 'copiado', 'pista', 'resumen', 'empate',
       'corto', 'largo', 'arena', 'arenaEncima', 'pronostico',
       'salaTitulo', 'crearSala', 'unirse', 'dictaCodigo', 'bandoA', 'bandoB',
       'cambiarBando', 'estoyListo', 'esperando', 'hueco', 'faltaRival',
