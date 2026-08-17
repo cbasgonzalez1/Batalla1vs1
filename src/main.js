@@ -34,6 +34,7 @@ import { exponerGanchos } from './ui/inspeccion.js';
 import { crearCliente } from './net/cliente.js';
 import { crearLobby } from './ui/lobby.js';
 import { crearSincronia } from './net/sincronia.js';
+import { crearFranja } from './ui/franja.js';
 import {
   crearPartida,
   avanzarTurno,
@@ -215,6 +216,8 @@ const state = {
   turnRng: null,
   partida: null,
   plantel: [],
+  // Por jugador: la x mas corta y la mas larga que ha logrado. Es su horquilla.
+  marcas: [],
   shot: null,
   flightSteps: 0,
   impactSteps: Infinity,
@@ -357,6 +360,7 @@ function startMatch(seedText, alineacion = ALINEACION_LOCAL) {
   state.players = state.plantel.map(() => newPlayerState());
   state.aim = state.plantel.map(() => ({ phi: 48 * DEG, power: 0.7 }));
   state.shots = state.plantel.map(() => 0);
+  state.marcas = state.plantel.map(() => ({ corta: null, larga: null }));
   state.phase = 'aiming';
   state.active = 0;
   state.shot = null;
@@ -441,6 +445,12 @@ function simBounds() {
   return { minX: t.x0 - 6, maxX: t.x0 + t.width + 6, minY: CONFIG.world.baseY };
 }
 
+/** Donde caeria la arena si el tiro previsto impactase donde dice el arco. */
+function depositoPrevisto(prediccion) {
+  if (!prediccion?.hit) return null;
+  return transporte(prediccion.hit.x, state.wind, prediccion.vy).centro;
+}
+
 function refreshPreview() {
   if (state.phase !== 'aiming') {
     arc.hide();
@@ -448,13 +458,18 @@ function refreshPreview() {
     state.previewCount = 0;
     return;
   }
-  const { points } = simulate(muzzleState(), state.wind, world.terrain, {
+  const prediccion = simulate(muzzleState(), state.wind, world.terrain, {
     sampleEvery: 6,
     maxPoints: 96,
     bounds: simBounds(),
   });
-  state.previewPoints = points;
-  state.previewCount = arc.update(points, CONFIG.assistLevel, CONFIG.playZ);
+  state.previewPoints = prediccion.points;
+  state.previewCount = arc.update(prediccion.points, CONFIG.assistLevel, CONFIG.playZ);
+
+  // Mientras se arrastra, la franja enseña donde caeria la arena. Es la unica
+  // forma de decidir un tiro corto a proposito: el deposito cae fuera de
+  // encuadre y sin esto habria que adivinarlo.
+  pintarFranja(state.dragging ? depositoPrevisto(prediccion) : null);
 }
 
 function applyAim(aimInput) {
@@ -589,6 +604,15 @@ function onImpact(hit) {
     anchura,
   });
   if (!acerto(lectura, BLAST.radius)) hud.showLectura(lectura);
+
+  // La horquilla del que ha tirado: su corto mas largo y su largo mas corto son
+  // los que encajonan la solucion. Solo se guardan los suyos — enseñar los del
+  // rival regalaria informacion que el juego esconde a proposito.
+  const mias = state.marcas[state.active];
+  if (mias) {
+    if (lectura.sentido === 'corto') mias.corta = hit.x;
+    else mias.larga = hit.x;
+  }
 
   state.phase = 'pluma';
   // Encuadre entre el crater y donde va a caer la arena: si la camara se queda
@@ -779,6 +803,37 @@ function advanceHops() {
 // ─────────────────────────────────────────────────────────────────── control
 
 let pinchStartZoom = 1;
+
+const franja = crearFranja(document.getElementById('franja'));
+
+const COLORES_FRANJA = {
+  terreno: '#26303F',
+  banda: 'rgba(255,107,44,.16)',
+  marca: '#7F8DA0',
+  arena: '#FF6B2C',
+  activo: '#EEF3F9',
+  a: '#FF6B2C',
+  b: '#16E0FF',
+};
+
+/**
+ * Repinta la franja con lo que el jugador puede saber ahora mismo.
+ *
+ * Las marcas son las DE QUIEN JUEGA: cada uno recuerda su propio corto y su
+ * propio largo, que es lo que encajona su solucion. Enseñar las del rival seria
+ * regalar informacion que el juego esconde a proposito.
+ */
+function pintarFranja(deposito = null) {
+  if (!world.terrain || state.plantel.length === 0) return;
+  franja.pintar({
+    terreno: world.terrain,
+    plantel: state.plantel,
+    activo: state.active,
+    marcas: state.marcas[state.active] ?? null,
+    deposito,
+    colores: COLORES_FRANJA,
+  });
+}
 
 const hud = new Hud({
   onScoutStart() {
@@ -995,6 +1050,7 @@ function updateHud() {
 function updateLiveHud() {
   for (let i = 0; i < state.plantel.length; i++) hud.setHp(i, state.players[i].hp);
   hud.marcarTurno(state.active, state.players.map((p) => p.destroyed));
+  pintarFranja();
   if (state.reaction.open) {
     const left = Math.max(0, state.impactSteps - state.flightSteps);
     hud.setReactionTimer(left / REACTION.windowSteps, left / 120);

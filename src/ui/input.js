@@ -1,4 +1,5 @@
 import { clamp } from '../core/mathx.js';
+import { aplicarVernier } from './vernier.js';
 
 /**
  * Control a un pulgar: arrastrar y soltar, tipo tirachinas.
@@ -11,6 +12,10 @@ import { clamp } from '../core/mathx.js';
  * Con dos dedos se entra en modo pellizco para el zoom. Al hacerlo se aborta
  * el arrastre en curso y se marca la secuencia como "no disparable", para que
  * levantar un dedo despues de un pellizco no dispare por accidente.
+ *
+ * Cerca del arrastre del tiro anterior el dedo pesa cuatro veces menos: es el
+ * vernier, y sin el la correccion fina de Sotavento no cabe en un pulgar. Ver
+ * vernier.js para los numeros.
  */
 
 const MAX_DRAG_PX = 240; // arrastre que equivale a potencia 1
@@ -22,6 +27,9 @@ export function attachDragControl(element, handlers) {
   let startY = 0;
   let pinchBase = 0;
   let suppressed = false;
+  // El arrastre del ultimo disparo, para anclar el vernier ahi.
+  let muesca = null;
+  let afinando = false;
 
   const dragScale = () => {
     // El arrastre se mide en px de CSS del propio elemento, asi que el control
@@ -30,14 +38,19 @@ export function attachDragControl(element, handlers) {
     return MAX_DRAG_PX * (r.height / 1920);
   };
 
-  function toAim(dx, dy) {
+  function toAim(dxBruto, dyBruto) {
+    const ajustado = aplicarVernier({ x: dxBruto, y: dyBruto }, muesca);
+    afinando = ajustado.afinando;
+    const dx = ajustado.x;
+    const dy = ajustado.y;
+
     // pantalla: +x derecha, +y abajo. mundo: +x derecha, +y arriba.
     // tirachinas -> el disparo va al contrario del arrastre.
     const len = Math.hypot(dx, dy);
     const power = clamp(len / dragScale(), 0, 1);
     // Sin arrastre util no hay direccion fiable; que lo decida quien llama.
     const angle = len < 6 ? null : Math.atan2(dy, -dx);
-    return { angle, power, len };
+    return { angle, power, len, afinando, bruto: { x: dxBruto, y: dyBruto } };
   }
 
   const pinchDistance = () => {
@@ -108,7 +121,11 @@ export function attachDragControl(element, handlers) {
     if (cancelled || suppressed) {
       handlers.onCancel?.();
     } else {
-      handlers.onRelease?.(toAim(e.clientX - startX, e.clientY - startY));
+      const aim = toAim(e.clientX - startX, e.clientY - startY);
+      // La muesca se queda donde el dedo solto: el vernier del turno siguiente
+      // se ancla en el gesto que el jugador acaba de hacer, no en el resultado.
+      muesca = aim.bruto;
+      handlers.onRelease?.(aim);
     }
     if (pointers.size === 0) suppressed = false;
   }
@@ -122,10 +139,18 @@ export function attachDragControl(element, handlers) {
   element.addEventListener('pointercancel', onCancel);
   element.addEventListener('contextmenu', (e) => e.preventDefault());
 
-  return () => {
+  /** Se llama al empezar combate: el vernier no hereda el tiro de otra partida. */
+  const olvidarMuesca = () => {
+    muesca = null;
+  };
+
+  const quitar = () => {
     element.removeEventListener('pointerdown', onDown);
     element.removeEventListener('pointermove', onMove);
     element.removeEventListener('pointerup', onUp);
     element.removeEventListener('pointercancel', onCancel);
   };
+
+  quitar.olvidarMuesca = olvidarMuesca;
+  return quitar;
 }

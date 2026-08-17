@@ -71,6 +71,7 @@ No hay cuentas ni registro: se entra con un código y ya está.
 pnpm verificar:lobby   # dos navegadores reales entrando a la misma sala
 pnpm verificar:red     # dos navegadores jugando cuatro turnos de verdad
 pnpm verificar:3v3     # seis navegadores, tres por bando
+pnpm verificar:fase2   # que la franja se pinta y el vernier afina 4x
 pnpm verificar:sala    # seis clientes; SABOTEAR=1 rompe uno a proposito
 ```
 
@@ -152,6 +153,23 @@ puede porque el PRNG va sembrado y ese valor ya está calculado. Eso da el reloj
 Y tras cada fallo salen dos números, no uno: `Corto 9,9 · Arena +1,3 a 19`.
 Cuánto fallaste **y qué construiste**. A 88 unidades no ves tu impacto, así que
 sin eso fallar no enseñaba nada y el turno se tiraba a la basura.
+
+### La franja y el vernier
+
+Arriba del todo, las 140 unidades del campo comprimidas en 44 px: el perfil del
+terreno, los vehículos, tu marca corta y tu larga con la banda entre ellas, y
+—mientras arrastras— dónde va a caer tu arena.
+
+La resolución es **basta a propósito**: una muestra cada 4 unidades, más del
+doble del radio de explosión. Da topología, no solución de tiro. Si permitiera
+apuntar, el juego sería leer una barra en vez de tirar.
+
+El **vernier** resuelve un problema medido: el arrastre útil son ~106 px en un
+móvil, y como la potencia interpola el cuadrado de la velocidad, 1 px vale ~1,07
+unidades de alcance. Corregir 1,5 unidades pedía mover el dedo 1,4 px, por debajo
+del temblor de un pulgar. Ahora, dentro de 40 px del arrastre anterior, el dedo
+pesa **cuatro veces menos**. Sin modos y sin botón: la función es continua, así
+que no hay salto al cruzar el borde.
 
 **Sin el motion spec todavía.** No hay retroceso del cañón, fogonazo, humo,
 estela, onda expansiva, escombros ni screen shake.

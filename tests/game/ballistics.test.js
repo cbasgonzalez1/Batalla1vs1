@@ -47,6 +47,25 @@ describe('determinismo', () => {
   });
 });
 
+describe('velocidad al impactar', () => {
+  it('simulate la devuelve, porque Sotavento la necesita', () => {
+    const r = simulate({ x: -44, y: 10, vx: 30, vy: 22 }, 0, terrenoPlano(0));
+    expect(Number.isFinite(r.vx)).toBe(true);
+    expect(Number.isFinite(r.vy)).toBe(true);
+  });
+
+  it('un tiro en globo llega mas vertical que uno tenso', () => {
+    const tenso = simulate({ x: -44, y: 10, vx: 40, vy: 12 }, 0, terrenoPlano(0));
+    const globo = simulate({ x: -44, y: 10, vx: 12, vy: 40 }, 0, terrenoPlano(0));
+    expect(Math.abs(globo.vy)).toBeGreaterThan(Math.abs(tenso.vy));
+  });
+
+  it('cae hacia abajo al final del vuelo', () => {
+    const r = simulate({ x: -44, y: 30, vx: 20, vy: 5 }, 0, terrenoPlano(0));
+    expect(r.vy).toBeLessThan(0);
+  });
+});
+
 describe('step', () => {
   it('aplica el viento a la velocidad horizontal', () => {
     const s = { x: 0, y: 0, vx: 0, vy: 0 };

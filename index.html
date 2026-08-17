@@ -105,6 +105,15 @@
   .player.a .charges i.on{ color:var(--magma); }
   .player.b .charges i.on{ color:var(--plasma); }
 
+  /* La franja: el campo entero comprimido arriba del todo. Da topologia, no
+     solucion de tiro — el muestreo es basto a proposito. */
+  #franja{
+    display:block; width:100%; height:calc(var(--u)*44);
+    margin-bottom:calc(var(--u)*6);
+    border-bottom:1px solid var(--line);
+    opacity:.9;
+  }
+
   /* Cada lado apila a los suyos: con tres por bando el marcador crece hacia
      abajo en vez de estrujar el ancho, que en vertical es lo escaso. */
   .lado{ display:flex; flex-direction:column; gap:calc(var(--u)*8); flex:1 1 0; min-width:0; }
@@ -358,6 +367,8 @@
 <body>
   <div id="stage">
     <div class="hud">
+
+      <canvas id="franja" aria-hidden="true"></canvas>
 
       <div id="top">
         <!-- Los marcadores los monta hud.montarMarcadores() a partir del

@@ -28,7 +28,7 @@ export function step(s, wind, dt) {
  * Simula hacia delante hasta impactar el terreno o agotar el tiempo.
  * No muta nada externo. Devuelve los puntos muestreados y como termino.
  *
- * @returns {{ points: number[][], hit: null | {x:number,y:number}, steps:number }}
+ * @returns {{ points: number[][], hit: null | {x:number,y:number}, steps:number, vx:number, vy:number }}
  */
 export function simulate(start, wind, terrain, opts = {}) {
   const {
@@ -62,7 +62,10 @@ export function simulate(start, wind, terrain, opts = {}) {
     }
   }
 
-  return { points, hit, steps: i };
+  // La velocidad final se devuelve porque Sotavento la necesita: cuanto mas
+  // vertical llega el proyectil, mas lejos se lleva el viento la arena. Sin
+  // esto no se puede anticipar el deposito antes de disparar.
+  return { points, hit, steps: i, vx: s.vx, vy: s.vy };
 }
 
 /**
