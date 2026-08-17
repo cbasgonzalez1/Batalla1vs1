@@ -565,12 +565,16 @@ export const FICHAS = [
     vida: 150, dano: 34, avance: '0,45x', piezas: 14,
     teatros: 'Somme · Flandes',
     nota: 'El mas largo. Cruza trincheras y muros bajos sin penalizacion: esa es su razon de existir. El faldon cerrado con recortes tapa seis piezas con una sola.',
-    L: 7.0, alto: 2.14, y0: 0.64, perfil: 'rombo',
-    opts: { estirado: 0.05 },
+    L: 7.0, alto: 2.02, y0: 0.64, perfil: 'rombo',
+    opts: { estirado: 0.12 },
     rodaje: { tipo: 'envolvente' },
     torreta: null,
+    // La cabina de mando alta y el rodillo antizanja delantero son lo unico que
+    // lo separa del ROMBO en la prueba en negro. Sin ellos son la misma silueta,
+    // y la checklist manda cambiar casco o rodaje, nunca color ni calcomania
+    // (docs/CHECKLIST-REVISION.md §3).
     tubos: [{ x: 1.0, largo: 1.8, r: 0.17, mantelete: 0.4 }],
-    bultos: [[-1.9, 2.78, 1.2, 0.28], [0.9, 2.78, 0.5, 0.2]],
-    extras: [{ tipo: 'disco', x: 3.45, y: 1.05, r: 0.46 }],
+    bultos: [[-2.2, 2.66, 1.5, 0.62], [0.5, 2.66, 0.6, 0.22]],
+    extras: [{ tipo: 'disco', x: 3.62, y: 0.66, r: 0.5 }],
   },
 ];
