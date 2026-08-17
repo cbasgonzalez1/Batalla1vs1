@@ -34,7 +34,13 @@ import { exponerGanchos } from './ui/inspeccion.js';
 import { crearCliente } from './net/cliente.js';
 import { crearLobby } from './ui/lobby.js';
 import { crearSincronia } from './net/sincronia.js';
-import { crearPartida, avanzarTurno } from './game/roster.js';
+import {
+  crearPartida,
+  avanzarTurno,
+  posicionesDe,
+  participanteActivo,
+  ganador as ganadorDe,
+} from './game/roster.js';
 import { ACCION } from './net/protocolo.js';
 
 // El idioma se resuelve una vez, antes de construir nada: el HUD y la pantalla
@@ -207,6 +213,8 @@ const state = {
   ],
   wind: 0,
   turnRng: null,
+  partida: null,
+  plantel: [],
   shot: null,
   flightSteps: 0,
   impactSteps: Infinity,
@@ -222,6 +230,31 @@ const state = {
 };
 
 const activeCannon = () => world.cannons[state.active];
+const bandoDe = (i) => state.plantel[i]?.bando;
+const rivalesDe = (i) =>
+  state.plantel.map((_, j) => j).filter((j) => bandoDe(j) !== bandoDe(i) && !state.players[j].destroyed);
+
+/**
+ * A quien le toca sudar durante el vuelo.
+ *
+ * En 1 contra 1 es el otro y ya esta. Con tres por bando hay que elegir, y se
+ * elige al que tiene el proyectil mas cerca: es el unico que gana algo gastando
+ * una carga, y ademas es lo que el jugador espera ver.
+ */
+function defensorMasExpuesto(impactoX) {
+  const candidatos = rivalesDe(state.active);
+  if (candidatos.length === 0) return state.active;
+  let elegido = candidatos[0];
+  let mejor = Infinity;
+  for (const i of candidatos) {
+    const d = Math.abs(world.cannons[i].group.position.x - impactoX);
+    if (d < mejor) {
+      mejor = d;
+      elegido = i;
+    }
+  }
+  return elegido;
+}
 const activeAim = () => state.aim[state.active];
 // El viento ya no se sortea cada turno: deriva, y por eso se puede pronosticar.
 let viento = null;
@@ -246,19 +279,13 @@ function buildWorld(seedText) {
     biome,
     ...CONFIG.world,
     bowlHalfWidth: CONFIG.cannonX,
-    pads: [
-      { x: -CONFIG.cannonX, halfWidth: 2.6, feather: 3.2 },
-      { x: +CONFIG.cannonX, halfWidth: 2.6, feather: 3.2 },
-    ],
+    // Una plataforma plana bajo cada vehiculo, sea cual sea el numero.
+    pads: state.plantel.map((p) => ({ x: p.x, halfWidth: 2.6, feather: 3.2 })),
   });
   scene.add(world.terrain.group);
   cam.setBounds(world.terrain.x0, world.terrain.x0 + world.terrain.width);
 
-  const specs = [
-    { chassis: MATERIALS.chassisA, facing: +1, x: -CONFIG.cannonX },
-    { chassis: MATERIALS.chassisB, facing: -1, x: +CONFIG.cannonX },
-  ];
-  for (const spec of specs) {
+  for (const spec of state.plantel) {
     const c = buildCannon(spec);
     c.group.position.set(spec.x, world.terrain.heightAt(spec.x), CONFIG.cannonZ);
 
@@ -289,19 +316,56 @@ function buildWorld(seedText) {
   state.wind = viento.actual;
 }
 
-function startMatch(seedText) {
+/**
+ * Alineacion local: el 1 contra 1 de siempre, escrito como lo que es — una
+ * partida de dos participantes. Asi el juego local y el de red recorren
+ * exactamente el mismo camino y no hay dos maquinas de estados que mantener.
+ */
+const ALINEACION_LOCAL = [
+  { id: 'local-a', nombre: 'A', bando: 'a' },
+  { id: 'local-b', nombre: 'B', bando: 'b' },
+];
+
+/**
+ * Coloca a cada participante y le asigna chasis y orientacion.
+ *
+ * El indice de cada uno sale de roster.js y es el mismo en los seis moviles:
+ * primero el bando 'a' y luego el 'b', en el orden congelado de la alineacion.
+ */
+function crearPlantel(partida) {
+  const posiciones = posicionesDe(partida, { separacion: CONFIG.cannonX * 2, margen: 9 });
+  const orden = [...partida.participantes].sort(
+    (u, v) => (u.bando === v.bando ? u.indice - v.indice : u.bando < v.bando ? -1 : 1)
+  );
+
+  return orden.map((p) => ({
+    id: p.id,
+    nombre: p.nombre,
+    bando: p.bando,
+    facing: p.bando === 'a' ? +1 : -1,
+    chassis: p.bando === 'a' ? MATERIALS.chassisA : MATERIALS.chassisB,
+    x: posiciones.get(p.id),
+  }));
+}
+
+function startMatch(seedText, alineacion = ALINEACION_LOCAL) {
   CONFIG.seed = seedText;
+  state.partida = crearPartida({ jugadores: alineacion, semilla: seedText });
+  state.plantel = crearPlantel(state.partida);
+
   buildWorld(seedText);
-  state.players = [newPlayerState(), newPlayerState()];
+  state.players = state.plantel.map(() => newPlayerState());
+  state.aim = state.plantel.map(() => ({ phi: 48 * DEG, power: 0.7 }));
+  state.shots = state.plantel.map(() => 0);
   state.phase = 'aiming';
   state.active = 0;
   state.shot = null;
-  state.shots = [0, 0];
   state.reaction = { open: false, used: false, defender: 1 };
   closeReaction();
   hud.hideVictory();
+  hud.montarMarcadores(state.plantel, t);
   for (const dome of world.shields) dome.visible = false;
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < state.plantel.length; i++) {
     world.cannons[i].setAim(state.aim[i].phi);
     hud.setHp(i, MAX_HP);
     hud.setCharges(i, REACTION.charges);
@@ -351,7 +415,7 @@ function dragFraming() {
 }
 
 function scoutFraming() {
-  const enemy = world.cannons[1 - state.active];
+  const enemy = world.cannons[rivalesDe(state.active)[0] ?? state.active];
   return {
     x: enemy.group.position.x,
     y: enemy.group.position.y + 8,
@@ -439,7 +503,13 @@ function dispararDeVerdad() {
   state.shot = { ...start };
   state.flightSteps = 0;
   state.impactSteps = predicted.hit ? predicted.steps : Infinity;
-  state.reaction = { open: false, used: false, defender: 1 - state.active };
+  // El defensor se decide con el impacto PREVISTO, que ya esta calculado: asi
+  // la ventana se le abre a quien de verdad le va a caer encima.
+  state.reaction = {
+    open: false,
+    used: false,
+    defender: defensorMasExpuesto(predicted.hit ? predicted.hit.x : muzzleState().x),
+  };
   state.shots[state.active] += 1;
 
   projectile.position.set(start.x, start.y, CONFIG.playZ);
@@ -467,14 +537,14 @@ function onImpact(hit) {
 
   // Reasentar los vehiculos: si el crater les quito el suelo se quedarian
   // flotando sobre el hueco.
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < state.plantel.length; i++) {
     if (state.players[i].hop) continue;
     const g = world.cannons[i].group;
     g.position.y = world.terrain.heightAt(g.position.x);
   }
 
   // La metralla alcanza a los dos: un tiro corto puede volarte a ti mismo.
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < state.plantel.length; i++) {
     const t = targetPoint(world.cannons[i]);
     const raw = damageAt(hit.x, hit.y, t.x, t.y);
     if (raw > 0) applyDamage(state.players[i], raw);
@@ -482,8 +552,15 @@ function onImpact(hit) {
     world.shields[i].visible = false;
   }
 
-  const dead = state.players.findIndex((p) => p.destroyed);
-  if (dead >= 0) return declareVictory(1 - dead, dead);
+  // Con equipos, la partida no acaba porque caiga uno: acaba cuando un bando
+  // entero se queda sin nadie.
+  sincronizarEstados();
+  const bandoGanador = ganadorDe(state.partida);
+  if (bandoGanador !== null) {
+    const vencedor = state.plantel.findIndex((p) => p.bando === bandoGanador);
+    const vencido = state.plantel.findIndex((p) => p.bando !== bandoGanador);
+    return declareVictory(Math.max(0, vencedor), Math.max(0, vencido));
+  }
 
   // La arena viaja: se calcula a donde y se suelta en tandas durante la fase
   // 'pluma', para que se vea caer en vez de aparecer de golpe.
@@ -502,7 +579,7 @@ function onImpact(hit) {
   // Que aprende el jugador de este disparo. Se calcula aqui, con el daño ya
   // aplicado, y solo se enseña si NO acerto: si acerto, la vida del rival ya
   // se lo ha contado.
-  const rival = world.cannons[1 - state.active];
+  const rival = world.cannons[defensorMasExpuesto(hit.x)];
   const lectura = lecturaDeTiro({
     xImpacto: hit.x,
     xObjetivo: rival.group.position.x,
@@ -526,23 +603,45 @@ function onImpact(hit) {
   cam.tweenTo(state.goal.x, state.goal.y, state.goal.w, 320, easeOutCubic);
 }
 
+/**
+ * Vuelca la vida a la partida de roster.
+ *
+ * Los estados de combate viven en state.players, indexados como el plantel, y
+ * la rotacion vive en roster. Copiar el "destruido" antes de rotar es lo que
+ * hace que el turno salte a los que ya han caido.
+ */
+function sincronizarEstados() {
+  for (let i = 0; i < state.plantel.length; i++) {
+    const participante = state.partida.participantes.find((p) => p.id === state.plantel[i].id);
+    if (participante) participante.estado = state.players[i];
+  }
+}
+
+function indiceDelActivo() {
+  const activo = participanteActivo(state.partida);
+  if (!activo) return state.active;
+  const i = state.plantel.findIndex((p) => p.id === activo.id);
+  return i >= 0 ? i : state.active;
+}
+
 function endTurn() {
   projectile.visible = false;
   state.shot = null;
 
+  // El turno lo lleva la partida de roster, en local y en red: una sola
+  // rotacion que salta a los destruidos y aguanta bandos desiguales.
+  sincronizarEstados();
+  avanzarTurno(state.partida);
+  state.active = indiceDelActivo();
+
   if (sincronia.estado.activa) {
-    // En red el turno lo decide la partida compartida, que todos avanzan igual.
-    // Y de paso se manda la huella del estado: si dos moviles han calculado
+    // La huella del estado va cada turno: si dos moviles han calculado
     // distinto, el servidor lo dice ahora y no tres turnos despues.
-    avanzarTurno(sincronia.estado.partida);
-    state.active = sincronia.indiceActivo();
-    red.contrastar(sincronia.estado.partida.ronda, {
+    red.contrastar(state.partida.ronda, {
       alturas: world.terrain.heights,
       vidas: state.players.map((p) => p.hp),
-      turno: sincronia.estado.partida.ronda,
+      turno: state.partida.ronda,
     });
-  } else {
-    state.active = 1 - state.active;
   }
   state.wind = viento.avanzar();
   state.phase = 'aiming';
@@ -660,7 +759,7 @@ function predictImpactX() {
 }
 
 function advanceHops() {
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < state.plantel.length; i++) {
     const p = state.players[i];
     if (!p.hop) continue;
     p.hop.step += 1;
@@ -818,7 +917,7 @@ function avanzarPluma() {
     p.perdido += caido.perdido;
 
     // Reasentar: la arena que cae encima de un vehiculo lo levanta con ella.
-    for (let i = 0; i < 2; i++) {
+    for (let i = 0; i < state.plantel.length; i++) {
       if (state.players[i].hop) continue;
       const g = world.cannons[i].group;
       g.position.y = world.terrain.heightAt(g.position.x);
@@ -886,7 +985,7 @@ function updateHud() {
   const { phi, power } = activeAim();
   hud.setShot(state.active === 0 ? 'A' : 'B', Math.round(phi * RAD_TO_DEG), Math.round(power * 100));
   hud.setWind(state.wind, viento ? viento.pronostico : null);
-  for (let i = 0; i < 2; i++) {
+  for (let i = 0; i < state.plantel.length; i++) {
     hud.setHp(i, state.players[i].hp);
     hud.setCharges(i, state.players[i].charges);
   }
@@ -894,7 +993,8 @@ function updateHud() {
 
 /** Lo que cambia cada cuadro: vida tras un impacto y reloj de reaccion. */
 function updateLiveHud() {
-  for (let i = 0; i < 2; i++) hud.setHp(i, state.players[i].hp);
+  for (let i = 0; i < state.plantel.length; i++) hud.setHp(i, state.players[i].hp);
+  hud.marcarTurno(state.active, state.players.map((p) => p.destroyed));
   if (state.reaction.open) {
     const left = Math.max(0, state.impactSteps - state.flightSteps);
     hud.setReactionTimer(left / REACTION.windowSteps, left / 120);
@@ -934,7 +1034,10 @@ exponerGanchos({
       pasosAlImpacto: state.impactSteps,
       reaccionAbierta: state.reaction.open,
       defensor: state.reaction.defender,
-      ganador: state.phase === 'victory' ? (state.players[0].destroyed ? 1 : 0) : null,
+      ganador:
+        state.phase === 'victory'
+          ? state.plantel.findIndex((_, i) => !state.players[i].destroyed)
+          : null,
       jugadores: state.players.map((p, i) => ({
         vida: p.hp,
         cargas: p.charges,
@@ -969,21 +1072,11 @@ const lobby = crearLobby({
   cliente: red,
   t,
   alEmpezar(m) {
-    // La escena monta exactamente dos vehiculos, asi que una sala de tres o mas
-    // reventaria al buscar world.cannons[2]. Se avisa y se juega en local en vez
-    // de dejar la partida a medias: generalizar la escena a N por bando es el
-    // trabajo siguiente y no esta hecho.
-    if (m.alineacion.length > 2) {
-      console.warn('[sala] de momento solo 1 contra 1; sois', m.alineacion.length);
-      lobby.avisar(t('solo1v1'));
-      return;
-    }
-
-    const partida = crearPartida({ jugadores: m.alineacion, semilla: m.semilla });
-    sincronia.empezar(partida, red.estado.yo);
-    startMatch(m.semilla);
-    // El turno lo manda la partida compartida, no el contador local.
-    state.active = sincronia.indiceActivo();
+    startMatch(m.semilla, m.alineacion);
+    // La partida que monta startMatch es la misma alineacion, asi que la
+    // sincronia y la escena comparten rotacion sin tener que casarlas.
+    sincronia.empezar(state.partida, red.estado.yo);
+    state.active = indiceDelActivo();
     updateHud();
   },
 });

@@ -49,7 +49,6 @@ const TEXTOS = {
     faltaUno: 'Falta 1 por confirmar',
     sinConexion: 'Sin conexión con el servidor',
     tuNombre: 'Tu nombre',
-    solo1v1: 'De momento solo 1 contra 1: sobra gente en la sala',
   },
   en: {
     titulo: 'Artillery 1v1',
@@ -89,7 +88,6 @@ const TEXTOS = {
     faltaUno: '1 still to confirm',
     sinConexion: 'No connection to the server',
     tuNombre: 'Your name',
-    solo1v1: 'Only 1v1 for now: too many players in the room',
   },
 };
 

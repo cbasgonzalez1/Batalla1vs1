@@ -17,10 +17,12 @@ export class Hud {
     const $ = (id) => document.getElementById(id);
 
     this.el = {
-      hp: [$('hp-a'), $('hp-b')],
-      fill: [$('fill-a'), $('fill-b')],
-      ghost: [$('ghost-a'), $('ghost-b')],
-      charges: [$('ch-a'), $('ch-b')],
+      // Se rellenan en montarMarcadores(): cuantos hay depende del plantel.
+      hp: [],
+      fill: [],
+      ghost: [],
+      charges: [],
+      lados: { a: $('lado-a'), b: $('lado-b') },
       wind: $('r-wind'),
       windNext: $('r-wind-next'),
       lectura: $('lectura'),
@@ -66,7 +68,73 @@ export class Hud {
     this.el.again.addEventListener('pointerdown', (e) => { swallow(e); handlers.onAgain?.(); });
   }
 
+  /**
+   * Construye un marcador por participante.
+   *
+   * Se hace aqui y no en el HTML porque el numero solo se sabe cuando arranca
+   * la partida: un 1 contra 1 y un 3 contra 3 usan el mismo marcado.
+   */
+  montarMarcadores(plantel, t = (c) => c) {
+    this._last = {};
+    this.el.hp = [];
+    this.el.fill = [];
+    this.el.ghost = [];
+    this.el.charges = [];
+    this.el.tarjetas = [];
+
+    for (const lado of Object.values(this.el.lados)) lado.textContent = '';
+
+    plantel.forEach((quien, indice) => {
+      const tarjeta = document.createElement('div');
+      tarjeta.className = `player ${quien.bando}`;
+
+      const nombre = document.createElement('div');
+      nombre.className = 'pname';
+      const etiqueta = document.createElement('b');
+      etiqueta.textContent = quien.nombre ?? quien.bando.toUpperCase();
+      const numero = document.createElement('span');
+      numero.className = 'hpnum';
+      numero.textContent = '100';
+      nombre.append(etiqueta, numero);
+
+      const barra = document.createElement('div');
+      barra.className = 'bar';
+      const fantasma = document.createElement('i');
+      fantasma.className = 'ghost';
+      const relleno = document.createElement('i');
+      relleno.className = 'fill';
+      barra.append(fantasma, relleno);
+
+      const cargas = document.createElement('div');
+      cargas.className = 'charges';
+      for (let i = 0; i < 3; i++) {
+        const punto = document.createElement('i');
+        punto.className = 'on';
+        punto.textContent = '◆';
+        cargas.append(punto);
+      }
+
+      tarjeta.append(nombre, barra, cargas);
+      this.el.lados[quien.bando].append(tarjeta);
+
+      this.el.hp[indice] = numero;
+      this.el.fill[indice] = relleno;
+      this.el.ghost[indice] = fantasma;
+      this.el.charges[indice] = cargas;
+      this.el.tarjetas[indice] = tarjeta;
+    });
+  }
+
+  /** Marca de quien es el turno y quien esta fuera de combate. */
+  marcarTurno(activo, destruidos = []) {
+    this.el.tarjetas?.forEach((tarjeta, i) => {
+      tarjeta.classList.toggle('turno', i === activo);
+      tarjeta.classList.toggle('fuera', Boolean(destruidos[i]));
+    });
+  }
+
   setHp(index, hp) {
+    if (!this.el.hp[index]) return;
     if (this._last[`hp${index}`] === hp) return;
     this._last[`hp${index}`] = hp;
     const pct = `${Math.max(0, (hp / MAX_HP) * 100)}%`;

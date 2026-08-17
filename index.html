@@ -105,6 +105,15 @@
   .player.a .charges i.on{ color:var(--magma); }
   .player.b .charges i.on{ color:var(--plasma); }
 
+  /* Cada lado apila a los suyos: con tres por bando el marcador crece hacia
+     abajo en vez de estrujar el ancho, que en vertical es lo escaso. */
+  .lado{ display:flex; flex-direction:column; gap:calc(var(--u)*8); flex:1 1 0; min-width:0; }
+  .lado#lado-b .player{ align-items:flex-end; }
+  .lado .player{ display:flex; flex-direction:column; gap:calc(var(--u)*4); }
+  .player.turno .pname{ color:var(--ink); }
+  .player.turno .bar{ box-shadow:0 0 0 1px var(--magma); }
+  .player.fuera{ opacity:.35; }
+
   #wind{
     flex:0 0 auto; text-align:center; padding-top:calc(var(--u)*4);
     font-size:calc(var(--u)*20); letter-spacing:.12em; text-transform:uppercase;
@@ -351,19 +360,13 @@
     <div class="hud">
 
       <div id="top">
-        <div class="player a">
-          <div class="pname"><b>A</b> <span class="hpnum" id="hp-a">100</span></div>
-          <div class="bar"><i class="ghost" id="ghost-a"></i><i class="fill" id="fill-a"></i></div>
-          <div class="charges" id="ch-a"><i class="on">◆</i><i class="on">◆</i><i class="on">◆</i></div>
-        </div>
+        <!-- Los marcadores los monta hud.montarMarcadores() a partir del
+             plantel: pueden ser dos o seis, y en el HTML no cabe suponerlo. -->
+        <div class="lado" id="lado-a"></div>
 
         <div id="wind"><span data-i18n="viento">Viento</span><b id="r-wind">0.0</b><i id="r-wind-next" title=""></i></div>
 
-        <div class="player b">
-          <div class="pname"><span class="hpnum" id="hp-b">100</span> <b>B</b></div>
-          <div class="bar"><i class="ghost" id="ghost-b"></i><i class="fill" id="fill-b"></i></div>
-          <div class="charges" id="ch-b"><i class="on">◆</i><i class="on">◆</i><i class="on">◆</i></div>
-        </div>
+        <div class="lado" id="lado-b"></div>
       </div>
 
       <div id="shotinfo">
