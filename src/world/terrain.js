@@ -57,9 +57,15 @@ const ESTRATOS = [
   { hasta: 8.4, mezcla: 0.52, brillo: 0.9 },
   { hasta: 12.5, mezcla: 0.36, brillo: 1.06 },
   { hasta: 18.0, mezcla: 0.7, brillo: 0.88 },
-  { hasta: 26.0, mezcla: 0.5, brillo: 1.04 },
-  { hasta: 40.0, mezcla: 0.86, brillo: 0.87 },
-  { hasta: Infinity, mezcla: 0.66, brillo: 1.0 },
+  // De 18 en adelante el brillo SUBE en vez de bajar. Con las franjas hondas
+  // apagandose, el tercio inferior del cuadro se iba a un marron muerto sin
+  // forma; asi la roca de abajo se queda en un medio tono con las capas a la
+  // vista. No es realista —a tres metros no hay mas luz— pero es lo que hace
+  // que la pantalla no tenga un agujero negro debajo de la accion.
+  { hasta: 26.0, mezcla: 0.46, brillo: 1.12 },
+  { hasta: 40.0, mezcla: 0.8, brillo: 1.0 },
+  { hasta: 58.0, mezcla: 0.5, brillo: 1.16 },
+  { hasta: Infinity, mezcla: 0.74, brillo: 1.06 },
 ];
 const AO_STRENGTH = 0.34;  // era 0.62: ensuciaba de gris toda la ladera
 const AO_FADE_DEPTH = 3.2; // la AO se disuelve a esta profundidad en la cara
@@ -92,6 +98,12 @@ const REPOSO_MAX_PASADAS = 288;
 // de unidad sobre un terreno de 14 de amplitud.
 const REPOSO_UMBRAL = 1e-3;
 
+// Unidades de mundo que ocupa una repeticion del grano. A 6, con el encuadre
+// de apuntado, cada baldosa mide algo mas de un quinto de pantalla: se ve como
+// textura y no como un patron que se repite.
+const GRANO_ESCALA = 6;
+
+
 export class Terrain {
   constructor({
     rng,
@@ -106,6 +118,7 @@ export class Terrain {
     bowlHalfWidth = 0,
     bowlWeight = 0.48,
     pads = [],
+    grano = null,
   }) {
     this.width = width;
     this.cols = columns;
@@ -146,8 +159,15 @@ export class Terrain {
     this.body = new THREE.Color(biome.body);
     this.deep = new THREE.Color(biome.deep);
 
+    // El grano multiplica al color de vertice: sin el, cada estrato es un
+    // plano perfecto y el suelo se lee como plastico moldeado. Viene DE FUERA
+    // y no se fabrica aqui: hacerlo dentro metia un `document.createElement` en
+    // la capa del mundo y con eso el terreno dejaba de poder probarse sin
+    // navegador, que es media red de seguridad de este fichero.
+    this.grano = grano;
     this.material = new THREE.MeshStandardMaterial({
       vertexColors: true,
+      map: grano ?? null,
       roughness: 0.94,
       metalness: 0.0,
     });
@@ -198,7 +218,79 @@ export class Terrain {
       this.heights[i] = minHeight + (shaped * (1 - w) + bowl * w) * amplitude;
     }
 
+    // El campo no es virgen: aqui ya se ha combatido.
+    this._cicatrices(rng, pads);
+
     for (const pad of pads) this._flattenPad(pad.x, pad.halfWidth, pad.feather);
+  }
+
+  /**
+   * Craterizado y parapetos de partida.
+   *
+   * Sin esto el perfil es fBm puro y sale un campo de dunas: bonito y de
+   * ninguna guerra. Lo que convierte un relieve en tierra de nadie es la
+   * MARCA — hoyos de obus con su borde levantado, y taludes de tierra apilada
+   * a mano donde alguien se ha atrincherado.
+   *
+   * Va en el heightmap de partida, no encima: asi la contabilidad de masa de
+   * Sotavento arranca ya con esto dentro y un crater viejo se comporta igual
+   * que uno nuevo — se puede rellenar con arena, y eso es jugable.
+   */
+  _cicatrices(rng, pads) {
+    // Despejado alrededor de cada cañon. No es estetico: un parapeto a doce
+    // metros de la boca tapa el tiro tenso y el combate nace sin solucion.
+    //
+    // Todo lo de aqui esta MEDIDO con `verificar:sotavento`, 200 combates de 16
+    // disparos. El primer craterizado subio los combates que Sotavento vuelve
+    // imposibles de 3 de 200 a 7, por encima de la tolerancia del 2 %. Curiosear
+    // cual era el culpable dio la sorpresa: no eran los parapetos —quitarlos lo
+    // dejaba en 6— sino los hoyos, por su labio. Con hoyos mas pequeños y menos
+    // hondos baja a 2 de 200, mejor que el terreno liso del que se partia.
+    const DESPEJE = 26;
+    const seguro = (x) => pads.some((p) => Math.abs(p.x - x) < DESPEJE);
+
+    // --- hoyos de obus. El borde levantado es lo que los hace legibles: un
+    // hoyo sin labio parece una hondonada natural.
+    const cuantos = 7 + Math.floor(rng() * 6);
+    for (let n = 0; n < cuantos; n++) {
+      const cx = (rng() * 2 - 1) * (this.width / 2 - 6);
+      if (seguro(cx)) continue;
+      const r = 1.8 + rng() * 3.2;
+      const hondura = r * (0.24 + rng() * 0.2);
+      const labio = hondura * 0.22;
+
+      const i0 = Math.max(0, Math.floor((cx - r * 1.8 - this.x0) / this.dx));
+      const i1 = Math.min(this.cols - 1, Math.ceil((cx + r * 1.8 - this.x0) / this.dx));
+      for (let i = i0; i <= i1; i++) {
+        const d = Math.abs(this.x0 + i * this.dx - cx);
+        if (d < r) {
+          // Cuenco: coseno alzado, que baja suave y no deja escalon.
+          this.heights[i] -= hondura * (1 + Math.cos((d / r) * Math.PI)) * 0.5;
+        } else if (d < r * 1.8) {
+          // Labio: la tierra que salio del hoyo, amontonada alrededor.
+          const t = (d - r) / (r * 0.8);
+          this.heights[i] += labio * Math.sin((1 - t) * Math.PI) * 0.8;
+        }
+      }
+    }
+
+    // --- parapetos: taludes rectos de tierra apilada. Un talud con la cara
+    // plana no lo hace la erosion; lo hace una pala. Es lo que dice que aqui
+    // hubo alguien cavando.
+    const parapetos = 2 + Math.floor(rng() * 3);
+    for (let n = 0; n < parapetos; n++) {
+      const cx = (rng() * 2 - 1) * (this.width / 2 - 14);
+      if (seguro(cx)) continue;
+      const largo = 4 + rng() * 7;
+      const alto = 0.8 + rng() * 1.0;
+      const i0 = Math.max(0, Math.floor((cx - largo - this.x0) / this.dx));
+      const i1 = Math.min(this.cols - 1, Math.ceil((cx + largo - this.x0) / this.dx));
+      for (let i = i0; i <= i1; i++) {
+        const t = Math.abs(this.x0 + i * this.dx - cx) / largo;
+        // Meseta con las faldas en rampa: plano arriba, corte claro a los lados.
+        this.heights[i] += alto * (1 - smoothstep(0.55, 1, t));
+      }
+    }
   }
 
   /** Aplana una meseta bajo cada canon para que apoyen bien. */
@@ -419,6 +511,11 @@ export class Terrain {
     const fCol = new Float32Array(fCount * 3);
     for (let i = 0; i < fCount; i++) fNor[i * 3 + 2] = 1;
 
+    // Coordenadas de textura proyectadas en MUNDO, no en la malla: asi el
+    // grano no se estira cuando un crater deforma el perfil, y dos columnas
+    // vecinas nunca comparten el mismo trozo de textura.
+    const fUv = new Float32Array(fCount * 2);
+
     const fIdx = [];
     for (let i = 0; i < cols - 1; i++) {
       for (let j = 0; j < ROWS - 1; j++) {
@@ -433,6 +530,7 @@ export class Terrain {
     this.frontGeo.setAttribute('position', new THREE.BufferAttribute(fPos, 3));
     this.frontGeo.setAttribute('normal', new THREE.BufferAttribute(fNor, 3));
     this.frontGeo.setAttribute('color', new THREE.BufferAttribute(fCol, 3));
+    this.frontGeo.setAttribute('uv', new THREE.BufferAttribute(fUv, 2));
     this.frontGeo.setIndex(fIdx);
 
     // --- superficie superior: 2 vertices por columna (z = 0 y z = -depth)
@@ -441,6 +539,7 @@ export class Terrain {
     this.topGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(tCount * 3), 3));
     this.topGeo.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(tCount * 3), 3));
     this.topGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(tCount * 3), 3));
+    this.topGeo.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(tCount * 2), 2));
     const tIdx = [];
     for (let i = 0; i < cols - 1; i++) {
       const a = i * 2;
@@ -484,9 +583,11 @@ export class Terrain {
 
     const fPos = this.frontGeo.attributes.position.array;
     const fCol = this.frontGeo.attributes.color.array;
+    const fUv = this.frontGeo.attributes.uv.array;
     const tPos = this.topGeo.attributes.position.array;
     const tNor = this.topGeo.attributes.normal.array;
     const tCol = this.topGeo.attributes.color.array;
+    const tUv = this.topGeo.attributes.uv.array;
     const tmp = new THREE.Color();
 
     for (let i = i0; i <= i1; i++) {
@@ -503,6 +604,8 @@ export class Terrain {
         fPos[k + 0] = x;
         fPos[k + 1] = h - depth;
         fPos[k + 2] = this.zFront;
+        fUv[(i * ROWS + j) * 2 + 0] = x / GRANO_ESCALA;
+        fUv[(i * ROWS + j) * 2 + 1] = (h - depth) / GRANO_ESCALA;
 
         // Estrato: franja plana, no degradado. El borde entre dos franjas es
         // duro a proposito — es lo que hace que el suelo se lea como suelo y
@@ -543,6 +646,9 @@ export class Terrain {
       tPos[kb + 0] = x; tPos[kb + 1] = h; tPos[kb + 2] = this.zBack;
       tNor[kf + 0] = nx; tNor[kf + 1] = ny; tNor[kf + 2] = 0;
       tNor[kb + 0] = nx; tNor[kb + 1] = ny; tNor[kb + 2] = 0;
+      const ku = i * 2 * 2;
+      tUv[ku + 0] = x / GRANO_ESCALA; tUv[ku + 1] = 0;
+      tUv[ku + 2] = x / GRANO_ESCALA; tUv[ku + 3] = this.depth / GRANO_ESCALA;
 
       // La cresta se apaga en pendiente fuerte: la arena no se queda en la pared.
       const steep = smoothstep(0.55, 1.5, Math.abs(dhdx));
@@ -557,6 +663,8 @@ export class Terrain {
 
     this.frontGeo.attributes.position.needsUpdate = true;
     this.frontGeo.attributes.color.needsUpdate = true;
+    this.frontGeo.attributes.uv.needsUpdate = true;
+    this.topGeo.attributes.uv.needsUpdate = true;
     this.topGeo.attributes.position.needsUpdate = true;
     this.topGeo.attributes.normal.needsUpdate = true;
     this.topGeo.attributes.color.needsUpdate = true;

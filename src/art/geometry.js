@@ -148,6 +148,80 @@ export function makeFlashTexture() {
   return texturaDe(canvas);
 }
 
+/**
+ * Grano de tierra: una textura casi blanca que multiplica al color del vertice.
+ *
+ * Hace falta porque cada estrato del terreno es un color perfectamente plano y
+ * eso se lee como plastico moldeado, no como tierra. El primer intento fue
+ * moteado POR VERTICE, y salio peor: la cara frontal solo tiene 18 filas, asi
+ * que el ruido se interpolaba en regueros verticales de medio metro y parecia
+ * un fallo de video. A nivel de pixel, con la textura repetida en coordenadas
+ * de mundo, el grano se queda del tamaño que tiene que estar y no se estira
+ * cuando el terreno se deforma.
+ *
+ * Va en espacio lineal y centrada muy arriba (0.88 a 1.0): es un multiplicador,
+ * no un color. Una textura gris media apagaria el terreno entero.
+ *
+ * El azar es un LCG fijo y no `Math.random`: la textura tiene que salir
+ * identica en los seis moviles y en cada recarga. No cambia el resultado de
+ * ninguna partida —es decorado—, pero una repeticion con otro grano no es la
+ * misma repeticion.
+ */
+export function makeGrainTexture() {
+  let semilla = 0x2f6e2b1;
+  const azar = () => {
+    semilla = (semilla * 1664525 + 1013904223) >>> 0;
+    return semilla / 4294967296;
+  };
+
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.createImageData(size, size);
+
+  // Dos escalas: manchas anchas de humedad y el picoteo fino de la arena.
+  const manchas = new Float32Array(size * size);
+  const lado = 16;
+  const gruesa = new Float32Array(lado * lado);
+  for (let i = 0; i < gruesa.length; i++) gruesa[i] = azar();
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const fx = (x / size) * lado;
+      const fy = (y / size) * lado;
+      const x0 = Math.floor(fx);
+      const y0 = Math.floor(fy);
+      const tx = fx - x0;
+      const ty = fy - y0;
+      const en = (a, b) => gruesa[(b % lado) * lado + (a % lado)];
+      const s = (t) => t * t * (3 - 2 * t);
+      const a = en(x0, y0) + (en(x0 + 1, y0) - en(x0, y0)) * s(tx);
+      const b = en(x0, y0 + 1) + (en(x0 + 1, y0 + 1) - en(x0, y0 + 1)) * s(tx);
+      manchas[y * size + x] = a + (b - a) * s(ty);
+    }
+  }
+
+  for (let i = 0; i < size * size; i++) {
+    const v = 0.72 * manchas[i] + 0.28 * azar();
+    const c = Math.round(224 + v * 31); // 224..255
+    img.data[i * 4] = c;
+    img.data[i * 4 + 1] = c;
+    img.data[i * 4 + 2] = c;
+    img.data[i * 4 + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.NoColorSpace;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true;
+  tex.anisotropy = 4;
+  return tex;
+}
+
 function texturaDe(canvas) {
   const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;

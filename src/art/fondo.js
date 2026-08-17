@@ -150,6 +150,96 @@ export function crearFondo({ rng, biome }) {
   grupo.add(poste);
   capas.push({ malla: poste, fraccion: cercana.fraccion });
 
+  // ── ruinas y columnas de humo ───────────────────────────────────────────
+  //
+  // Un horizonte de crestas peladas puede ser cualquier planeta. Lo que dice
+  // que hay una guerra al otro lado son dos cosas: siluetas de edificios rotos
+  // y humo subiendo. Van en la capa lejana, planas y sin luz, del color de la
+  // bruma: son recorte contra el cielo, no volumen.
+  const ruinasCapa = CAPAS[0];
+  // Mas OSCURO que la cresta que tiene delante, no mas claro. Una silueta
+  // recortada contra el cielo se ve por su cara en sombra: mezclada hacia la
+  // parada clara del horizonte salia beige y era lo mas luminoso del cuadro,
+  // justo lo contrario de lo que hace una ruina a un kilometro.
+  const colorRuina = suelo
+    .clone()
+    .lerp(cielo[ruinasCapa.parada], ruinasCapa.mezclaCielo * 0.55)
+    .multiplyScalar(0.62);
+  const materialRuina = new THREE.MeshBasicMaterial({ color: colorRuina, fog: false });
+  const ruinas = new THREE.Group();
+  const alturaLejana = capas[0].alturaDe;
+
+  for (let i = 0; i < 10; i++) {
+    const x = (rng() * 2 - 1) * (ANCHO / 2.4);
+    // Arrancan bien por DEBAJO de la cresta lejana y solo asoma lo que sobra:
+    // el grupo va detras de la capa, asi que la cresta les corta la base. Es lo
+    // que los convierte en horizonte en vez de en cajas apoyadas encima.
+    const base = alturaLejana(x) - 6;
+    const alto = 8 + rng() * 11;
+    const ancho = 1.4 + rng() * 3.6;
+
+    const bloque = (bx, balto, bancho) => {
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(bancho, balto), materialRuina);
+      m.position.set(bx, base + balto / 2, 0);
+      m.frustumCulled = false;
+      ruinas.add(m);
+    };
+
+    // Perfil escalonado sumando bloques, nunca restando cielo: el cielo es un
+    // degradado y un rectangulo de color plano encima se nota siempre.
+    //
+    // Tres alturas distintas y ninguna igual. Un bloque unico con un escalon se
+    // lee como un edificio de oficinas; lo que dice "esto lo ha partido algo"
+    // es que la linea de arriba no sea nunca recta dos veces seguidas.
+    bloque(x, alto, ancho);
+    bloque(x + ancho * 0.62, alto * (0.42 + rng() * 0.34), ancho * (0.5 + rng() * 0.4));
+    bloque(x - ancho * 0.58, alto * (0.62 + rng() * 0.3), ancho * (0.4 + rng() * 0.4));
+    // Alguna chimenea alta y fina: es lo que le da perfil de ciudad rota.
+    if (rng() < 0.45) bloque(x - ancho * 0.95, alto * (1.2 + rng() * 0.5), 0.6);
+  }
+
+  // Detras de la capa lejana (z -60), no delante.
+  ruinas.position.z = -63;
+  ruinas.renderOrder = -11;
+  grupo.add(ruinas);
+  capas.push({ malla: ruinas, fraccion: ruinasCapa.fraccion, alturaDe: alturaLejana });
+
+  // Columnas de humo: se estrechan hacia abajo y se disuelven arriba, que es
+  // como sube el humo de verdad. Quietas a proposito — animarlas pediria otro
+  // sistema de particulas para algo que esta a un kilometro.
+  const humo = new THREE.Group();
+  for (let i = 0; i < 4; i++) {
+    const x = (rng() * 2 - 1) * (ANCHO / 3);
+    const alto = 22 + rng() * 26;
+    const lienzo = document.createElement('canvas');
+    lienzo.width = 8;
+    lienzo.height = 128;
+    const ctx = lienzo.getContext('2d');
+    const g = ctx.createLinearGradient(0, 128, 0, 0);
+    g.addColorStop(0, 'rgba(40,40,44,0.55)');
+    g.addColorStop(0.45, 'rgba(70,70,76,0.28)');
+    g.addColorStop(1, 'rgba(120,120,126,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 8, 128);
+    const tex = new THREE.CanvasTexture(lienzo);
+    tex.colorSpace = THREE.SRGBColorSpace;
+
+    const columna = new THREE.Mesh(
+      new THREE.PlaneGeometry(4 + rng() * 7, alto),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, fog: false }),
+    );
+    // Arranca por debajo de la cresta: el fuego esta al otro lado y solo se ve
+    // subir la columna. Ver el pie del humo lo delataria como un plano.
+    columna.position.set(x, alturaLejana(x) + alto / 2 - 5, 0);
+    columna.rotation.z = (rng() - 0.5) * 0.24;
+    columna.frustumCulled = false;
+    humo.add(columna);
+  }
+  humo.position.z = -62;
+  humo.renderOrder = -10;
+  grupo.add(humo);
+  capas.push({ malla: humo, fraccion: ruinasCapa.fraccion, alturaDe: capas[0].alturaDe });
+
   return {
     grupo,
     /** Arrastra cada capa con su fraccion del centro de camara. */

@@ -10,7 +10,7 @@ import {
   projectileAccent,
   esGranGuerra,
 } from './art/direction.js';
-import { makeDotTexture, makeSkyTexture } from './art/geometry.js';
+import { makeDotTexture, makeSkyTexture, makeGrainTexture } from './art/geometry.js';
 import { crearEfectos } from './art/efectos.js';
 import { crearFondo } from './art/fondo.js';
 import { crearCalidad, NIVELES } from './art/calidad.js';
@@ -190,6 +190,9 @@ scene.add(new THREE.HemisphereLight(LIGHT.bounceSky, biome.bounceGround, LIGHT.b
 
 // ── proyectil y arco ─────────────────────────────────────────────────────
 const dotTexture = makeDotTexture(accent.css, PROJECTILE_RIM);
+// Una sola vez para toda la sesion: la misma baldosa de grano vale para
+// cualquier teatro porque solo modula, no colorea.
+const granoDelSuelo = makeGrainTexture();
 
 const arc = new TrajectoryArc({ texture: dotTexture, pixelRatio: renderer.getPixelRatio() });
 scene.add(arc.points);
@@ -468,6 +471,7 @@ function buildWorld(seedText) {
   world.terrain = new Terrain({
     rng,
     biome,
+    grano: granoDelSuelo,
     ...CONFIG.world,
     bowlHalfWidth: CONFIG.cannonX,
     // Una plataforma plana bajo cada vehiculo, sea cual sea el numero.
