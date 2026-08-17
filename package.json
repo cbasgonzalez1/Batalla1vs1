@@ -26,7 +26,8 @@
     "verificar:efectos": "node scripts/verificar-efectos.mjs",
     "verificar:avance": "node scripts/verificar-avance.mjs",
     "verificar:fluidez": "node scripts/verificar-fluidez.mjs",
-    "capturar": "node scripts/capturar.mjs"
+    "capturar": "node scripts/capturar.mjs",
+    "planchas": "node diseno/planchas.mjs"
   },
   "dependencies": {
     "three": "^0.180.0",

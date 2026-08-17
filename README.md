@@ -105,7 +105,7 @@ abiertas. Es a propósito, no hay nada que valga la pena persistir.
 |---|---|---|
 | `?seed=` | cualquier texto | Semilla del terreno y del viento |
 | `?assist=` | `0` … `1` | Recorte del arco. `1` arco entero, `0` solo 3 puntos |
-| `?biome=` | `dunas`, `placa`, `salar`, `caldera`, `tranquilidad`, `selva` | Bioma; cambia paleta y color del proyectil |
+| `?biome=` | `somme`, `flandes`, `alamein`, `rzhev`, `stalingrado`, `ardenas` | Teatro; cambia paleta, época del blindado y color del proyectil |
 | `?trampas=` | `0` … `1` | Minas, deflectores y muros en el campo |
 | `?online` | — | Abre la pantalla de sala |
 | `?sala=` | código de 4 letras | Entra directo a esa sala |
@@ -113,7 +113,7 @@ abiertas. Es a propósito, no hay nada que valga la pena persistir.
 | `?ia=` | `facil`, `normal`, `dificil` | La máquina lleva el bando B |
 | `?replay=` | código del enlace | Repite un combate guardado |
 
-Ejemplo: `http://localhost:5173/?seed=vostok&biome=placa&assist=0.4`
+Ejemplo: `http://localhost:5173/?seed=vostok&biome=stalingrado&assist=0.4`
 
 ## Consola
 
@@ -262,11 +262,12 @@ Cableado y esperando los ficheros: suelta los MP3 en `public/audio/` con los
 nombres de `public/audio/LEEME.md` y sonarán solos. Los que falten no suenan, sin
 errores ni huecos — el juego es jugable sin ninguno.
 
-**Sin el motion spec todavía.** No hay retroceso del cañón, fogonazo, humo,
-estela, onda expansiva, escombros ni screen shake.
-Lo que sí se mueve es lo que hace falta para jugar: el barrido de cámara
-(700 ms, `easeInOutCubic`), el salto de reacción (280 ms, `easeOutQuad`) y el
-giro del proyectil sobre su eje.
+El movimiento **sí está especificado**, con duraciones y curvas, en `ARTE.md`
+§14: retroceso del tubo, fogonazo, humo de boca, casquillo, estela, onda
+expansiva, hundimiento del cráter, escombros y sacudida de pantalla proporcional
+al daño. Implementado en `src/art/efectos.js`; lo comprueba
+`pnpm verificar:efectos`. La nota anterior decía que nada de eso existía y era
+falsa desde que se escribió §14.
 
 ## Arquitectura
 

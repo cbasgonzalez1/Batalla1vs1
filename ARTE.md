@@ -15,8 +15,11 @@ Estas seis reglas no se negocian y aplican a **todo** objeto dibujado:
 
 1. **Contorno.** Todo objeto del plano medio y del primer plano lleva contorno de
    `2.5px` (plano medio) o `3.5px` (primer plano). El color del contorno es el color
-   base del objeto oscurecido un 55%, nunca `#000` ni un gris neutro.
+   base del objeto oscurecido un **65%**, nunca `#000` ni un gris neutro.
    Los objetos del fondo lejano **no llevan contorno**.
+   El 65% no es una elección: sale de medir la imagen de referencia aprobada
+   (casco `#7D8B4E`, contorno `#2B3419` — un factor de −0,645). El 55% de la
+   primera versión daba un contorno verdoso que no cerraba la silueta.
 2. **Tres tonos por objeto.** Base + banda clara + banda oscura. Nunca un objeto de
    un solo color plano.
 3. **Luz fija.** La fuente de luz está siempre arriba-izquierda. La banda clara va
@@ -47,6 +50,14 @@ export const PALETA = {
   lona:     '#8a7a52',
   acento:   '#d94f2b',
 };
+
+// Un solo color base por bando. Contorno, bandas de sombra y camuflaje se
+// calculan de el, asi que anadir un tercer bando es una linea y ningun bando
+// puede salir con el contorno del otro. `docs/ARTE-VEHICULOS.md` §6.
+export const BANDOS = {
+  A: { base: '#7e8b4a', nombre: 'oliva' },
+  B: { base: '#5c7d92', nombre: 'acero' },
+};
 ```
 
 Los tonos derivados se calculan, no se escriben a mano. Una sola función:
@@ -56,8 +67,9 @@ Los tonos derivados se calculan, no se escriben a mano. Una sola función:
 export function tono(base, f) { /* ... */ }
 
 export const claro    = c => tono(c,  0.18);
-export const oscuro   = c => tono(c, -0.22);
-export const contorno = c => tono(c, -0.55);
+export const camuflaje = c => tono(c, -0.13);  // mancha, nivel C: apenas se separa
+export const oscuro   = c => tono(c, -0.24);
+export const contorno = c => tono(c, -0.65);
 ```
 
 Regla de valor tonal: entre fondo, suelo y objetos debe haber al menos un 20% de
@@ -101,6 +113,10 @@ siluetaFrente(puntos, base)
 Toda primitiva aplica sombra de contacto y contorno por defecto. Desactivarlos exige
 pasar una opción explícita y dejar un motivo en el código.
 
+Los vehículos tienen su propio juego de primitivas en `src/art/vehiculo/primitivas.js`
+(`docs/ARTE-VEHICULOS.md` §2) porque son mallas 3D y estas son formas de escena. Son
+dos módulos, no dos estilos: las seis reglas de §1 mandan en los dos.
+
 ---
 
 ## 5. Silueta antes que detalle
@@ -109,9 +125,15 @@ La prueba de silueta: rellena la forma entera de negro. Si no se reconoce qué e
 forma está mal y no se arregla con detalle interno.
 
 - Exagera proporciones: ruedas grandes, estructuras panzudas, cañones de tubo largo.
-- Cada objeto se lee con **3–6 formas**, no con veinte.
-- Fuera detalles por debajo de 6px: no se ven y ensucian.
 - Nada de planos técnicos ni vistas de manual. Es una caricatura del objeto.
+- El detalle está **jerarquizado, no racionado**: silueta primero, luego forma,
+  luego superficie. Cuánto detalle admite cada familia lo dice su documento.
+
+> **Para vehículos manda `docs/ARTE-VEHICULOS.md`, que sustituye a esta sección.**
+> Allí el presupuesto es de 12–18 piezas por vehículo con tres niveles de detalle.
+> La regla vieja de «3 a 6 formas por objeto» y «fuera detalles por debajo de 6 px»
+> **queda derogada**: era exactamente lo que producía siete cajas con un tubo.
+> Para decorado manda `docs/ESCENARIOS.md`; para trampas, `docs/TRAMPAS.md`.
 
 ---
 
@@ -144,34 +166,23 @@ Una escena no está terminada hasta que las diez respuestas son sí:
 
 ---
 
-## 8. Sprites de unidad
+## 8. Vehículos — derogada, ver `docs/ARTE-VEHICULOS.md`
 
-Los sprites de vehículo son el activo más reutilizado del juego: aparecen en la fila
-de comparación, en las fichas y en partida. La consistencia entre ellos importa más
-que la calidad de cualquiera por separado.
+Esta sección definía los vehículos como *sprites*: 2 bandas de tono, detalle mínimo
+de 8 px, contorno del 4 % del alto. **Ya no vale.** Los vehículos no son sprites: son
+mallas de Three.js con cámara ortográfica de perfil, y el detalle mínimo se calcula
+en unidades de mundo a partir del encuadre, no en píxeles de una imagen.
 
-A tamaño de sprite las reglas se ajustan así:
+Lo que sí sobrevive de aquí, y sigue siendo obligatorio, está recogido en
+`docs/ARTE-VEHICULOS.md` §2, §5 y §7:
 
-| Regla | En escena | En sprite |
-|---|---|---|
-| Contorno | 2.5px | 2px, y nunca menos del 4% del alto del sprite |
-| Tonos | 3 bandas | 2 bandas (base + oscura). La banda clara solo si el sprite supera los 120px de ancho |
-| Detalle mínimo | 6px | 8px. Lo que no llegue, se elimina; no se reduce |
-| Sombra de contacto | Elipse | Elipse achatada, `ry` máximo 4px |
-
-Reglas adicionales, obligatorias:
-
-- **Un solo módulo de sprites.** Todos los vehículos salen del mismo fichero y
-  comparten primitivas de casco, torreta, tubo, oruga y rueda. Prohibido que un
-  vehículo defina sus propias formas base.
-- **Coherencia de familia.** Dos vehículos cualesquiera puestos uno al lado del otro
-  deben parecer del mismo juego: mismo grosor de contorno relativo, mismo criterio de
-  sombreado, mismo nivel de detalle. Esta es la prueba real, no mirarlos por separado.
-- **La silueta distingue.** Lo que diferencia a un vehículo de otro es la forma
-  exterior (altura del casco, longitud del tubo, perfil de la oruga), no el detalle
-  interno ni el color.
-- **El sprite no lleva su propio fondo.** El color de fondo lo pone el contenedor.
-  El sprite es transparente y debe leerse sobre cualquier fondo de la paleta.
+- **Un solo módulo.** Todos los vehículos salen de `src/art/vehiculo/` y comparten
+  primitivas. Una ficha de catálogo no modela geometría a pelo.
+- **Coherencia de familia.** La prueba real es la fila de comparación con los quince
+  al mismo zoom, no mirar uno por separado (`docs/CHECKLIST-REVISION.md` §3).
+- **La silueta distingue.** Perfil del casco, tubo, torreta y tren de rodaje. Ni el
+  color ni la calcomanía distinguen a dos vehículos.
+- **El vehículo no lleva su propio fondo** y tiene que leerse sobre los seis teatros.
 
 ---
 
@@ -183,10 +194,14 @@ Son restricciones de simulación disfrazadas de decisiones de dibujo. Modificarl
 rompe la sincronización entre clientes y produce un bug que no se manifiesta como
 error visual, sino como partidas que divergen sin explicación.
 
-- **Altura de la boca del arma.** Todos los vehículos tienen la boca del arma en la
-  misma coordenada Y exacta. De ahí sale la velocidad inicial del proyectil. Un
-  cambio de un solo píxel en la altura del casco, la torreta o el tubo desincroniza
-  la partida.
+- **Altura del pivote de elevación.** Todos los vehículos tienen el eje sobre el que
+  gira el tubo en la misma coordenada Y exacta, y la boca sale de ese pivote más el
+  largo de tubo que declara la ficha. De ahí sale el punto de salida del proyectil.
+  Un cambio en la altura del casco, la torreta o el tubo que mueva el pivote
+  desincroniza la partida.
+  (Antes esta regla hablaba de **la boca** «a la misma Y en toda elevación». Un tubo
+  que gira describe un arco, así que eso no se puede cumplir; ver
+  `docs/ARTE-VEHICULOS.md` §8.)
 - Antes de dar por buena cualquier modificación de un sprite, verificar que la boca
   sigue en la Y de referencia. Si el proyecto no tiene un test que lo compruebe,
   escribirlo antes de tocar el primer sprite.

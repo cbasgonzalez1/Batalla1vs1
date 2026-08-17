@@ -27,6 +27,14 @@ crea un lock paralelo y desincroniza las dependencias.
 - Esto no es documentación: lo vigila `tests/arquitectura.test.js` y falla en
   rojo. Ese mismo test prohíbe `Math.random()` y la lectura del reloj en
   `core/` y `game/`.
+- El arte de vehículos vive en `src/art/vehiculo/`: `paleta.js`, `primitivas.js`,
+  `toon.js` (material de bandas + shell de contorno), `ensamblar.js` y una ficha
+  por vehículo en `fichas/`. `world/cannon.js` **no modela**: pide un `Object3D`
+  a `ensamblar.js` y lo coloca. El decorado, igual, en `src/art/decorado/`.
+- `diseno/` no entra en el `build`: son las planchas de diseño en SVG con las que
+  se aprueba un vehículo o una escena **antes** de modelarla en Three. Comparten
+  paleta y proporciones con el juego a propósito — si una plancha y el juego se
+  ven distintos, el roto está en el juego.
 
 ## Restricciones duras
 
@@ -122,18 +130,52 @@ partir del primer turno en que alguien se movió.
   decisión, nunca el qué hace la línea siguiente.
 - La configuración numérica vive en el objeto `CONFIG` de `src/main.js`, no
   dispersa en constantes por fichero.
-- Los valores de arte (paleta, luces, roughness, easings, duraciones) salen de
-  `ARTE.md`, que es la ÚNICA fuente de verdad de arte. Si vas a inventarte un
-  color o una duración, para y pregunta. Si cambias uno, cámbialo **también**
-  ahí: un número de arte que solo existe en el código deja de ser una decisión y
-  pasa a ser un accidente.
-- Estilo: **cartoon vectorial** tipo Angry Birds / Rayman Origins. Las seis
+- Los valores de arte salen de los documentos de arte, y **solo** de ahí. Son
+  cuatro y no se solapan:
+  - `ARTE.md` — reglas generales, paleta, teatros, suelo, fondo, movimiento y
+    presupuesto de cuadro. Manda en todo lo que no tenga documento propio.
+  - `docs/ARTE-VEHICULOS.md` — vehículos. **Sustituye a `ARTE.md` §5 y §8.**
+  - `docs/ESCENARIOS.md` — decorado y las ocho familias de campo de batalla.
+  - `docs/TRAMPAS.md` — minas, deflectores y muros, y cómo se distinguen del
+    decorado.
+
+  Si vas a inventarte un color, una medida o una duración, para y pregunta. Si
+  cambias uno, cámbialo **también** en su documento: un número de arte que solo
+  existe en el código deja de ser una decisión y pasa a ser un accidente.
+- Estilo: **cartoon vectorial de contorno grueso** tipo Hills of Steel /
+  Angry Birds, en malla de Three.js con cámara ortográfica de perfil. Las seis
   reglas invariables de `ARTE.md` §1 no se negocian: contorno, tres tonos, luz
   fija arriba-izquierda, sombra de contacto, esquinas redondeadas y cero
-  degradados. Y **silueta antes que detalle**: 3 a 6 formas por objeto.
-- `ARTE.md` §9 marca el invariante que no se toca al cambiar arte: la boca del
-  arma en la misma coordenada en todos los vehículos. Lo vigila
-  `tests/world/cannon.test.js`.
+  degradados.
+- **El detalle está jerarquizado, no racionado.** La regla vieja de «3 a 6 formas
+  por objeto» ya no vale para vehículos y era la causa de que los que hay
+  parezcan cajas con un tubo. Ahora: silueta (4–6 piezas) + forma (6–10) +
+  superficie (calcomanías, sin coste de malla), con un tope de **12 a 18 piezas**
+  por vehículo y **8 llamadas de dibujo**. Detalle mínimo: 1,3 u en silueta,
+  0,7 u en forma, 0,27 u en superficie y nunca aislado. Lo que no llega al mínimo
+  **se elimina o se fusiona; nunca se reduce**. `docs/ARTE-VEHICULOS.md` §1.
+- **Un cuerpo, un contorno** (`docs/ARTE-VEHICULOS.md` §12). Casco, torreta,
+  mantelete, tubo y freno de boca son **una sola silueta continua** con **un solo
+  shell de contorno**. Los bultos del techo crecen del borde; las calcomanías no
+  llevan contorno propio. La vara de medir es la imagen de referencia aprobada:
+  casco `#7D8B4E`, contorno `#2B3419`, oruga `#4A4A42`.
+- Un vehículo se construye **solo** con las primitivas de
+  `src/art/vehiculo/primitivas.js`. Una ficha de `fichas/` es un objeto de
+  números y **no importa Three**: lo vigila `tests/arquitectura.test.js`. Si una
+  forma no encaja en una primitiva, se añade **a la primitiva**, no a la ficha.
+- `docs/ARTE-VEHICULOS.md` §8 blinda el invariante de `ARTE.md` §9: el ancla
+  `boca` del tubo está a la misma Y mundial en **los quince vehículos**, la
+  balística lee solo esa ancla y `tests/world/cannon.test.js` recorre el catálogo
+  entero. Cinco fichas corrigen el anclaje del tubo para cumplirlo (mortero,
+  cohetes, antiaéreo, obús, asalto pesado) y cada corrección está escrita con su
+  motivo. Si una decisión estética choca con esto, **gana el invariante**.
+- **Nada de rostros ni figuras.** Ni tripulantes, ni siluetas, ni cascos, ni
+  manos, ni cadáveres, ni cruces de tumba, ni iconografía humana en un cartel o
+  una señal. El juego son máquinas y terreno. Aplica a vehículos, decorado,
+  trampas, HUD e iconos, en todos los niveles de detalle.
+- Ningún vehículo, escena o trampa está terminado hasta pasar
+  `docs/CHECKLIST-REVISION.md`. La prueba que decide no es mirar uno: es **la
+  fila de comparación** con los quince al mismo zoom, en color y en negro.
 - El pintado se ajusta solo (`src/art/calidad.js`) hasta que el cuadro cabe en
   16,7 ms. Solo toca densidad de píxeles y sombra: nunca efectos, nunca trampas
   y nunca la física, porque dos móviles distintos tienen que jugar la misma
@@ -164,6 +206,18 @@ Con `pnpm dev` levantado:
 pnpm verificar:idioma        # cinco idiomas de dispositivo en un Chromium real
 pnpm verificar:determinismo  # dos pestanas, misma semilla, mismo texto
 ```
+
+Para arte, además de la captura y la consola limpia:
+
+```bash
+pnpm planchas              # regenera diseno/planchas/*.html (no necesita servidor)
+pnpm verificar:familia     # los quince en fila: color, bandos, negro y 0,55x
+pnpm verificar:bocas       # la Y del ancla `boca` de las quince fichas
+pnpm verificar:cuadro      # seis vehiculos en pantalla por debajo de 16,7 ms
+```
+
+`verificar:familia` es el que suspende un vehículo aprobado por separado, y por
+eso se ejecuta **en cada cambio de sprite**, no al final del lote.
 
 ## Idioma
 
