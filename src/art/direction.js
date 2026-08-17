@@ -67,6 +67,45 @@ export const BIOMES = {
     ui: 'plasma',
     sky: ['#101a2a', '#22405c', '#4c7d9e', '#9fc9dd'],
   },
+  salar: {
+    id: 'salar',
+    name: 'Salar de Aral',
+    // El mundo mas claro: costra de sal casi blanca. Obliga a que el proyectil
+    // sea magma, porque el plasma se perderia sobre tanto valor alto.
+    crest: 0xeef2f3,
+    body: 0xc3ced6,
+    deep: 0x7d8b98,
+    bounceGround: 0xc9d2d8,
+    projectile: 'magma',
+    ui: 'plasma',
+    sky: ['#1b2338', '#3a4a6b', '#8390a8', '#cfc2c4'],
+  },
+  caldera: {
+    id: 'caldera',
+    name: 'Caldera Ignea',
+    // Basalto apagado bajo un cielo de noche volcanica. El proyectil va en
+    // plasma para que no se confunda con el rescoldo del horizonte.
+    crest: 0x6b6a72,
+    body: 0x40404a,
+    deep: 0x22222a,
+    bounceGround: 0x4a3a38,
+    projectile: 'plasma',
+    ui: 'magma',
+    sky: ['#0d0a0e', '#241419', '#48222a', '#8a4030'],
+  },
+  tranquilidad: {
+    id: 'tranquilidad',
+    name: 'Mar de la Tranquilidad',
+    // Sin atmosfera: el cielo no degrada a claro por abajo, se queda negro. Es
+    // el unico bioma donde la silueta del terreno se lee contra la nada.
+    crest: 0x9aa3ad,
+    body: 0x69727e,
+    deep: 0x39404a,
+    bounceGround: 0x6e7783,
+    projectile: 'magma',
+    ui: 'plasma',
+    sky: ['#04050a', '#080c14', '#0f151f', '#1b2431'],
+  },
   selva: {
     id: 'selva',
     name: 'Selva de Ceniza',

@@ -36,6 +36,12 @@ export function simulate(start, wind, terrain, opts = {}) {
     sampleEvery = 5,        // un punto cada 5 pasos
     maxPoints = 64,
     bounds = null,
+    // Choques que no son el terreno. Se recibe como funcion y no como lista de
+    // obstaculos a proposito: asi la balistica no tiene que saber que existen
+    // las minas ni los deflectores, solo que algo puede pasarle al proyectil.
+    // Devuelve null, o { fin: {x,y} } para terminar el vuelo, o { rebote: true }
+    // habiendo cambiado ya la velocidad de `s`.
+    alChocar = null,
   } = opts;
 
   const s = { x: start.x, y: start.y, vx: start.vx, vy: start.vy };
@@ -47,6 +53,18 @@ export function simulate(start, wind, terrain, opts = {}) {
     const px = s.x;
     const py = s.y;
     step(s, wind, FIXED_DT);
+
+    if (alChocar) {
+      const choque = alChocar(s, px, py);
+      if (choque?.fin) {
+        hit = choque.fin;
+        points.push([hit.x, hit.y]);
+        break;
+      }
+      // Un rebote no termina el vuelo: se apunta el punto para que el arco
+      // dibuje el codo y se sigue volando con la velocidad ya cambiada.
+      if (choque?.rebote && points.length < maxPoints) points.push([s.x, s.y]);
+    }
 
     const impact = sweepTerrain(px, py, s.x, s.y, terrain);
     if (impact) {

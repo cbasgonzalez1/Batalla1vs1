@@ -19,6 +19,7 @@ import { FIXED_DT, simulate, step, sweepTerrain, launchVelocity } from './game/b
 import { crearViento, flechaDe } from './game/viento.js';
 import { transporte } from './game/sotavento.js';
 import { DIFICULTAD, apuntar as apuntarIA, reaccionar as reaccionarIA } from './game/ia.js';
+import { generarTrampas, chocarCon, resolverChoque, minaEn, nivelDe } from './game/trampas.js';
 import { lecturaDeTiro, acerto } from './game/lectura.js';
 import { codificar, decodificar, semillaDeRevancha } from './game/replay.js';
 import {
@@ -102,6 +103,10 @@ const CONFIG = {
   // ?ia=facil|normal|dificil hace que la maquina lleve el bando B. Sin el
   // parametro no hay IA y el juego se comporta como siempre.
   ia: params.get('ia'),
+
+  // ?trampas=0..1 siembra el campo de minas, deflectores y muros. A 0 no hay
+  // ninguna y el juego es el de siempre.
+  trampas: params.has('trampas') ? clamp(parseFloat(params.get('trampas')), 0, 1) : 0.5,
 
   craterRadius: 2.6,
   // La pluma dura 1,4 s: lo que tarda la arena en verse caer sin que el turno
@@ -207,9 +212,61 @@ halo.scale.setScalar(1.5);
 projectile.add(halo);
 scene.add(projectile);
 
+/**
+ * El cuerpo de cada trampa.
+ *
+ * Se leen por SILUETA antes que por color: esfera erizada la mina, aspa el
+ * deflector, bloque el muro. En un movil pequeño y con el campo comprimido, la
+ * forma llega antes que el tono.
+ */
+function construirTrampa(trampa) {
+  const grupo = new THREE.Group();
+  grupo.position.set(trampa.x, trampa.y, CONFIG.playZ);
+
+  const material = new THREE.MeshStandardMaterial({
+    color: trampa.tipo === 'mina' ? 0xd93b3b : trampa.tipo === 'deflector' ? 0x9fd6e8 : 0x6c6f78,
+    roughness: trampa.tipo === 'deflector' ? 0.18 : 0.7,
+    metalness: 0,
+    emissive: trampa.tipo === 'mina' ? 0x5a0f0f : 0x000000,
+    emissiveIntensity: 1,
+  });
+
+  if (trampa.tipo === 'mina') {
+    const nucleo = new THREE.Mesh(new THREE.IcosahedronGeometry(trampa.radio * 0.62, 0), material);
+    grupo.add(nucleo);
+    // Puas: es lo que la distingue de un proyectil a simple vista.
+    for (let i = 0; i < 8; i++) {
+      const angulo = (i / 8) * Math.PI * 2;
+      const pua = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.7, 5), material);
+      pua.position.set(Math.cos(angulo) * trampa.radio * 0.7, Math.sin(angulo) * trampa.radio * 0.7, 0);
+      pua.rotation.z = angulo - Math.PI / 2;
+      grupo.add(pua);
+    }
+  } else if (trampa.tipo === 'deflector') {
+    // Aspa: dos palas cruzadas, que ademas giran para que se vea que esta vivo.
+    for (const giro of [Math.PI / 4, -Math.PI / 4]) {
+      const pala = new THREE.Mesh(
+        new THREE.BoxGeometry(trampa.radio * 2.1, 0.34, 0.9),
+        material,
+      );
+      pala.rotation.z = giro;
+      grupo.add(pala);
+    }
+  } else {
+    const bloque = new THREE.Mesh(
+      new THREE.BoxGeometry(trampa.radio * 1.5, trampa.radio * 2.2, 1.2),
+      material,
+    );
+    grupo.add(bloque);
+  }
+
+  for (const hijo of grupo.children) hijo.castShadow = true;
+  return { datos: trampa, grupo, material };
+}
+
 // ─────────────────────────────────────────────────────────────────── estado
 
-const world = { terrain: null, cannons: [], shields: [] };
+const world = { terrain: null, cannons: [], shields: [], trampas: [] };
 
 const state = {
   phase: 'aiming',   // aiming | flying | pluma | victory
@@ -298,6 +355,24 @@ function buildWorld(seedText) {
   });
   scene.add(world.terrain.group);
   cam.setBounds(world.terrain.x0, world.terrain.x0 + world.terrain.width);
+
+  // Las trampas salen de la semilla, en su propio hilo de azar: asi los seis
+  // moviles siembran el mismo campo sin que el servidor tenga que contarlo.
+  for (const malla of world.trampas) scene.remove(malla.grupo);
+  world.trampas = [];
+  const semilleroTrampas = mulberry32(hashSeed(`${seedText}:trampas`));
+  const sembradas = generarTrampas({
+    rng: semilleroTrampas,
+    complejidad: CONFIG.trampas,
+    anchoMundo: CONFIG.world.width,
+    separacionCanones: CONFIG.cannonX * 2,
+    alturaEn: (x) => world.terrain.heightAt(x),
+  });
+  for (const trampa of sembradas) {
+    const malla = construirTrampa(trampa);
+    scene.add(malla.grupo);
+    world.trampas.push(malla);
+  }
 
   for (const spec of state.plantel) {
     const c = buildCannon(spec);
@@ -457,6 +532,25 @@ function simBounds() {
   return { minX: t.x0 - 6, maxX: t.x0 + t.width + 6, minY: CONFIG.world.baseY };
 }
 
+/**
+ * Colision de trampas para el ARCO, sobre copias.
+ *
+ * Se trabaja con copias porque previsualizar no puede gastar una mina: el
+ * jugador estaria destruyendo el campo con solo mover el dedo.
+ */
+function preverTrampas() {
+  if (world.trampas.length === 0) return null;
+  const copias = world.trampas.filter((m) => m.datos.viva).map((m) => ({ ...m.datos }));
+
+  return (s, px, py) => {
+    const golpe = chocarCon(copias, px, py, s.x, s.y);
+    if (!golpe) return null;
+    const efecto = resolverChoque(golpe.trampa, s);
+    if (efecto === 'rebota') return { rebote: true };
+    return { fin: { x: golpe.x, y: golpe.y } };
+  };
+}
+
 /** Donde caeria la arena si el tiro previsto impactase donde dice el arco. */
 function depositoPrevisto(prediccion) {
   if (!prediccion?.hit) return null;
@@ -474,6 +568,7 @@ function refreshPreview() {
     sampleEvery: 6,
     maxPoints: 96,
     bounds: simBounds(),
+    alChocar: preverTrampas(),
   });
   state.previewPoints = prediccion.points;
   state.previewCount = arc.update(prediccion.points, CONFIG.assistLevel, CONFIG.playZ);
@@ -557,6 +652,41 @@ function dispararDeVerdad() {
     state.fired = true;
     hud.hideHint();
   }
+}
+
+/**
+ * Resuelve el paso del proyectil por una trampa.
+ *
+ * El rebote es lo que le da sentido a todo esto: el tiro vuelve hacia quien lo
+ * hizo, y si le cae encima se come su propia metralla. Aqui no hay que hacer
+ * nada especial para eso — el daño ya alcanza a los dos bandos.
+ */
+function golpearTrampa(s, px, py) {
+  if (world.trampas.length === 0) return null;
+
+  const activas = world.trampas.filter((m) => m.datos.viva).map((m) => m.datos);
+  const golpe = chocarCon(activas, px, py, s.x, s.y);
+  if (!golpe) return null;
+
+  const efecto = resolverChoque(golpe.trampa, s);
+  const malla = world.trampas.find((m) => m.datos === golpe.trampa);
+
+  if (efecto === 'detona') {
+    sonidos.sonar('impacto');
+    if (malla) malla.grupo.visible = false;
+  } else if (efecto === 'rebota') {
+    sonidos.sonar('escudo');
+    projectile.position.set(s.x, s.y, CONFIG.playZ);
+    // El arco de prevision dejo de valer en cuanto el tiro cambio de rumbo:
+    // seguir enseñandolo seria mentirle al jugador.
+    arc.hide();
+    state.impactSteps = Infinity;
+    closeReaction();
+  } else {
+    sonidos.sonar('salto');
+  }
+
+  return efecto;
 }
 
 function onImpact(hit) {
@@ -810,6 +940,7 @@ function aplicarSalto() {
   if (!canReact()) return;
   anotarReaccion('salto');
   sonidos.sonar('salto');
+  // El destino del salto se comprueba mas abajo, cuando ya se sabe donde cae.
   const i = state.reaction.defender;
   const cannon = world.cannons[i];
   const px = cannon.group.position.x;
@@ -818,11 +949,23 @@ function aplicarSalto() {
   const away = Math.sign(px - impactX) || cannon.facing;
   const limit = world.terrain.width / 2 - 4;
   spendCharge();
-  state.players[i].hop = {
-    fromX: px,
-    toX: clamp(px + away * REACTION.hopDistance, -limit, limit),
-    step: 0,
-  };
+  const destino = clamp(px + away * REACTION.hopDistance, -limit, limit);
+
+  // Aterrizar sobre una mina de pista es peor que haberse quedado quieto: es lo
+  // que convierte las trampas del suelo en una decision y no en decorado.
+  const mina = minaEn(world.trampas.map((m) => m.datos), destino);
+  if (mina) {
+    mina.viva = false;
+    const malla = world.trampas.find((m) => m.datos === mina);
+    if (malla) malla.grupo.visible = false;
+    sonidos.sonar('impacto');
+    world.terrain.carve(mina.x, world.terrain.heightAt(mina.x), CONFIG.craterRadius);
+    const centro = targetPoint(cannon);
+    applyDamage(state.players[i], damageAt(mina.x, world.terrain.heightAt(mina.x), centro.x, centro.y));
+    hud.setHp(i, state.players[i].hp);
+  }
+
+  state.players[i].hop = { fromX: px, toX: destino, step: 0 };
 }
 
 function predictImpactX() {
@@ -1007,6 +1150,16 @@ function fixedUpdate() {
     const py = s.y;
     step(s, state.wind, FIXED_DT);
     shellCore.rotation.z -= 0.14; // giro sobre su eje
+
+    // Trampas: pueden detonar el tiro donde estan, devolverlo o tragarselo.
+    const choque = golpearTrampa(s, px, py);
+    if (choque === 'detona') return onImpact({ x: s.x, y: s.y });
+    if (choque === 'absorbe') {
+      projectile.visible = false;
+      state.shot = null;
+      closeReaction();
+      return endTurn();
+    }
 
     const impact = sweepTerrain(px, py, s.x, s.y, world.terrain);
     if (impact) return onImpact(impact);

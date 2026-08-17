@@ -75,6 +75,7 @@ pnpm verificar:fase2   # que la franja se pinta y el vernier afina 4x
 pnpm verificar:ia      # que la dificultad significa algo, en terreno real
 pnpm verificar:partida-ia  # una partida entera contra la maquina
 pnpm verificar:replay  # se juega, se copia el enlace y se reproduce
+pnpm verificar:trampas # que el deflector devuelve el tiro y castiga
 pnpm verificar:sala    # seis clientes; SABOTEAR=1 rompe uno a proposito
 ```
 
@@ -104,7 +105,8 @@ abiertas. Es a propósito, no hay nada que valga la pena persistir.
 |---|---|---|
 | `?seed=` | cualquier texto | Semilla del terreno y del viento |
 | `?assist=` | `0` … `1` | Recorte del arco. `1` arco entero, `0` solo 3 puntos |
-| `?biome=` | `dunas`, `placa`, `selva` | Bioma; cambia paleta y color del proyectil |
+| `?biome=` | `dunas`, `placa`, `salar`, `caldera`, `tranquilidad`, `selva` | Bioma; cambia paleta y color del proyectil |
+| `?trampas=` | `0` … `1` | Minas, deflectores y muros en el campo |
 | `?online` | — | Abre la pantalla de sala |
 | `?sala=` | código de 4 letras | Entra directo a esa sala |
 | `?servidor=` | `ws://host:puerto` | Otro servidor de salas |
@@ -190,6 +192,31 @@ imposible.
 El alud es **progresivo**: cada turno se dan hasta 288 pasadas y el montón se
 sigue asentando en los siguientes, cada vez menos. Forzar la convergencia de
 golpe pedía más de mil pasadas y un tirón de 100 ms.
+
+### Trampas
+
+`?trampas=0` a `?trampas=1`. A 0 el campo está despejado; a 1 hay seis y la
+mitad son deflectores.
+
+| | Qué hace |
+|---|---|
+| **Mina** | Detona donde está. El cráter sale ahí, no donde apuntabas |
+| **Deflector** | Invierte el tiro. **Vuelve hacia ti**, y si te cae encima te lo comes |
+| **Muro** | Se traga el proyectil. No duele, pero pierdes el turno |
+
+Aparecen **en el aire**, cortando las parábolas, y **apoyadas en la pista**,
+cerrando el tiro raso —que si no sería siempre la jugada segura—. No hay
+deflectores tumbados: devolverían el tiro contra el propio suelo.
+
+Saltar para esquivar un obús y **aterrizar sobre una mina** es peor que haberse
+quedado quieto. Eso es lo que hace que las trampas del suelo sean una decisión.
+
+Salen de la semilla, así que los seis móviles siembran el mismo campo sin que el
+servidor mande nada.
+
+El rebote está medido: con el 0,82 inicial el tiro devuelto se pasaba por encima
+del propio cañón y salía del mapa —volvía, pero no castigaba—. Con **0,60** cae
+a 2,7 u de media del que disparó y castiga en la mitad de los rebotes.
 
 ### Jugar contra la máquina
 
