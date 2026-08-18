@@ -109,48 +109,100 @@ export const MATERIA = {
 // ── teatros ───────────────────────────────────────────────────────────────
 
 /**
- * Los seis de ARTE.md §11. Todos de dia y todos claros: la primera version los
- * pinto de noche y el juego entero se veia triste. El color de un frente lo pone
- * la tierra, no la falta de luz.
+ * Nueve teatros, y todos son un sitio de verdad.
+ *
+ * La version anterior tenia seis nombres genericos y el mismo decorado en todos:
+ * unos tocones y una alambrada daba igual donde estuvieras. Un teatro no es una
+ * paleta, es un SITIO — y lo que lo dice no es el color del cielo, es que en
+ * Normandia hay setos de bocage y erizos de playa y en Varsovia hay almiares y
+ * postes de telegrafo.
+ *
+ * Todos son de dia y todos son claros. La primera version los pinto de noche y
+ * el juego entero se veia triste: el color de un frente lo pone la tierra, no la
+ * falta de luz. Stalingrado es el unico con el cielo ardiendo, porque ahi el
+ * fuego ES el sitio.
  */
 export const TEATROS = {
   somme: {
-    nombre: 'El Somme', epoca: 1916, proyectil: 'trazadora',
-    cielo: ['#8fb4cf', '#b4cede', '#d3e3ea', '#e9eee4'],
-    cresta: '#f3efe0', cuerpo: '#cfc6ac', socavon: '#9c9078',
-    hito: 'torre', nota: 'Torre de iglesia rota. Creta pisoteada y craterizada.',
+    agua: true,
+    nombre: 'El Somme', pais: 'Francia', epoca: 1916, proyectil: 'trazadora',
+    cielo: ['#8fb0c8', '#b6cedd', '#d2e1e7', '#e7ebe0'],
+    cresta: '#f0ead9', cuerpo: '#cdc0a2', socavon: '#94876c',
+    hito: 'iglesia',
+    props: ['alambrada', 'cajas', 'poste'],
+    nota: 'Creta pisoteada y craterizada. La torre de la iglesia rota es lo unico que queda en pie sobre la loma.',
   },
-  flandes: {
-    nombre: 'Flandes', epoca: 1917, proyectil: 'fosforo',
-    cielo: ['#7fa9c6', '#b1d2e1', '#c9e1eb', '#dfeadf'],
-    cresta: '#c2ce72', cuerpo: '#8c9b47', socavon: '#5f6b34',
-    hito: 'tocon', nota: 'Es el teatro de la imagen de referencia. Verde y barro.',
+  passchendaele: {
+    agua: true,
+    nombre: 'Passchendaele', pais: 'Belgica', epoca: 1917, proyectil: 'fosforo',
+    cielo: ['#7e96a6', '#a3b8c4', '#c3d2d6', '#d9ddce'],
+    cresta: '#9aa05c', cuerpo: '#6e7440', socavon: '#474b2a',
+    hito: 'bosque',
+    props: ['tocon', 'alambrada', 'cajas', 'bidones'],
+    nota: 'Barro y bosque astillado. Del hayedo solo quedan los tocones: el gigante del centro es el ultimo arbol que hubo.',
+  },
+  bzura: {
+    nombre: 'Llanura del Bzura', pais: 'Polonia', epoca: 1939, proyectil: 'trazadora',
+    cielo: ['#6e9fc4', '#9cc0d8', '#c6d9e2', '#e6e6cd'],
+    cresta: '#e3ce94', cuerpo: '#bfa35f', socavon: '#87703c',
+    hito: 'granero',
+    props: ['almiar', 'cerca', 'poste', 'cajas'],
+    nota: 'Rastrojo de septiembre. Campo abierto de verdad: almiares, una cerca de listones y el granero de madera al fondo.',
   },
   alamein: {
-    nombre: 'El Alamein', epoca: 1942, proyectil: 'fosforo',
+    nombre: 'El Alamein', pais: 'Egipto', epoca: 1942, proyectil: 'fosforo',
     cielo: ['#4f89b4', '#8cb6d0', '#c3d6dc', '#f0e2c4'],
     cresta: '#fbe1a0', cuerpo: '#e8a94e', socavon: '#b87438',
-    hito: 'adobe', nota: 'Arena batida por el viento. Sotavento se ve a simple vista.',
-  },
-  rzhev: {
-    nombre: 'Frente del Este', epoca: 1942, proyectil: 'trazadora',
-    cielo: ['#8ea9c2', '#b6cbdd', '#d6e4ee', '#eef4f8'],
-    cresta: '#fbfdff', cuerpo: '#c6dcee', socavon: '#8aa8c4',
-    hito: 'isba', nota: 'Nieve como capa, no como repinte: los estratos de debajo no cambian.',
+    hito: 'adobe',
+    props: ['bidones', 'alambrada', 'cajas', 'erizo'],
+    nota: 'Arena batida por el viento: es donde mas se nota Sotavento. La casa de adobe es la unica sombra en kilometros.',
   },
   stalingrado: {
-    nombre: 'Stalingrado', epoca: 1942, proyectil: 'fosforo',
+    nombre: 'Stalingrado', pais: 'URSS', epoca: 1942, proyectil: 'fosforo',
     cielo: ['#8a6f5e', '#b8917a', '#d7b48f', '#e8cba0'],
     cresta: '#b9b0a6', cuerpo: '#8a8078', socavon: '#5d554f',
-    hito: 'chimenea', nota: 'El unico con el cielo ardiendo, porque ahi el fuego ES el sitio.',
+    hito: 'fabrica',
+    props: ['escombro', 'via', 'bidones'],
+    nota: 'La chimenea de la fabrica y la via retorcida a sus pies. El unico teatro con el cielo ardiendo.',
+  },
+  normandia: {
+    agua: true,
+    nombre: 'Normandia', pais: 'Francia', epoca: 1944, proyectil: 'trazadora',
+    cielo: ['#7fa9c6', '#b1d2e1', '#c9e1eb', '#e0eadf'],
+    cresta: '#b7c96f', cuerpo: '#84a048', socavon: '#556a31',
+    hito: 'granja',
+    props: ['seto', 'erizo', 'poste', 'cajas'],
+    nota: 'Bocage: setos sobre caballon de tierra que cortan el campo en parcelas. Son la cobertura y son el problema.',
+  },
+  paris: {
+    nombre: 'Paris', pais: 'Francia', epoca: 1944, proyectil: 'fosforo',
+    cielo: ['#8aa6bc', '#b3c6d4', '#d2dce0', '#eae6d9'],
+    cresta: '#e2dac6', cuerpo: '#bcb097', socavon: '#82785f',
+    hito: 'haussmann',
+    props: ['barricada', 'farola', 'escombro'],
+    nota: 'Piedra de Paris y barricada de adoquines levantados. El unico teatro urbano de verdad.',
   },
   ardenas: {
-    nombre: 'Las Ardenas', epoca: 1944, proyectil: 'trazadora',
-    cielo: ['#7b98ad', '#a6bfd0', '#cbdce6', '#e7eff4'],
-    cresta: '#e4eef4', cuerpo: '#a8bccb', socavon: '#6e8496',
-    hito: 'casa', nota: 'Bosque astillado bajo la nieve. Borde de nieve duro, nunca degradado.',
+    nombre: 'Las Ardenas', pais: 'Belgica y Alemania', epoca: 1944, proyectil: 'trazadora',
+    cielo: ['#7b98ad', '#a6bfd0', '#cbdce6', '#e8eff4'],
+    cresta: '#edf3f7', cuerpo: '#afc3d0', socavon: '#6e8496',
+    hito: 'casa',
+    props: ['abeto', 'tocon', 'cajas'],
+    nota: 'Abetal bajo la nieve. La nieve es una capa encima, no un repinte: los estratos de debajo no cambian.',
+  },
+  seelow: {
+    agua: true,
+    nombre: 'Alturas de Seelow', pais: 'Alemania', epoca: 1945, proyectil: 'trazadora',
+    cielo: ['#8496a0', '#aebdc0', '#cbd3cb', '#dddcc9'],
+    cresta: '#c2b69c', cuerpo: '#93866b', socavon: '#63593f',
+    hito: 'ladrillo',
+    props: ['escombro', 'erizo', 'poste', 'bidones'],
+    nota: 'Barro de abril y ladrillo aleman destripado. El ultimo teatro y el mas cerrado de los nueve.',
   },
 };
+
+/** Los que llevan manto de nieve. Es tratamiento de terreno, no piezas. */
+export const NEVADOS = new Set(['ardenas']);
 
 /** Tinte de teatro obligatorio del decorado: 0,35 hacia el cuerpo del terreno. */
 export const TINTE_TEATRO = 0.35;

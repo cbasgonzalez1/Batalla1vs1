@@ -234,28 +234,41 @@ conflicto gana lo anterior.
 
 ## 11. Teatros
 
-La sección 2 define **una** paleta. El juego tiene seis, todas con la misma
-forma de tokens. La de la sección 2 es exactamente la de El Alamein.
+La sección 2 define **una** paleta. El juego tiene nueve, todas con la misma
+forma de tokens.
 
-Cielo de cuatro paradas, de arriba abajo. Tres tonos de terreno más el rebote.
+**Un teatro no es una paleta: es un sitio.** La primera versión tenía seis
+nombres y el mismo decorado en todos —unos tocones y una alambrada, daba igual
+dónde estuvieras—, y por eso ninguno se reconocía. Lo que dice dónde estás no es
+el color del cielo: es que en Normandía haya setos de bocage sobre caballón y en
+la llanura del Bzura haya almiares y postes de telégrafo. Cada teatro declara
+sus familias de decorado (`docs/ESCENARIOS.md` §3) y **no usa las de los demás**.
 
-| Teatro | Época | Cresta | Cuerpo | Socavón | Proyectil |
-|---|---|---|---|---|---|
-| **El Somme** `?biome=somme` | 1916 | `#F3EFE0` | `#CFC6AC` | `#9C9078` | trazadora |
-| **Flandes** `?biome=flandes` | 1917 | `#C2CE72` | `#8C9B47` | `#5F6B34` | fósforo |
-| **El Alamein** `?biome=alamein` | 1942 | `#FBE1A0` | `#E8A94E` | `#B87438` | fósforo |
-| **Frente del Este** `?biome=rzhev` | 1942 | `#FBFDFF` | `#C6DCEE` | `#8AA8C4` | trazadora |
-| **Stalingrado** `?biome=stalingrado` | 1942 | `#B9B0A6` | `#8A8078` | `#5D554F` | fósforo |
-| **Las Ardenas** `?biome=ardenas` | 1944 | `#E4EEF4` | `#A8BCCB` | `#6E8496` | trazadora |
+| Teatro | País | Época | Cresta | Cuerpo | Socavón | Hito | Decorado propio |
+|---|---|---|---|---|---|---|---|
+| **El Somme** `?biome=somme` | Francia | 1916 | `#F0EAD9` | `#CDC0A2` | `#94876C` | Torre de iglesia rota | alambrada, cajas, poste |
+| **Passchendaele** `?biome=passchendaele` | Bélgica | 1917 | `#9AA05C` | `#6E7440` | `#474B2A` | Tocón gigante | tocones, alambrada, bidones |
+| **Llanura del Bzura** `?biome=bzura` | Polonia | 1939 | `#E3CE94` | `#BFA35F` | `#87703C` | Granero de madera | almiares, cerca de listones, postes |
+| **El Alamein** `?biome=alamein` | Egipto | 1942 | `#FBE1A0` | `#E8A94E` | `#B87438` | Casa de adobe | bidones, alambrada, erizos |
+| **Stalingrado** `?biome=stalingrado` | URSS | 1942 | `#B9B0A6` | `#8A8078` | `#5D554F` | Chimenea de fábrica | escombro de ladrillo, vía retorcida, bidones |
+| **Normandía** `?biome=normandia` | Francia | 1944 | `#B7C96F` | `#84A048` | `#556A31` | Granja de piedra | seto de bocage, erizos, postes |
+| **París** `?biome=paris` | Francia | 1944 | `#E2DAC6` | `#BCB097` | `#82785F` | Edificio haussmanniano | barricada de adoquines, farolas, escombro |
+| **Las Ardenas** `?biome=ardenas` | Bélgica y Alemania | 1944 | `#EDF3F7` | `#AFC3D0` | `#6E8496` | Casa nevada | abetos nevados, tocones, cajas |
+| **Alturas de Seelow** `?biome=seelow` | Alemania | 1945 | `#C2B69C` | `#93866B` | `#63593F` | Ruina de ladrillo | escombro, erizos, postes |
 
 Todos son de día y todos son claros. La primera versión los pintó de noche o al
 atardecer y el juego entero se veía triste; el color de un frente lo pone la
 tierra, no la falta de luz. Stalingrado es el único que conserva un cielo
 ardiendo, porque ahí el fuego *es* el sitio.
 
-**La época la manda el teatro**, no el jugador: en el Somme y en Flandes se
-combate con rombos tipo Mark IV, en el resto con casco de torreta y blindaje
-inclinado.
+**La época la manda el teatro**, no el jugador: en el Somme y en Passchendaele se
+combate con rombos tipo Mark IV, en el Bzura con carros ligeros y coches
+blindados, y del 42 en adelante con casco de torreta y blindaje inclinado.
+
+**Los ocho hitos con edificio salen del mismo constructor** y por eso parecen del
+mismo mundo: cambia el tejado (dos aguas, mansarda, plano, roto), el material, el
+número de plantas y dónde está roto — nunca la forma de construirlo. El tocón
+gigante y la chimenea son los dos únicos casos especiales.
 
 ## 12. El suelo, por estratos
 
@@ -263,27 +276,26 @@ La cara frontal del terreno es **la mitad de la pantalla**. Se pintaba como un
 degradado que se hundía hasta casi el negro, y eso era lo que ponía el juego
 sombrío por muy alegre que fuera el cielo.
 
-Ahora son franjas de color plano con el borde marcado, como el suelo de un
-juego de plataformas. El brillo **alterna** de una franja a la siguiente: con un
-degradado monótono el subsuelo vuelve a ser una mancha por muchos estratos que
-tenga; alternando, cada línea entre franjas se ve.
+La primera corrección fueron **diez** franjas de color plano con el brillo
+alternando. Arreglaba el degradado y creaba un problema peor: con diez bandas
+onduladas siguiendo el relieve, la mitad inferior del cuadro se convierte en un
+**mapa topográfico** que compite con todo lo que se planta encima. Lo que hacía
+falta era color plano con borde duro; lo que no hacía falta era *contar* las
+capas.
+
+**Cuatro franjas, y el contraste bajo entre las tres de abajo.** La costra clara
+manda —es la que dibuja la línea del suelo— y lo demás es masa.
 
 | Profundidad (u) | Mezcla cuerpo→socavón | Brillo |
 |---|---|---|
-| 0 – 0.55 (costra) | cresta | 1.16 |
-| – 1.7 | 0.10 | 1.04 |
-| – 3.2 | 0.28 | 0.93 |
-| – 5.4 | 0.20 | 1.09 |
-| – 8.4 | 0.52 | 0.90 |
-| – 12.5 | 0.36 | 1.06 |
-| – 18.0 | 0.70 | 0.88 |
-| – 26.0 | 0.50 | 1.04 |
-| – 40.0 | 0.86 | 0.87 |
-| resto | 0.66 | 1.00 |
+| 0 – 0.42 (costra) | cresta | 1.00 |
+| – 2.6 | 0.18 | 0.98 |
+| – 6.5 | 0.44 | 0.93 |
+| resto | 0.64 | 0.90 |
 
-Las franjas van apretadas hasta 18 u porque **eso es lo que se ve jugando**: con
-el encuadre de apuntado hay unos 17 m de tierra entre la cresta y el borde
-inferior. Lo de más abajo solo asoma al abrir plano.
+Encima, una línea de contorno de `0.1` en el perfil: es lo que separa el suelo
+del cielo y de las crestas de fondo, y sin ella el terreno se funde con el
+horizonte.
 
 Oclusión de horizonte **0.34** (era 0.62, y ensuciaba de gris toda la ladera).
 Hundimiento del fondo **0.14** hasta 26 u (era 0.42 hasta 14, y se comía la

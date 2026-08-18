@@ -2,7 +2,7 @@
  * Plancha de decision: tres composiciones de campo y tres piezas.
  *
  * No es un catalogo, es una eleccion. Las tres escenas van en el MISMO teatro
- * —Flandes, el de la imagen de referencia— para que lo unico que cambie sea la
+ * —Normandia— para que lo unico que cambie sea la
  * composicion; y las tres piezas van al mismo zoom y con la misma linea de
  * pivote. Comparar dos cosas que cambian en dos ejes a la vez no es comparar.
  *
@@ -32,7 +32,7 @@ const CAMPOS = [
     id: 'abierto',
     nombre: 'Campo abierto',
     lema: 'Ves la parabola entera',
-    teatro: 'flandes',
+    teatro: 'normandia',
     reparto: ['media', 'cazacarros'],
     tiro: 'Todo el arco visible',
     cobertura: 'Ninguna: estas al descubierto',
@@ -45,7 +45,7 @@ const CAMPOS = [
     id: 'zanja',
     nombre: 'Zanja enfrentada',
     lema: 'El tiro raso deja de servir',
-    teatro: 'flandes',
+    teatro: 'normandia',
     reparto: ['tanqueta', 'ruedas'],
     tiro: 'Hay que pasar por encima del labio propio',
     cobertura: 'Alta: estas metido en el suelo',
@@ -58,12 +58,12 @@ const CAMPOS = [
     id: 'ruina',
     nombre: 'Cresta con hito',
     lema: 'Obliga a elegir lado',
-    teatro: 'flandes',
+    teatro: 'normandia',
     reparto: ['pesado', 'asalto'],
     tiro: 'Por encima de la loma o rodeando',
     cobertura: 'Media: la loma tapa el tiro raso',
     avance: 'Decisivo — quien corona la loma domina',
-    tesis: 'Una loma central con el hito del teatro plantado en la cresta —torre rota en el Somme, chimenea en Stalingrado, tocon gigante en Flandes— ocupando el tope del 25–40 % del ancho. El decorado no colisiona —eso son las trampas— pero la loma si es terreno, y por eso avanzar hacia ella es la jugada.',
+    tesis: 'Una loma central con el hito del teatro plantado en la cresta —torre rota en el Somme, chimenea en Stalingrado, tocon gigante en Passchendaele— ocupando el tope del 25–40 % del ancho. El decorado no colisiona —eso son las trampas— pero la loma si es terreno, y por eso avanzar hacia ella es la jugada.',
     contra: 'Con la loma en medio, la mitad de las trayectorias acaban contra tierra y el jugador puede leerlo como que el juego le engana. Hay que ensenar la altura de la cresta en el arco de apuntado.',
     encaja: 'Stalingrado y las Ardenas, donde el hito ya es una masa vertical',
   },
@@ -220,7 +220,7 @@ footer{margin:46px 0 0;color:var(--tinta-2);font-size:14px}
 </header>
 
 <h2>Los tres campos</h2>
-<p class="sub">Mismo teatro —Flandes, el de la imagen de referencia— y mismo reparto de planos. Lo unico que cambia es como esta cortado el suelo.</p>
+<p class="sub">Mismo teatro —Normandia— y mismo reparto de planos. Lo unico que cambia es como esta cortado el suelo.</p>
 <p class="nota">Los tres cumplen los cinco planos de <code>ARTE.md</code> §3 y colocan
 todo con el <code>rng</code> de la semilla. La diferencia no es de adorno: es donde
 esta el terreno respecto a la pieza, y eso cambia que tiros son posibles.</p>

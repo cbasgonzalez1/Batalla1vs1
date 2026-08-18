@@ -76,7 +76,7 @@ function planchaEscena(clave) {
   return `
   <section class="teatro">
     <header>
-      <h3>${t.nombre} <em>${t.epoca}</em></h3>
+      <h3>${t.nombre} <em>${t.pais} · ${t.epoca}</em></h3>
       <p>${t.nota}</p>
       <ul class="chips">
         <li><i style="background:${t.cresta}"></i>cresta</li>
@@ -84,6 +84,7 @@ function planchaEscena(clave) {
         <li><i style="background:${t.socavon}"></i>socavon</li>
         <li class="txt">?biome=${clave}</li>
         <li class="txt">${r.a.nombre} vs ${r.b.nombre}</li>
+        <li class="txt">${t.props.join(' · ')}</li>
       </ul>
     </header>
     ${lienzo({ ancho: 1600, alto: 700, escala: esc, ox: 800, suelo: 700 - 3.4 * esc, contenido: svg })}
@@ -309,12 +310,17 @@ footer{margin:80px 0 0;padding-top:22px;border-top:3px solid var(--tinta);color:
 
 <section>
   <h2>Los seis teatros</h2>
-  <p class="sub">Uno por partida, sorteado. La epoca la manda el teatro, no el jugador.</p>
-  <p class="nota">Cinco planos en cada uno: cielo de cuatro bandas, tres crestas de
-  fondo mezcladas hacia el horizonte, suelo por estratos de color plano siguiendo el
+  <p class="sub">Nueve sitios de verdad, uno por partida. La epoca la manda el teatro, no el jugador.</p>
+  <p class="nota">Un teatro no es una paleta, es un <b>sitio</b>: lo que lo dice no es
+  el color del cielo, es que en Normandia hay setos de bocage sobre caballon y en la
+  llanura del Bzura hay almiares y postes de telegrafo. Cada uno declara sus familias
+  de decorado y no usa las de los demas.</p>
+  <p class="nota">Cinco planos: cielo de cuatro bandas, tres crestas de fondo mezcladas
+  hacia el horizonte, suelo de <b>cuatro</b> franjas de color plano siguiendo el
   relieve, decorado tenido un 35 % hacia la tierra del teatro, y primer plano en
-  silueta. Todo colocado con el <code>rng</code> de la semilla: dos moviles en la
-  misma sala ven el mismo campo sin que el servidor mande nada.</p>
+  silueta. Todo colocado con el <code>rng</code> de la semilla y pasando por un motor
+  que <b>niega</b> la colocacion si el hueco esta ocupado: por eso ya no hay piezas
+  encima de los blindados.</p>
   ${Object.keys(TEATROS).map(planchaEscena).join('')}
 </section>
 
@@ -343,6 +349,12 @@ footer{margin:80px 0 0;padding-top:22px;border-top:3px solid var(--tinta);color:
       <td>ARTE.md §14 lo especifica y esta implementado</td><td>La nota era falsa desde que se escribio §14</td></tr>
     <tr><td>ARTE.md §9 · VEHICULOS §8</td><td>la BOCA a la misma Y en toda elevacion</td>
       <td>el PIVOTE de elevacion a la misma Y</td><td>Un tubo que gira describe un arco: lo otro no se puede cumplir</td></tr>
+    <tr><td>ARTE.md §11</td><td>seis teatros con el mismo decorado</td>
+      <td>nueve sitios de verdad, cada uno con sus familias</td><td>Un teatro no es una paleta; con el mismo decorado los seis eran uno repintado</td></tr>
+    <tr><td>ARTE.md §12</td><td>diez franjas de suelo con el brillo alternando</td>
+      <td>cuatro, y contraste bajo entre las de abajo</td><td>Diez bandas onduladas convierten media pantalla en un mapa topografico</td></tr>
+    <tr><td>ESCENARIOS §2</td><td>«toda pieza se asienta en el terreno»</td>
+      <td>+ nada se solapa, nada flota, de mayor a menor</td><td>La regla estaba escrita pero no habia nada que la hiciera cumplir</td></tr>
   </table></div>
 </section>
 

@@ -1,16 +1,39 @@
 # Escenarios
 
-Normativo. Amplía `ARTE.md` §11–§13 con el detalle de decorado que faltaba y con
-las ocho familias de piezas de campo de batalla. Los seis teatros, sus paletas,
-las capas de fondo y los estratos de suelo **siguen definidos en `ARTE.md`** y no
-se duplican aquí: si un número está en los dos sitios, manda `ARTE.md`.
+Normativo. Amplía `ARTE.md` §11–§13 con el detalle de decorado y con las familias
+de piezas de campo de batalla. Los nueve teatros, sus paletas, las capas de fondo
+y los estratos de suelo **siguen definidos en `ARTE.md`** y no se duplican aquí:
+si un número está en los dos sitios, manda `ARTE.md`.
 
-> **Incoherencia detectada, arreglar antes de empezar.** `README.md` documenta
-> `?biome=dunas|placa|salar|caldera|tranquilidad|selva` y `ARTE.md` §11 define
-> `?biome=somme|flandes|alamein|rzhev|stalingrado|ardenas`. Son dos juegos de
-> biomas distintos. Los teatros de `ARTE.md` son los buenos —los de `README.md`
-> son de la versión lunar anterior—; hay que corregir la tabla del `README` y
-> comprobar qué acepta de verdad el parseo de la URL.
+---
+
+## 0. Las tres reglas de colocación
+
+Se escriben las primeras porque son las que estaban rotas y las que producían un
+campo «mal diseñado» por mucho que cada pieza suelta estuviera bien.
+
+**0.1 · Nada se solapa.** Toda pieza declara el ancho que ocupa en el terreno y
+pasa por un registro de tramos ocupados que **niega** la colocación si no cabe.
+Se reservan primero los dos emplazamientos y el hito —son intocables— y el
+decorado se acomoda a ellos, nunca al revés. Si una pieza no cabe, **no se
+coloca**: un campo con tres piezas bien puestas se ve mejor que uno con siete
+encaballadas.
+
+El registro reparte además por **huecos reales**, sorteando uno ponderado por su
+tamaño. Probar a los lados de una x pedida y rendirse a las cinco unidades —que
+es lo que hacía la primera versión— deja el campo vacío, porque con dos
+emplazamientos y un hito reservados casi todo cae fuera de ese alcance.
+
+**0.2 · Nada flota.** Toda pieza se asienta muestreando el terreno en **su** x.
+Lo que ocupa más de dos unidades —un seto, un terraplén de vía, una barricada,
+un parapeto de sacos— construye su borde inferior **siguiendo el perfil**, no con
+una recta al punto más bajo: con la base recta la pieza apoya en una esquina y
+queda en voladizo en el resto. Los edificios arrancan **0,8 u por debajo del
+suelo** por el mismo motivo. Y toda pieza lleva su elipse de contacto.
+
+**0.3 · Se coloca de mayor a menor.** El seto de 6 u tiene un solo sitio posible
+en el campo y las cajas de 2 u tienen diez. Colocando primero las pequeñas, éstas
+ocupan el único vano ancho y la pieza que **define** el teatro se queda fuera.
 
 ---
 
@@ -67,7 +90,35 @@ implementación.
 
 ---
 
-## 3. Las ocho familias
+## 3. Las familias, y a quién pertenece cada una
+
+**Un teatro no es una paleta: es un sitio.** Cada uno declara sus familias en
+`paleta.js` y **no usa las de los demás**. Un tocón astillado en El Alamein o un
+almiar en Stalingrado convierten los nueve teatros en el mismo teatro repintado,
+que es exactamente lo que pasaba.
+
+| Familia | Ancho | Veces | Teatros |
+|---|---|---|---|
+| Seto de bocage | 5,8 u | 1 | Normandía |
+| Vía y carril retorcido | 7,0 u | 1 | Stalingrado |
+| Alambrada | 6,6 u | 1 | Somme, Passchendaele, Alamein |
+| Cerca de listones | 5,0 u | 1 | Bzura |
+| Barricada de adoquines | 3,4 u | 1 | París |
+| Escombro de ladrillo | 3,2 u | 2 | Stalingrado, París, Seelow |
+| Almiar | 2,7 u | 2 | Bzura |
+| Cajas de munición | 2,1 u | 1 | Somme, Bzura, Normandía, Ardenas |
+| Bidones | 2,1 u | 1 | Passchendaele, Alamein, Seelow |
+| Erizo checo | 2,1 u | 2 | Normandía, Alamein, Seelow |
+| Abeto nevado | 1,9 u | 2 | Ardenas |
+| Tocón astillado | 1,4 u | 2 | Passchendaele, Ardenas |
+| Farola | 1,2 u | 1 | París |
+| Poste de telégrafo | 1,1 u | 2 | Somme, Bzura, Normandía, Seelow |
+| Parapeto de sacos | 3,4 u | — | **todos**, automático: uno delante de cada cañón |
+
+El parapeto de sacos no se declara: va siempre, **delante** del cañón y no
+detrás, porque detrás lo tapa la propia pieza y el jugador nunca lo ve.
+
+---
 
 ### 3.1 Trincheras y parapetos
 
