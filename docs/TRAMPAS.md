@@ -1,32 +1,58 @@
-# Trampas
+# Trampas y modificadores de tiro
 
-Normativo. Define el aspecto de las tres trampas y —lo más importante— **el
-lenguaje visual que las separa del decorado**. Las reglas de juego (qué hace
-cada una, el rebote de 0,60, cómo salen de la semilla) están en `README.md` y en
-`src/game/`; aquí no se cambian.
+Normativo. Define los nueve objetos que **cambian el disparo** y —lo más
+importante— el lenguaje visual que los separa del decorado.
 
 ---
 
-## 0. El problema que este documento resuelve
+## 0. Qué son y por qué existen
 
-Con el decorado nuevo de `ESCENARIOS.md` el campo se llena de objetos: sacos,
-alambradas, tocones, vagones, búnkeres. Ninguno para el proyectil. Tres sí lo
-paran. Si una mina se parece a un bidón del decorado, el jugador aprende que el
+Lo que le falta a un duelo de artillería por turnos no es otra silueta de cañón:
+es que el turno tenga una decisión más allá de ángulo y potencia. Eso son estos
+nueve. Cuatro viven **en el suelo**, donde cae el proyectil, y cinco **en el
+aire**, donde lo atraviesa.
+
+| # | Objeto | Dónde | Efecto |
+|---|---|---|---|
+| 1 | Carga hueca | aire | ×1,8 de daño en el impacto |
+| 2 | Bomba de racimo | aire | El disparo se parte en tres, con dispersión **sembrada** |
+| 3 | Espoleta de proximidad | aire | Revienta en el aire sobre el blanco: ignora parapeto y labio |
+| 4 | Bote de fósforo | aire · **defensa** | Cortina de humo en tu mitad; el rival tira a ciegas un turno |
+| 5 | Globo de barrera | aire | Si lo tocas, pierdes el tiro. Es el castigo del arco alto |
+| 6 | Mina de fósforo | suelo | Cráter y daño al doble |
+| 7 | Depósito de combustible | suelo | Fuego en el terreno, dos turnos |
+| 8 | Placa de blindaje | suelo · **defensa** | Escudo: absorbe el próximo impacto. **Se recoge avanzando** |
+| 9 | Nido de munición | suelo | Un disparo extra este turno. **Se recoge avanzando** |
+
+Los dos que se recogen avanzando son los que enganchan el sistema con
+`src/game/avance.js`, que hoy solo sirve para colocarse.
+
+---
+
+## 0 bis. El lenguaje visual, que es lo que hace justo el sistema
+
+El campo está lleno de decorado que **no hace nada**: escombro, vigas, coches
+quemados, tranvías. Si una mina se parece a un bidón, el jugador aprende que el
 juego le engaña y deja de leer el campo.
 
-Por eso las trampas comparten **tres marcas que ningún decorado puede usar**:
+Por eso todo lo que afecta al disparo lleva las mismas marcas, y **ningún
+decorado puede usarlas nunca**:
 
-1. **Acento.** Toda trampa lleva el color `acento` (`#d94f2b`) en una pieza
-   visible. Ninguna pieza de decorado lo lleva nunca, en ningún teatro.
-2. **Contorno más gordo.** 4 px en lugar de 2,5–3,5. Se leen como más
+1. **Naranja `#d94f2b` = daño.** Te afecta a ti o al rival en daño.
+2. **Cian `#4fd8ff` = defensa.** Escudo, humo, cobertura. Nada que haga daño
+   lleva cian.
+3. **Contorno de 4 px**, frente a los 2,5–3,5 del decorado. Se leen como más
    importantes, y lo son.
-3. **No se tiñen del teatro.** El decorado se mezcla 0,35 hacia el terreno
-   (`ESCENARIOS.md` §2); las trampas mantienen su color íntegro. En Alamein la
-   alambrada es arenosa y la mina no.
+4. **No se tiñen del teatro.** El decorado se mezcla 0,35 hacia la tierra del
+   sitio (`ESCENARIOS.md` §2); éstos mantienen su color íntegro.
+5. **Lo del aire cuelga siempre de algo** — cable, paracaídas o globo. Nada
+   flota sin explicación.
+6. **Lo del suelo lleva reborde de tierra removida.** Dice que alguien lo puso
+   ahí, y lo separa de un bidón tirado.
 
-Las tres son **objetos de gameplay** y por eso están exentas de la calidad
-adaptativa: `ARTE.md` §15 ya lo dice y aquí se subraya. Una trampa que no se
-pinta en un móvil viejo es una partida distinta.
+Los nueve son **objetos de gameplay** y por eso están exentos de la calidad
+adaptativa: `ARTE.md` §15 ya lo dice y aquí se subraya. Uno que no se pinta en un
+móvil viejo es una partida distinta.
 
 ---
 

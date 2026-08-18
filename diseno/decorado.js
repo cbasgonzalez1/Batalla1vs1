@@ -21,7 +21,7 @@
 import {
   caminoRedondeado, circulo, caja, camino, grupo, polilinea, siluetaUnica,
 } from './primitivas.js';
-import { mezcla, tono, claro, oscuro, contorno, MATERIA, TINTE_TEATRO } from './paleta.js';
+import { mezcla, tono, claro, oscuro, contorno, MATERIA, FABRICA, CAUCHO, TINTE_TEATRO } from './paleta.js';
 
 // ── el suelo manda ────────────────────────────────────────────────────────
 
@@ -184,70 +184,130 @@ export function monton(cx, suelo, ancho, c, rng, n = 9) {
 // ── las familias ──────────────────────────────────────────────────────────
 
 /**
- * Tocon astillado. Fractura en puntas desiguales, corteza oscura en el flanco
- * derecho y el interior de la rotura en claro: la madera fresca de dentro es lo
- * que dice que se rompio hace poco.
+ * Arbol de calle quemado. Tronco con dos o tres munones de rama y nada de copa.
+ * En una ciudad arrasada es lo unico organico que queda en pie, y por eso dice
+ * «esto era una calle» mejor que ningun escombro.
  */
-function tocon(cx, suelo, t, rng, e = 1) {
-  const c = tenir(MATERIA.madera, t);
-  const w = 0.34 * e, a = cx - w, b = cx + w;
+function arbol(cx, suelo, t, rng) {
+  const c = mezcla('#5a4632', t.cuerpo, 0.22);
+  const w = 0.2, a = cx - w, b = cx + w;
   const y = altoDe(suelo, a, b);
-  const h = (1.05 + rng() * 0.45) * e;
-  const techo = [0.0, 0.34, 0.1, 0.26, -0.05].map((k, i) => [a + (2 * w * i) / 4, y + h + k * e]);
-  let s = sombraApoyada(suelo, a - 0.5 * e, b + 0.3 * e, 0.13);
-  s += pieza([
-    apoyado(suelo, a, b, techo),
-    // raiz expuesta a un lado: la asimetria es lo que lo hace objeto y no icono
-    apoyado(suelo, a - 0.5 * e, a, [[a - 0.5 * e, y + 0.2 * e], [a, y + 0.42 * e]]),
-  ], c, {
-    dentro:
-      camino(caja(cx + w * 0.3, y - 0.6, w * 1.2, h + 1.2, 0), { fill: oscuro(c) })
-      + camino(caja(a, y + h - 0.12 * e, w * 2, 0.6 * e, 0), { fill: tono(c, 0.3) }),
+  const h = 2.2 + rng() * 1.1;
+  const f = [apoyado(suelo, a, b, [[a, y + h], [b, y + h * 0.94]], 0.2)];
+  // munones: uno a cada altura y de distinto largo. Simetricos parecen una cruz
+  for (const [k, dx, dy] of [[0.52, 1.05, 0.5], [0.68, -0.9, 0.36], [0.86, 0.66, 0.28]]) {
+    f.push(caminoRedondeado([
+      [cx - 0.09, y + h * k], [cx + dx, y + h * k + dy],
+      [cx + dx * 0.92, y + h * k + dy - 0.16], [cx + 0.09, y + h * k - 0.16],
+    ], 0.06));
+  }
+  return sombraApoyada(suelo, a - 0.35, b + 0.35, 0.11) + pieza(f, c, {
+    grosor: 0.08,
+    dentro: camino(caja(cx + 0.03, y - 0.5, 0.3, h + 1.5, 0), { fill: oscuro(c) }),
   });
-  return s;
 }
 
-/** Abeto nevado: tres pisos y tronco corto. Solo en las Ardenas. */
-function abeto(cx, suelo, t, rng) {
-  const w = 0.82 + rng() * 0.25, a = cx - w, b = cx + w;
+/**
+ * Muro suelto: el trozo de fachada que se queda en pie cuando cae el resto.
+ * Es la pieza mas util de una ciudad —vertical, alta y con un hueco— y la que
+ * mas se parece a un muro-trampa, asi que NUNCA va sola y recta: va girada y
+ * acompanada de su escombro (docs/TRAMPAS.md §4).
+ */
+function muro(cx, suelo, t, rng) {
+  const c = mezcla(FABRICA[t.fabrica], t.cuerpo, 0.22);
+  const w = 1.5 + rng() * 0.6, a = cx - w / 2, b = cx + w / 2;
   const y = altoDe(suelo, a, b);
-  const h = 2.3 + rng() * 1.0;
-  const verde = mezcla('#3f5c33', t.cuerpo, 0.2);
-  let s = sombraApoyada(suelo, a, b, 0.14);
-  s += pieza([apoyado(suelo, cx - 0.13, cx + 0.13, [[cx - 0.13, y + h * 0.32], [cx + 0.13, y + h * 0.32]])],
-    tenir(MATERIA.madera, t), { grosor: 0.07 });
-  const pisos = [], nieves = [];
-  for (let i = 0; i < 3; i++) {
-    const bs = y + h * (0.22 + i * 0.24), an = w * (1 - i * 0.24);
-    pisos.push(caminoRedondeado([[cx - an, bs], [cx + an, bs], [cx, bs + h * 0.36]], 0.14));
-    nieves.push(caminoRedondeado([[cx - an, bs + h * 0.13], [cx + an, bs + h * 0.13], [cx, bs + h * 0.4]], 0.14));
+  const h = 2.2 + rng() * 1.4;
+  const inc = (rng() - 0.5) * 0.5;
+  const dientes = [];
+  for (let i = 0; i <= 4; i++) {
+    dientes.push([a + inc * 0.6 + (w * i) / 4, y + h + (i % 2 ? 0.3 : -0.22) * (0.6 + rng() * 0.8)]);
   }
-  s += pieza(pisos, verde, { dentro: nieves.map((n) => camino(n, { fill: '#eef4f8' })).join('') });
+  let s = sombraApoyada(suelo, a - 0.2, b + 0.2, 0.13);
+  s += pieza([apoyado(suelo, a, b, dientes, 0.25)], c, {
+    grosor: 0.1,
+    dentro:
+      camino(caja(cx + inc * 0.4 - w * 0.16, y + h * 0.42, w * 0.32, h * 0.3, 0.07), { fill: contorno(c) })
+      + [0.3, 0.6].map((k) => camino(polilinea([[a, y + h * k], [b, y + h * k]]), {
+        stroke: contorno(c), 'stroke-width': 0.05, fill: 'none', opacity: 0.5,
+      })).join(''),
+  });
+  s += monton(cx + w * 0.72, suelo, 1.5, c, rng, 5);
   return s;
 }
 
 /**
- * Seto de bocage: caballon de tierra con la mata encima. No es un arbusto, es
- * un terraplen, y por eso corta el campo. Es la pieza que dice «Normandia».
- *
- * El caballon lleva base Y TECHO siguiendo el terreno. Con el techo recto entre
- * dos puntos, sobre una loma el techo cae por debajo del suelo en el medio, el
- * poligono se cruza consigo mismo y sale una cuna flotando con las matas encima:
- * era lo que se veia.
+ * Viga retorcida: perfil doblado con un extremo clavado en el suelo. Recta seria
+ * una barra; lo que cuenta que aqui exploto algo es el doblez.
  */
-function seto(cx, suelo, t, rng, largo = 5.4) {
-  const a = cx - largo / 2, b = cx + largo / 2;
-  const tierra = mezcla(t.socavon, t.cuerpo, 0.35);
-  const verde = mezcla('#4d6b2f', t.cuerpo, 0.22);
-  let s = sombraApoyada(suelo, a - 0.2, b + 0.2, 0.16);
-  s += pieza([apoyado(suelo, a, b, perfilBase(suelo, a, b, -0.85))], tierra, { grosor: 0.1 });
-  const matas = [];
-  const n = Math.max(4, Math.round(largo / 1.35));
-  for (let i = 0; i < n; i++) {
-    const x = a + 0.5 + ((largo - 1.0) * i) / (n - 1);
-    matas.push(circulo(x, suelo(x) + 1.15 + rng() * 0.3, 0.64 + rng() * 0.24));
+function viga(cx, suelo, t, rng) {
+  const c = tenir(MATERIA.metal, t);
+  const y = altoDe(suelo, cx - 1.2, cx + 1.2);
+  const alto = 2.0 + rng() * 0.9;
+  const g = 0.16;
+  const p0 = [cx - 1.0, y - 0.15], p1 = [cx - 0.1, y + alto * 0.62], p2 = [cx + 1.15, y + alto];
+  const tramo = (u, v) => {
+    const dx = v[0] - u[0], dy = v[1] - u[1], l = Math.hypot(dx, dy) || 1;
+    const nx = (-dy / l) * g, ny = (dx / l) * g;
+    return caminoRedondeado([
+      [u[0] + nx, u[1] + ny], [v[0] + nx, v[1] + ny], [v[0] - nx, v[1] - ny], [u[0] - nx, u[1] - ny],
+    ], 0.05);
+  };
+  let s = sombraApoyada(suelo, cx - 1.2, cx + 0.2, 0.11);
+  s += pieza([tramo(p0, p1), tramo(p1, p2), caja(p2[0] - 0.24, p2[1] - 0.1, 0.48, 0.2, 0.04)], c, {
+    grosor: 0.08,
+    dentro: camino(polilinea([p0, p1, p2]), { stroke: contorno(c), 'stroke-width': 0.07, fill: 'none' }),
+  });
+  return s;
+}
+
+/**
+ * Coche quemado: carroceria baja, sin cristales y con las llantas peladas. Va
+ * SIN neumatico —ardio— y eso es lo que lo separa de un coche aparcado.
+ */
+function coche(cx, suelo, t, rng) {
+  const c = mezcla('#6a6258', t.cuerpo, 0.2);
+  const w = 2.3, a = cx - w / 2, b = cx + w / 2;
+  const y = altoDe(suelo, a, b);
+  let s = sombraApoyada(suelo, a - 0.15, b + 0.15, 0.12);
+  for (const dx of [-0.66, 0.7]) {
+    s += pieza([circulo(cx + dx, y + 0.3, 0.3, 16)], oscuro(CAUCHO.base), { grosor: 0.07 });
+    s += camino(circulo(cx + dx, y + 0.3, 0.14, 12), { fill: contorno(c) });
   }
-  s += pieza(matas, verde, { grosor: 0.1 });
+  s += pieza([apoyado(suelo, a, b, [
+    [a, y + 0.62], [a + 0.3, y + 0.66], [cx - 0.5, y + 1.28], [cx + 0.42, y + 1.3],
+    [b - 0.24, y + 0.7], [b, y + 0.62],
+  ], 0.2)], c, {
+    grosor: 0.09,
+    dentro:
+      camino(caja(cx - 0.42, y + 0.78, 0.8, 0.44, 0.08), { fill: contorno(c) })
+      + camino(caja(a - 0.2, y - 0.3, w + 0.4, 0.68, 0), { fill: oscuro(c) }),
+  });
+  return s;
+}
+
+/**
+ * Tranvia volcado. Es el obstaculo mas largo del catalogo y la silueta que mas
+ * dice «ciudad»: caja de viajeros tumbada, ventanas como huecos negros seguidos
+ * y el bogie con las ruedas al aire — que es lo que dice VOLCADO y no aparcado.
+ */
+function tranvia(cx, suelo, t, rng) {
+  const c = mezcla('#8a6a4a', t.cuerpo, 0.18);
+  const w = 4.6, a = cx - w / 2, b = cx + w / 2;
+  const y = altoDe(suelo, a, b);
+  const h = 1.5;
+  let s = sombraApoyada(suelo, a - 0.2, b + 0.2, 0.15);
+  s += pieza([apoyado(suelo, a, b, [
+    [a, y + 0.32], [a + 0.2, y + h * 0.9], [b - 0.55, y + h], [b, y + h * 0.55],
+  ], 0.22)], c, {
+    grosor: 0.1,
+    dentro:
+      [0, 1, 2, 3].map((i) => camino(caja(a + 0.55 + i * 0.92, y + 0.62, 0.6, 0.5, 0.07), { fill: contorno(c) })).join('')
+      + camino(caja(a - 0.2, y - 0.3, w + 0.4, 0.6, 0), { fill: oscuro(c) }),
+  });
+  const bx = cx + w * 0.18;
+  s += pieza([caja(bx - 0.62, y + h, 1.24, 0.26, 0.06)], oscuro(c), { grosor: 0.07 });
+  for (const dx of [-0.38, 0.38]) s += pieza([circulo(bx + dx, y + h + 0.4, 0.23, 14)], CAUCHO.llanta, { grosor: 0.07 });
   return s;
 }
 
@@ -313,34 +373,6 @@ function erizo(cx, suelo, t, rng) {
   // pletina de union en el centro: es lo que lo hace un objeto soldado
   f.push(circulo(cx, cy, 0.26, 12));
   return sombraApoyada(suelo, a - 0.15, b + 0.15, 0.12) + pieza(f, c, { grosor: 0.085 });
-}
-
-/**
- * Almiar: montón de paja con el palo. Dice «campo cosechado» y es la pieza de
- * la llanura del Bzura. La cumbrera va DESCENTRADA: simétrica se lee como un
- * sobre y no como algo amontonado a horca.
- */
-function almiar(cx, suelo, t, rng) {
-  const c = mezcla('#d9b962', t.cuerpo, 0.25);
-  const w = 1.15 + rng() * 0.25, a = cx - w, b = cx + w;
-  const h = 1.9 + rng() * 0.5;
-  const cumbre = 0.44 + rng() * 0.12;
-  const techo = [];
-  for (let i = 0; i <= 10; i++) {
-    const u = i / 10, x = a + (b - a) * u;
-    const k = u < cumbre ? u / cumbre : (1 - u) / (1 - cumbre);
-    techo.push([x, suelo(x) + h * Math.sin(Math.min(1, k) * Math.PI * 0.5) ** 0.72]);
-  }
-  let s = sombraApoyada(suelo, a - 0.25, b + 0.25, 0.15);
-  s += pieza([apoyado(suelo, a, b, techo)], c, {
-    dentro: [0.28, 0.55, 0.8].map((k) =>
-      camino(polilinea([[a, suelo(a) + h * k], [b, suelo(b) + h * k]]), {
-        stroke: oscuro(c), 'stroke-width': 0.05, 'stroke-dasharray': '0.42 0.3', fill: 'none',
-      })).join(''),
-  });
-  const px = a + (b - a) * cumbre;
-  s += pieza([caja(px - 0.07, suelo(px) + h * 0.94, 0.14, 0.55, 0.04)], tenir(MATERIA.madera, t), { grosor: 0.06 });
-  return s;
 }
 
 /** Poste de telegrafo: dos crucetas con aisladores, inclinado. */
@@ -452,31 +484,6 @@ function cajas(cx, suelo, t, rng) {
   return s;
 }
 
-/** Cerca de listones: dos travesanos y un tramo caido. */
-function cerca(cx, suelo, t, rng, tramos = 3) {
-  const c = tenir(MATERIA.madera, t);
-  const paso = 1.5, x0 = cx - (tramos * paso) / 2;
-  let s = '';
-  const cimas = [];
-  for (let i = 0; i <= tramos; i++) {
-    const x = x0 + i * paso;
-    const y = suelo(x), h = 1.0 + rng() * 0.2;
-    cimas.push([x, y, h]);
-    s += sombraApoyada(suelo, x - 0.25, x + 0.25, 0.09);
-    s += pieza([caja(x - 0.08, y - 0.25, 0.16, h + 0.25, 0.04)], c, { grosor: 0.06 });
-  }
-  for (let i = 1; i < cimas.length; i++) {
-    const [xa, ya, ha] = cimas[i - 1], [xb, yb, hb] = cimas[i];
-    const roto = i === 2;
-    for (const k of [0.85, 0.5]) {
-      const p0 = [xa, ya + ha * k];
-      const p1 = roto ? [(xa + xb) / 2, ya + ha * k - 0.55] : [xb, yb + hb * k];
-      s += pieza([caminoRedondeado([[p0[0], p0[1] - 0.06], [p1[0], p1[1] - 0.06], [p1[0], p1[1] + 0.06], [p0[0], p0[1] + 0.06]], 0.03)], c, { grosor: 0.055 });
-    }
-  }
-  return s;
-}
-
 /** Via de tren: terraplen de balasto, traviesas y el carril retorcido. */
 function via(cx, suelo, t, rng, largo = 6.5) {
   const balasto = mezcla(t.cresta, t.socavon, 0.5);
@@ -541,18 +548,18 @@ export function sacos(cx, suelo, t, rng, ancho = 3.0) {
  * aparece: un teatro con seis setos no es Normandia, es un laberinto.
  */
 export const FAMILIAS = {
-  seto: { ancho: 5.8, veces: 1, dibujar: (x, s, t, r) => seto(x, s, t, r, 5.4) },
+  tranvia: { ancho: 5.0, veces: 1, dibujar: tranvia },
   via: { ancho: 7.0, veces: 1, dibujar: (x, s, t, r) => via(x, s, t, r, 6.5) },
   alambrada: { ancho: 6.6, veces: 1, dibujar: (x, s, t, r) => alambrada(x, s, t, r, 3) },
-  cerca: { ancho: 5.0, veces: 1, dibujar: (x, s, t, r) => cerca(x, s, t, r, 3) },
-  barricada: { ancho: 3.4, veces: 1, dibujar: barricada },
-  escombro: { ancho: 3.2, veces: 2, dibujar: escombro },
-  almiar: { ancho: 2.7, veces: 2, dibujar: almiar },
+  barricada: { ancho: 3.4, veces: 2, dibujar: barricada },
+  escombro: { ancho: 3.2, veces: 3, dibujar: escombro },
+  coche: { ancho: 2.7, veces: 1, dibujar: coche },
+  viga: { ancho: 2.6, veces: 2, dibujar: viga },
+  muro: { ancho: 2.6, veces: 2, dibujar: muro },
+  erizo: { ancho: 2.2, veces: 2, dibujar: erizo },
   cajas: { ancho: 2.2, veces: 1, dibujar: cajas },
   bidones: { ancho: 2.2, veces: 1, dibujar: bidones },
-  erizo: { ancho: 2.2, veces: 2, dibujar: erizo },
-  abeto: { ancho: 2.0, veces: 2, dibujar: abeto },
-  tocon: { ancho: 1.5, veces: 2, dibujar: tocon },
-  farola: { ancho: 1.3, veces: 1, dibujar: farola },
+  arbol: { ancho: 1.6, veces: 2, dibujar: arbol },
+  farola: { ancho: 1.3, veces: 2, dibujar: farola },
   poste: { ancho: 1.2, veces: 2, dibujar: poste },
 };

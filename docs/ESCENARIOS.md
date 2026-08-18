@@ -114,26 +114,29 @@ implementación.
 ## 3. Las familias, y a quién pertenece cada una
 
 **Un teatro no es una paleta: es un sitio.** Cada uno declara sus familias en
-`paleta.js` y **no usa las de los demás**. Un tocón astillado en El Alamein o un
-almiar en Stalingrado convierten los nueve teatros en el mismo teatro repintado,
-que es exactamente lo que pasaba.
+`paleta.js` y **no usa las de los demás**. Con el mismo decorado en los dieciséis,
+son uno repintado dieciséis veces.
+
+Las dieciséis ciudades comparten un vocabulario urbano: lo que queda en pie en
+Berlín y en Coventry es lo mismo —muro suelto, viga retorcida, escombro, coche
+quemado— y lo que cambia es la fábrica con la que está hecho.
 
 | Familia | Ancho | Veces | Teatros |
 |---|---|---|---|
-| Seto de bocage | 5,8 u | 1 | Normandía |
+| Tranvía volcado | 5,0 u | 1 | Varsovia 39 y 44, Járkov, Budapest |
 | Vía y carril retorcido | 7,0 u | 1 | Stalingrado |
-| Alambrada | 6,6 u | 1 | Somme, Passchendaele, Alamein |
-| Cerca de listones | 5,0 u | 1 | Bzura |
-| Barricada de adoquines | 3,4 u | 1 | París |
-| Escombro de ladrillo | 3,2 u | 2 | Stalingrado, París, Seelow |
-| Almiar | 2,7 u | 2 | Bzura |
-| Cajas de munición | 2,1 u | 1 | Somme, Bzura, Normandía, Ardenas |
-| Bidones | 2,1 u | 1 | Passchendaele, Alamein, Seelow |
-| Erizo checo | 2,1 u | 2 | Normandía, Alamein, Seelow |
-| Abeto nevado | 1,9 u | 2 | Ardenas |
-| Tocón astillado | 1,4 u | 2 | Passchendaele, Ardenas |
-| Farola | 1,2 u | 1 | París |
-| Poste de telégrafo | 1,1 u | 2 | Somme, Bzura, Normandía, Seelow |
+| Alambrada | 6,6 u | 1 | Ypres, Verdún, Montecassino |
+| Barricada de adoquines | 3,4 u | 2 | Varsovia 44, Berlín |
+| Escombro de ladrillo | 3,2 u | 3 | **los dieciséis** |
+| Coche quemado | 2,7 u | 1 | Rotterdam, Coventry, Caen, Saint-Lô, Arnhem, Budapest, Dresde |
+| Viga retorcida | 2,6 u | 2 | Ypres, Verdún, Rotterdam, Stalingrado, Járkov, Cassino, Saint-Lô, Aquisgrán, Dresde, Berlín |
+| Muro suelto | 2,6 u | 2 | casi todos |
+| Erizo checo | 2,2 u | 2 | Aquisgrán, Berlín |
+| Cajas de munición | 2,2 u | 1 | Ypres, Verdún, Coventry, Cassino, Saint-Lô |
+| Bidones | 2,2 u | 1 | Stalingrado |
+| Árbol de calle quemado | 1,6 u | 2 | Varsovia 39, Caen, Arnhem, Dresde |
+| Farola | 1,3 u | 2 | Varsovia 39 y 44, Rotterdam, Caen, Budapest |
+| Poste de telégrafo | 1,2 u | 2 | — |
 | Parapeto de sacos | 3,4 u | — | **todos**, automático: uno delante de cada cañón |
 
 El parapeto de sacos no se declara: va siempre, **delante** del cañón y no
@@ -149,8 +152,7 @@ que se lea como aparejo y no como una rejilla.
 se entiende: puede ser una roca, una rampa o una sombra. Lo que se lee como
 cascote es ver las piedras sueltas, cada una con su contorno, amontonadas —
 tocándose— de mayor abajo a menor arriba, sobre un vertido fino que las ata al
-suelo. Repartidas por todo el ancho se leen como piedras tiradas y el montón
-deja de existir.
+suelo. Repartidas por todo el ancho se leen como piedras tiradas.
 
 **Una fachada es una rejilla rígida.** Todos los huecos de un edificio —ventanas
 y puerta— se replantean desde la misma cota. La puerta se colocaba a la altura
@@ -158,7 +160,10 @@ del terreno *en su x*, así que en cuanto había pendiente se movía respecto a 
 ventanas y se veía una ventana bailando según el escenario. Lo que varía con el
 terreno es cuánto tapa el suelo la fachada, nunca dónde están sus huecos.
 
----
+**El muro suelto nunca va solo y recto.** Es la pieza que más se parece a un
+muro-trampa (`docs/TRAMPAS.md` §4), así que va girado y acompañado de su montón
+de escombro. Una ruina aislada y vertical está prohibida en cualquier escena con
+trampas activas.
 
 ### 3.1 Trincheras y parapetos
 

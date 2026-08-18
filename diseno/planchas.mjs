@@ -310,11 +310,17 @@ footer{margin:80px 0 0;padding-top:22px;border-top:3px solid var(--tinta);color:
 
 <section>
   <h2>Los seis teatros</h2>
-  <p class="sub">Nueve sitios de verdad, uno por partida. La epoca la manda el teatro, no el jugador.</p>
-  <p class="nota">Un teatro no es una paleta, es un <b>sitio</b>: lo que lo dice no es
-  el color del cielo, es que en Normandia hay setos de bocage sobre caballon y en la
-  llanura del Bzura hay almiares y postes de telegrafo. Cada uno declara sus familias
-  de decorado y no usa las de los demas.</p>
+  <p class="sub">Dieciseis ciudades destruidas de verdad, una por partida. La epoca la manda el teatro, no el jugador.</p>
+  <p class="nota">El campo abierto con colinas se ha ido: la guerra que cuenta este
+  juego se peleo en calles. Una ciudad arrasada da lo que el campo no daba — un fondo
+  con silueta (tres capas de manzanas con el remate roto), obstaculos con forma
+  reconocible y una excusa fisica para que el suelo sea cascote y no cesped.</p>
+  <p class="nota">Un teatro no es una paleta, es un <b>sitio</b>: lo que lo dice es de
+  que esta hecha la ciudad —ladrillo en Varsovia, piedra caliza en Caen, arenisca
+  ennegrecida en Dresde— y que piezas quedaron en pie. Cada uno declara sus familias
+  de decorado y no usa las de los demas. Los nueve hitos salen del mismo constructor
+  de edificios, y por eso las dieciseis parecen del mismo mundo sin parecerse entre
+  si.</p>
   <p class="nota">Cinco planos: cielo de cuatro bandas, tres crestas de fondo mezcladas
   hacia el horizonte, suelo de <b>cuatro</b> franjas de color plano siguiendo el
   relieve, decorado tenido un 35 % hacia la tierra del teatro, y primer plano en
@@ -349,8 +355,10 @@ footer{margin:80px 0 0;padding-top:22px;border-top:3px solid var(--tinta);color:
       <td>ARTE.md §14 lo especifica y esta implementado</td><td>La nota era falsa desde que se escribio §14</td></tr>
     <tr><td>ARTE.md §9 · VEHICULOS §8</td><td>la BOCA a la misma Y en toda elevacion</td>
       <td>el PIVOTE de elevacion a la misma Y</td><td>Un tubo que gira describe un arco: lo otro no se puede cumplir</td></tr>
-    <tr><td>ARTE.md §11</td><td>seis teatros con el mismo decorado</td>
-      <td>nueve sitios de verdad, cada uno con sus familias</td><td>Un teatro no es una paleta; con el mismo decorado los seis eran uno repintado</td></tr>
+    <tr><td>ARTE.md §11</td><td>seis teatros de campo con el mismo decorado</td>
+      <td>dieciseis ciudades destruidas, cada una con sus familias</td><td>Un teatro no es una paleta; con el mismo decorado eran uno repintado</td></tr>
+    <tr><td>ARTE.md §13</td><td>fondo de tres crestas de colina</td>
+      <td>tres capas de manzanas con el remate roto</td><td>Una ciudad no tiene colinas detras: tiene mas ciudad</td></tr>
     <tr><td>ARTE.md §12</td><td>diez franjas de suelo con el brillo alternando</td>
       <td>cuatro, y contraste bajo entre las de abajo</td><td>Diez bandas onduladas convierten media pantalla en un mapa topografico</td></tr>
     <tr><td>ESCENARIOS §2</td><td>«toda pieza se asienta en el terreno»</td>

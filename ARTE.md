@@ -234,41 +234,53 @@ conflicto gana lo anterior.
 
 ## 11. Teatros
 
-La sección 2 define **una** paleta. El juego tiene nueve, todas con la misma
+La sección 2 define **una** paleta. El juego tiene dieciséis, todas con la misma
 forma de tokens.
 
-**Un teatro no es una paleta: es un sitio.** La primera versión tenía seis
-nombres y el mismo decorado en todos —unos tocones y una alambrada, daba igual
-dónde estuvieras—, y por eso ninguno se reconocía. Lo que dice dónde estás no es
-el color del cielo: es que en Normandía haya setos de bocage sobre caballón y en
-la llanura del Bzura haya almiares y postes de telégrafo. Cada teatro declara
-sus familias de decorado (`docs/ESCENARIOS.md` §3) y **no usa las de los demás**.
+**Los dieciséis son una ciudad destruida de verdad.** El campo abierto con
+colinas se ha ido: la guerra que cuenta este juego se peleó en calles, y una
+ciudad arrasada da lo que el campo no daba — un fondo con silueta (el perfil de
+ruinas), obstáculos con forma reconocible y una excusa física para que el suelo
+sea cascote y no césped.
 
-| Teatro | País | Época | Cresta | Cuerpo | Socavón | Hito | Decorado propio |
+Un teatro no es una paleta: es un sitio. Lo que dice dónde estás es de qué está
+hecha la ciudad —`FABRICA`: ladrillo, piedra, creta, hormigón, granito, estuco,
+arenisca— y qué piezas quedaron en pie. Cada teatro declara sus familias
+(`docs/ESCENARIOS.md` §3) y **no usa las de los demás**.
+
+| Teatro | País | Época | Cresta | Cuerpo | Socavón | Fábrica | Hito |
 |---|---|---|---|---|---|---|---|
-| **El Somme** `?biome=somme` | Francia | 1916 | `#F0EAD9` | `#CDC0A2` | `#94876C` | Torre de iglesia rota | alambrada, cajas, poste |
-| **Passchendaele** `?biome=passchendaele` | Bélgica | 1917 | `#9AA05C` | `#6E7440` | `#474B2A` | Tocón gigante | tocones, alambrada, bidones |
-| **Llanura del Bzura** `?biome=bzura` | Polonia | 1939 | `#E3CE94` | `#BFA35F` | `#87703C` | Granero de madera | almiares, cerca de listones, postes |
-| **El Alamein** `?biome=alamein` | Egipto | 1942 | `#FBE1A0` | `#E8A94E` | `#B87438` | Casa de adobe | bidones, alambrada, erizos |
-| **Stalingrado** `?biome=stalingrado` | URSS | 1942 | `#B9B0A6` | `#8A8078` | `#5D554F` | Chimenea de fábrica | escombro de ladrillo, vía retorcida, bidones |
-| **Normandía** `?biome=normandia` | Francia | 1944 | `#B7C96F` | `#84A048` | `#556A31` | Granja de piedra | seto de bocage, erizos, postes |
-| **París** `?biome=paris` | Francia | 1944 | `#E2DAC6` | `#BCB097` | `#82785F` | Edificio haussmanniano | barricada de adoquines, farolas, escombro |
-| **Las Ardenas** `?biome=ardenas` | Bélgica y Alemania | 1944 | `#EDF3F7` | `#AFC3D0` | `#6E8496` | Casa nevada | abetos nevados, tocones, cajas |
-| **Alturas de Seelow** `?biome=seelow` | Alemania | 1945 | `#C2B69C` | `#93866B` | `#63593F` | Ruina de ladrillo | escombro, erizos, postes |
+| **Ypres** `?biome=ypres` | Bélgica | 1915 | `#9D9578` | `#7A7358` | `#4F4A38` | ladrillo | Lonja de los Paños |
+| **Verdún** `?biome=verdun` | Francia | 1916 | `#DCD6C2` | `#B6AE97` | `#7D766A` | hormigón | Fuerte |
+| **Varsovia** `?biome=varsovia39` | Polonia | 1939 | `#C9A877` | `#A2814F` | `#6D5636` | ladrillo | Manzana |
+| **Rotterdam** `?biome=rotterdam` | P. Bajos | 1940 | `#9A8F80` | `#776D60` | `#4B453C` | ladrillo oscuro | Manzana |
+| **Coventry** `?biome=coventry` | R. Unido | 1940 | `#B9AC93` | `#94886F` | `#615948` | arenisca | Catedral |
+| **Stalingrado** `?biome=stalingrado` | URSS | 1942 | `#B9B0A6` | `#8A8078` | `#5D554F` | hormigón | Fábrica |
+| **Járkov** `?biome=jarkov` | URSS | 1943 | `#DFE4E4` | `#A8ACA9` | `#6D6F6B` | estuco | Estación |
+| **Montecassino** `?biome=cassino` | Italia | 1944 | `#E7E0CB` | `#C0B69C` | `#83795F` | creta | Abadía |
+| **Caen** `?biome=caen` | Francia | 1944 | `#DED5BD` | `#B8AD92` | `#7C7360` | piedra | Iglesia |
+| **Saint-Lô** `?biome=saintlo` | Francia | 1944 | `#D4CDB9` | `#ABA28C` | `#736B58` | piedra | Manzana |
+| **Varsovia, el Levantamiento** `?biome=varsovia44` | Polonia | 1944 | `#B5A58C` | `#8D7F68` | `#5C5342` | ladrillo | Manzana |
+| **Arnhem** `?biome=arnhem` | P. Bajos | 1944 | `#C6AC82` | `#9C8459` | `#68583B` | ladrillo | Puente |
+| **Aquisgrán** `?biome=aquisgran` | Alemania | 1944 | `#ADABA3` | `#868580` | `#585751` | granito | Catedral |
+| **Budapest** `?biome=budapest` | Hungría | 1945 | `#D3BB8E` | `#A89065` | `#6F5F42` | estuco | Manzana |
+| **Dresde** `?biome=dresde` | Alemania | 1945 | `#9D9086` | `#75695F` | `#453E38` | quemada | Catedral |
+| **Berlín** `?biome=berlin` | Alemania | 1945 | `#B0A493` | `#877C6C` | `#565044` | ladrillo | Manzana |
 
-Todos son de día y todos son claros. La primera versión los pintó de noche o al
-atardecer y el juego entero se veía triste; el color de un frente lo pone la
-tierra, no la falta de luz. Stalingrado es el único que conserva un cielo
+Todos son de día y todos son claros. La primera versión los pintó de noche y el
+juego entero se veía triste; el color de un frente lo pone la fábrica de sus
+casas, no la falta de luz. Stalingrado y Dresde son los únicos con el cielo
 ardiendo, porque ahí el fuego *es* el sitio.
 
-**La época la manda el teatro**, no el jugador: en el Somme y en Passchendaele se
-combate con rombos tipo Mark IV, en el Bzura con carros ligeros y coches
-blindados, y del 42 en adelante con casco de torreta y blindaje inclinado.
+**La época la manda el teatro**, no el jugador: en Ypres se combate con rombos
+tipo Mark IV, en Varsovia del 39 con carros ligeros y coches blindados, y del 42
+en adelante con casco de torreta y blindaje inclinado.
 
-**Los ocho hitos con edificio salen del mismo constructor** y por eso parecen del
-mismo mundo: cambia el tejado (dos aguas, mansarda, plano, roto), el material, el
-número de plantas y dónde está roto — nunca la forma de construirlo. El tocón
-gigante y la chimenea son los dos únicos casos especiales.
+**Los nueve hitos salen del mismo constructor de edificios** —cambia el tejado
+(dos aguas, mansarda, plano, roto), el material, el número de plantas y dónde
+está roto, nunca la forma de construirlo— más dos casos especiales: la chimenea
+de fábrica y la arcada rota. Por eso las dieciséis ciudades parecen del mismo
+mundo sin parecerse entre sí.
 
 ## 12. El suelo, por estratos
 
@@ -303,28 +315,28 @@ mitad inferior del cuadro).
 
 ## 13. Fondo y decorado
 
-**Crestas de fondo:** tres capas con perspectiva aérea, mezcladas hacia la
-parada de cielo del horizonte (la 3 y la 2, nunca el cenit — mezclando con el
-cenit el horizonte del desierto salía malva). Se arrastran con una fracción del
-centro de cámara (0.86 / 0.68 / 0.44): con cámara ortográfica la profundidad no
-da paralaje sola.
+**El fondo es un perfil de ruinas, no unas colinas.** Tres capas de manzanas con
+el remate roto, cada una más mezclada con el cielo y arrancando más arriba que la
+de delante, de forma que la lejana asoma por encima de las otras dos. Es lo que da
+profundidad sin paralaje —la cámara es ortográfica— y lo que hace que el sitio se
+lea como una ciudad antes de mirar una sola pieza del suelo.
 
-| Capa | Base | Altura | Mezcla con el cielo |
-|---|---|---|---|
-| Lejana | 12.4 u | 5.5 u | 0.80 |
-| Media | 9.2 u | 4.0 u | 0.64 (lleva los postes) |
-| Cercana | 6.6 u | 3.0 u | 0.46 |
+| Capa | Base | Alturas | Ancho de manzana | Mezcla con el cielo |
+|---|---|---|---|---|
+| Lejana | 3.0 u | 5.5 – 9.5 u | 2.6 – 5.5 u | 0.72 |
+| Media | 2.0 u | 4.5 – 8.0 u | 2.2 – 4.6 u | 0.52 |
+| Cercana | 1.0 u | 3.5 – 6.5 u | 1.8 – 3.8 u | 0.30 (lleva las ventanas) |
 
-**Arrancan muy por encima de la cota del campo, y esto no es un ajuste fino.**
-La versión anterior ponía la cresta cercana a 5 u con el terreno jugable entre 3
-y 5: las dos se entrelazaban, y como la cresta va **más clara** que el suelo se
-leía como si fuera la hierba de delante. Resultado: todo lo plantado en el
-terreno parecía hundido en una loma que en realidad estaba detrás — era la causa
-real de las «casas flotando», y no se veía mirando la escena. Se encontró
-superponiendo el perfil del terreno en magenta.
+Se mezcla hacia la parada de cielo del horizonte, nunca hacia el cenit (con el
+cenit los tejados salen malva). El remate roto es **una sola muesca** por manzana:
+con tres dientes de medio metro cada bloque se lee como una montaña y el fondo
+deja de parecer una ciudad. Y las ventanas de la capa cercana van **en rejilla
+dentro de su edificio**: sembradas al azar sobre la silueta se leen como suciedad.
 
-Sigue en pie la otra mitad de la regla: una cresta de fondo a 30 u no se lee como
-lejanía, se lee como un muro gris.
+Las tres arrancan muy por encima de la cota del campo. La versión anterior ponía
+la cercana a 5 u con el terreno jugable entre 3 y 5: se entrelazaban, y como el
+fondo va más claro que el suelo se leía como la hierba de delante — era la causa
+real de que todo lo plantado en el terreno pareciera flotar.
 
 **Decorado:** sacos terreros, alambrada, tocones astillados, bidones y cajas de
 munición, repartidos con el `rng` de la semilla; un parapeto de sacos pegado a

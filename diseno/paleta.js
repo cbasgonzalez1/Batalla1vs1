@@ -106,103 +106,173 @@ export const MATERIA = {
   acento: '#d94f2b',
 };
 
+// ── mamposteria ───────────────────────────────────────────────────────────
+
+/**
+ * De que esta hecha la ciudad. Es lo que mas la distingue de la de al lado:
+ * Varsovia es ladrillo, Caen es piedra caliza y Dresde es arenisca ennegrecida.
+ * De aqui salen el color del hito, el del perfil de ruinas del fondo y el del
+ * escombro, y por eso las tres cosas pertenecen al mismo sitio.
+ */
+export const FABRICA = {
+  ladrillo: '#9e5540',
+  ladrilloOscuro: '#7d4436',
+  piedra: '#b3aa98',
+  creta: '#d8d2bd',
+  hormigon: '#9a9a94',
+  granito: '#8d8f92',
+  estuco: '#c39a63',
+  arenisca: '#bd8a5c',
+  quemada: '#6b625c',
+};
+
 // ── teatros ───────────────────────────────────────────────────────────────
 
 /**
- * Nueve teatros, y todos son un sitio de verdad.
+ * Dieciseis teatros, y todos son una CIUDAD DESTRUIDA de verdad.
  *
- * La version anterior tenia seis nombres genericos y el mismo decorado en todos:
- * unos tocones y una alambrada daba igual donde estuvieras. Un teatro no es una
- * paleta, es un SITIO — y lo que lo dice no es el color del cielo, es que en
- * Normandia hay setos de bocage y erizos de playa y en Varsovia hay almiares y
- * postes de telegrafo.
+ * El campo abierto con colinas se ha ido: la guerra que cuenta este juego se
+ * peleo en calles, y una ciudad arrasada da lo que el campo no daba — un fondo
+ * con silueta (el perfil de ruinas), obstaculos con forma reconocible y una
+ * excusa fisica para que el suelo sea cascote y no cesped.
  *
- * Todos son de dia y todos son claros. La primera version los pinto de noche y
- * el juego entero se veia triste: el color de un frente lo pone la tierra, no la
- * falta de luz. Stalingrado es el unico con el cielo ardiendo, porque ahi el
- * fuego ES el sitio.
+ * Todos son de dia y todos son claros. El color de un frente lo pone la fabrica
+ * de sus casas, no la falta de luz: Stalingrado y Dresde son los unicos con el
+ * cielo ardiendo, porque ahi el fuego ES el sitio.
  */
 export const TEATROS = {
-  somme: {
-    agua: true,
-    nombre: 'El Somme', pais: 'Francia', epoca: 1916, proyectil: 'trazadora',
-    cielo: ['#8fb0c8', '#b6cedd', '#d2e1e7', '#e7ebe0'],
-    cresta: '#f0ead9', cuerpo: '#cdc0a2', socavon: '#94876c',
-    hito: 'iglesia',
-    props: ['alambrada', 'cajas', 'poste'],
-    nota: 'Creta pisoteada y craterizada. La torre de la iglesia rota es lo unico que queda en pie sobre la loma.',
+  ypres: {
+    nombre: 'Ypres', pais: 'Belgica', epoca: 1915, proyectil: 'trazadora',
+    cielo: ['#7d8f94', '#9fb0b2', '#bfcbc6', '#d5dbcb'],
+    cresta: '#9d9578', cuerpo: '#7a7358', socavon: '#4f4a38',
+    fabrica: 'ladrillo', hito: 'lonja', agua: true,
+    props: ['escombro', 'muro', 'viga', 'alambrada', 'cajas'],
+    nota: 'La Lonja de los Panos en pie a medias sobre el barro. La primera ciudad que se borro del mapa a canonazos.',
   },
-  passchendaele: {
-    agua: true,
-    nombre: 'Passchendaele', pais: 'Belgica', epoca: 1917, proyectil: 'fosforo',
-    cielo: ['#7e96a6', '#a3b8c4', '#c3d2d6', '#d9ddce'],
-    cresta: '#9aa05c', cuerpo: '#6e7440', socavon: '#474b2a',
-    hito: 'bosque',
-    props: ['tocon', 'alambrada', 'cajas', 'bidones'],
-    nota: 'Barro y bosque astillado. Del hayedo solo quedan los tocones: el gigante del centro es el ultimo arbol que hubo.',
+  verdun: {
+    nombre: 'Verdun', pais: 'Francia', epoca: 1916, proyectil: 'trazadora',
+    cielo: ['#8ea6bb', '#b3c5d1', '#d0dbdc', '#e5e6d8'],
+    cresta: '#dcd6c2', cuerpo: '#b6ae97', socavon: '#7d766a',
+    fabrica: 'hormigon', hito: 'fuerte', agua: true,
+    props: ['escombro', 'alambrada', 'viga', 'sacos', 'cajas'],
+    nota: 'Creta y hormigon. De los nueve pueblos del sector no quedo ni el trazado de las calles.',
   },
-  bzura: {
-    nombre: 'Llanura del Bzura', pais: 'Polonia', epoca: 1939, proyectil: 'trazadora',
-    cielo: ['#6e9fc4', '#9cc0d8', '#c6d9e2', '#e6e6cd'],
-    cresta: '#e3ce94', cuerpo: '#bfa35f', socavon: '#87703c',
-    hito: 'granero',
-    props: ['almiar', 'cerca', 'poste', 'cajas'],
-    nota: 'Rastrojo de septiembre. Campo abierto de verdad: almiares, una cerca de listones y el granero de madera al fondo.',
+  varsovia39: {
+    nombre: 'Varsovia', pais: 'Polonia', epoca: 1939, proyectil: 'trazadora',
+    cielo: ['#5f92bb', '#8fb5cf', '#bdd2dc', '#e0d9bd'],
+    cresta: '#c9a877', cuerpo: '#a2814f', socavon: '#6d5636',
+    fabrica: 'ladrillo', hito: 'manzana',
+    props: ['escombro', 'tranvia', 'farola', 'muro', 'arbol'],
+    nota: 'Septiembre del 39. La manzana de viviendas destripada y el tranvia volcado en mitad de la calzada.',
   },
-  alamein: {
-    nombre: 'El Alamein', pais: 'Egipto', epoca: 1942, proyectil: 'fosforo',
-    cielo: ['#4f89b4', '#8cb6d0', '#c3d6dc', '#f0e2c4'],
-    cresta: '#fbe1a0', cuerpo: '#e8a94e', socavon: '#b87438',
-    hito: 'adobe',
-    props: ['bidones', 'alambrada', 'cajas', 'erizo'],
-    nota: 'Arena batida por el viento: es donde mas se nota Sotavento. La casa de adobe es la unica sombra en kilometros.',
+  rotterdam: {
+    nombre: 'Rotterdam', pais: 'Paises Bajos', epoca: 1940, proyectil: 'fosforo',
+    cielo: ['#6e8391', '#93a7ae', '#b9c8c6', '#cdd6c8'],
+    cresta: '#9a8f80', cuerpo: '#776d60', socavon: '#4b453c',
+    fabrica: 'ladrilloOscuro', hito: 'manzana', agua: true,
+    props: ['escombro', 'viga', 'coche', 'farola', 'muro'],
+    nota: 'El centro entero ardio en un par de horas. Ladrillo oscuro, cielo bajo y el suelo siempre mojado.',
+  },
+  coventry: {
+    nombre: 'Coventry', pais: 'Reino Unido', epoca: 1940, proyectil: 'fosforo',
+    cielo: ['#8c8479', '#ab9f8f', '#c8bda8', '#ddd0b4'],
+    cresta: '#b9ac93', cuerpo: '#94886f', socavon: '#615948',
+    fabrica: 'arenisca', hito: 'catedral',
+    props: ['escombro', 'muro', 'viga', 'coche', 'cajas'],
+    nota: 'De la catedral quedo el campanario y el perimetro. Es el hito mas alto de los dieciseis.',
   },
   stalingrado: {
     nombre: 'Stalingrado', pais: 'URSS', epoca: 1942, proyectil: 'fosforo',
     cielo: ['#8a6f5e', '#b8917a', '#d7b48f', '#e8cba0'],
     cresta: '#b9b0a6', cuerpo: '#8a8078', socavon: '#5d554f',
-    hito: 'fabrica',
-    props: ['escombro', 'via', 'bidones'],
-    nota: 'La chimenea de la fabrica y la via retorcida a sus pies. El unico teatro con el cielo ardiendo.',
+    fabrica: 'hormigon', hito: 'fabrica',
+    props: ['escombro', 'via', 'viga', 'bidones', 'sacos'],
+    nota: 'La fabrica y el silo. El unico teatro con el cielo ardiendo desde el primer turno.',
   },
-  normandia: {
-    agua: true,
-    nombre: 'Normandia', pais: 'Francia', epoca: 1944, proyectil: 'trazadora',
-    cielo: ['#7fa9c6', '#b1d2e1', '#c9e1eb', '#e0eadf'],
-    cresta: '#b7c96f', cuerpo: '#84a048', socavon: '#556a31',
-    hito: 'granja',
-    props: ['seto', 'erizo', 'poste', 'cajas'],
-    nota: 'Bocage: setos sobre caballon de tierra que cortan el campo en parcelas. Son la cobertura y son el problema.',
+  jarkov: {
+    nombre: 'Jarkov', pais: 'URSS', epoca: 1943, proyectil: 'trazadora',
+    cielo: ['#8496a8', '#adbdc7', '#cdd8dc', '#e7ecec'],
+    cresta: '#dfe4e4', cuerpo: '#a8aca9', socavon: '#6d6f6b',
+    fabrica: 'estuco', hito: 'estacion', nieve: true,
+    props: ['escombro', 'tranvia', 'viga', 'muro', 'sacos'],
+    nota: 'Nieve sucia sobre el escombro. La estacion cambio de mano cuatro veces en seis meses.',
   },
-  paris: {
-    nombre: 'Paris', pais: 'Francia', epoca: 1944, proyectil: 'fosforo',
-    cielo: ['#8aa6bc', '#b3c6d4', '#d2dce0', '#eae6d9'],
-    cresta: '#e2dac6', cuerpo: '#bcb097', socavon: '#82785f',
-    hito: 'haussmann',
-    props: ['barricada', 'farola', 'escombro'],
-    nota: 'Piedra de Paris y barricada de adoquines levantados. El unico teatro urbano de verdad.',
+  cassino: {
+    nombre: 'Montecassino', pais: 'Italia', epoca: 1944, proyectil: 'fosforo',
+    cielo: ['#4f86b4', '#87b0cc', '#bfd2d8', '#e8ddbe'],
+    cresta: '#e7e0cb', cuerpo: '#c0b69c', socavon: '#83795f',
+    fabrica: 'creta', hito: 'abadia',
+    props: ['escombro', 'muro', 'viga', 'alambrada', 'cajas'],
+    nota: 'Piedra caliza machacada hasta el polvo. Todo el teatro es una ladera de cascote blanco.',
   },
-  ardenas: {
-    nombre: 'Las Ardenas', pais: 'Belgica y Alemania', epoca: 1944, proyectil: 'trazadora',
-    cielo: ['#7b98ad', '#a6bfd0', '#cbdce6', '#e8eff4'],
-    cresta: '#edf3f7', cuerpo: '#afc3d0', socavon: '#6e8496',
-    hito: 'casa',
-    props: ['abeto', 'tocon', 'cajas'],
-    nota: 'Abetal bajo la nieve. La nieve es una capa encima, no un repinte: los estratos de debajo no cambian.',
+  caen: {
+    nombre: 'Caen', pais: 'Francia', epoca: 1944, proyectil: 'trazadora',
+    cielo: ['#7fa4c2', '#a9c6d8', '#c9dde1', '#e2e3d2'],
+    cresta: '#ded5bd', cuerpo: '#b8ad92', socavon: '#7c7360',
+    fabrica: 'piedra', hito: 'iglesia',
+    props: ['escombro', 'coche', 'farola', 'muro', 'arbol'],
+    nota: 'Piedra de Caen, la misma con la que se construyo media Inglaterra, hecha grava en una noche.',
   },
-  seelow: {
-    agua: true,
-    nombre: 'Alturas de Seelow', pais: 'Alemania', epoca: 1945, proyectil: 'trazadora',
-    cielo: ['#8496a0', '#aebdc0', '#cbd3cb', '#dddcc9'],
-    cresta: '#c2b69c', cuerpo: '#93866b', socavon: '#63593f',
-    hito: 'ladrillo',
-    props: ['escombro', 'erizo', 'poste', 'bidones'],
-    nota: 'Barro de abril y ladrillo aleman destripado. El ultimo teatro y el mas cerrado de los nueve.',
+  saintlo: {
+    nombre: 'Saint-Lo', pais: 'Francia', epoca: 1944, proyectil: 'trazadora',
+    cielo: ['#8b9aa4', '#adbbbf', '#cbd5d0', '#dfe2d4'],
+    cresta: '#d4cdb9', cuerpo: '#ab a2 8c'.replace(/ /g, ''), socavon: '#736b58',
+    fabrica: 'piedra', hito: 'manzana',
+    props: ['escombro', 'viga', 'muro', 'coche', 'cajas'],
+    nota: 'La llamaron «la capital de las ruinas». No quedo una sola manzana con las cuatro paredes.',
+  },
+  varsovia44: {
+    nombre: 'Varsovia, el Levantamiento', pais: 'Polonia', epoca: 1944, proyectil: 'fosforo',
+    cielo: ['#7b8288', '#9ea5a6', '#c0c4bd', '#d6d6c6'],
+    cresta: '#b5a58c', cuerpo: '#8d7f68', socavon: '#5c5342',
+    fabrica: 'ladrillo', hito: 'manzana',
+    props: ['barricada', 'escombro', 'tranvia', 'muro', 'farola'],
+    nota: 'Barricadas de adoquin levantado en cada bocacalle. Es el teatro con mas obstaculos apoyados.',
+  },
+  arnhem: {
+    nombre: 'Arnhem', pais: 'Paises Bajos', epoca: 1944, proyectil: 'trazadora',
+    cielo: ['#7396b5', '#a2bccd', '#c6d6d6', '#e0dcc0'],
+    cresta: '#c6ac82', cuerpo: '#9c8459', socavon: '#68583b',
+    fabrica: 'ladrillo', hito: 'puente',
+    props: ['escombro', 'coche', 'arbol', 'muro', 'sacos'],
+    nota: 'El puente al fondo y las villas de ladrillo alrededor. Otono: los arboles de calle todavia tienen algo de copa.',
+  },
+  aquisgran: {
+    nombre: 'Aquisgran', pais: 'Alemania', epoca: 1944, proyectil: 'fosforo',
+    cielo: ['#77848c', '#9aa6a9', '#bcc5c0', '#d1d5c8'],
+    cresta: '#adaba3', cuerpo: '#868580', socavon: '#585751',
+    fabrica: 'granito', hito: 'catedral',
+    props: ['escombro', 'erizo', 'viga', 'muro', 'sacos'],
+    nota: 'La primera ciudad alemana que cayo. Granito gris y erizos soldados en cada cruce.',
+  },
+  budapest: {
+    nombre: 'Budapest', pais: 'Hungria', epoca: 1945, proyectil: 'trazadora',
+    cielo: ['#7e93a8', '#a6bac6', '#c8d6d3', '#e6ddc2'],
+    cresta: '#d3bb8e', cuerpo: '#a89065', socavon: '#6f5f42',
+    fabrica: 'estuco', hito: 'manzana',
+    props: ['escombro', 'tranvia', 'farola', 'muro', 'coche'],
+    nota: 'Estuco ocre y balcones de hierro colgando. El asedio duro cincuenta dias dentro de la ciudad.',
+  },
+  dresde: {
+    nombre: 'Dresde', pais: 'Alemania', epoca: 1945, proyectil: 'fosforo',
+    cielo: ['#8a7365', '#ab9180', '#c7ae94', '#ddc5a2'],
+    cresta: '#9d9086', cuerpo: '#75695f', socavon: '#453e38',
+    fabrica: 'quemada', hito: 'catedral',
+    props: ['escombro', 'viga', 'muro', 'arbol', 'coche'],
+    nota: 'Arenisca ennegrecida por la tormenta de fuego. El teatro mas oscuro de los dieciseis, y a proposito.',
+  },
+  berlin: {
+    nombre: 'Berlin', pais: 'Alemania', epoca: 1945, proyectil: 'trazadora',
+    cielo: ['#84868a', '#a5a6a4', '#c3c2b8', '#d8d3c0'],
+    cresta: '#b0a493', cuerpo: '#877c6c', socavon: '#565044',
+    fabrica: 'ladrillo', hito: 'manzana',
+    props: ['escombro', 'erizo', 'barricada', 'viga', 'muro'],
+    nota: 'El ultimo. Manzanas destripadas, erizos en las avenidas y escombro hasta la altura del primer piso.',
   },
 };
 
 /** Los que llevan manto de nieve. Es tratamiento de terreno, no piezas. */
-export const NEVADOS = new Set(['ardenas']);
+export const NEVADOS = new Set(['jarkov']);
 
 /** Tinte de teatro obligatorio del decorado: 0,35 hacia el cuerpo del terreno. */
 export const TINTE_TEATRO = 0.35;

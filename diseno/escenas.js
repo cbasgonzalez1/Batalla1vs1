@@ -10,7 +10,7 @@
 import {
   caminoRedondeado, circulo, caja, camino, grupo, polilinea, siluetaUnica,
 } from './primitivas.js';
-import { TEATROS, NEVADOS, mezcla, tono, claro, oscuro, contorno, MATERIA } from './paleta.js';
+import { TEATROS, NEVADOS, FABRICA, mezcla, tono, claro, oscuro, contorno, MATERIA } from './paleta.js';
 import { construir, FICHAS } from './vehiculos.js';
 import { crearReserva, FAMILIAS, sacos, tenir, apoyado, perfilBase, altoDe, bajoDe, monton } from './decorado.js';
 
@@ -276,79 +276,157 @@ function chimenea(cx, suelo, t, rng) {
   return s;
 }
 
-const PIEDRA = (t) => mezcla('#b8b0a0', t.cuerpo, 0.3);
-const LADRILLO = (t) => mezcla('#a8603f', t.cuerpo, 0.3);
-const MADERA = (t) => tenir(MATERIA.madera, t);
-const ADOBE = (t) => mezcla('#d8b481', t.cuerpo, 0.3);
+const MAT = (t) => mezcla(FABRICA[t.fabrica], t.cuerpo, 0.18);
+const MAT2 = (t) => oscuro(MAT(t));
 
-/** El hito del teatro. Ocupa el 25-40 % del ancho y rompe el horizonte. */
+/** Arcada rota: la fila de arcos de una nave o de un puente. */
+function arcada(cx, suelo, n, w, alto, c) {
+  const f = [];
+  for (let i = 0; i < n; i++) {
+    const x = cx - (n * w) / 2 + w * i;
+    f.push(apoyado(suelo, x, x + w * 0.36, [[x, suelo(x) + alto], [x + w * 0.36, suelo(x) + alto]], 0.3));
+  }
+  const a = cx - (n * w) / 2, b = cx + (n * w) / 2;
+  f.push(caminoRedondeado([[a, altoDe(suelo, a, b) + alto], [b, altoDe(suelo, a, b) + alto],
+    [b, altoDe(suelo, a, b) + alto + 0.42], [a, altoDe(suelo, a, b) + alto + 0.42]], 0.08));
+  return objeto(f, c, 0.11);
+}
+
+/**
+ * El hito del teatro: la ruina grande que rompe el horizonte y ocupa entre el
+ * 25 % y el 40 % del ancho. Los nueve salen del mismo constructor de edificios
+ * y por eso las dieciseis ciudades parecen del mismo mundo.
+ */
 function hito(t, cx, suelo, rng, k = 1) {
-  const P = { cx, suelo, rng };
+  const c = MAT(t), c2 = MAT2(t);
+  const P = { cx, suelo, rng, material: c };
+  const ed = (o) => edificio({ ...P, ...o });
   switch (t.hito) {
-    case 'bosque': return toconGigante(cx, suelo, t, rng);
     case 'fabrica': return chimenea(cx, suelo, t, rng);
+
+    case 'catedral':   // torre alta + nave con arcada + escombro al pie
+      return ed({ cx: cx - 2.6 * k, w: 3.0 * k, h: 9.4 * k, tejado: 'roto', plantas: 4, columnas: 1 })
+        + ed({ cx: cx + 2.4 * k, w: 6.2 * k, h: 4.6 * k, tejado: 'roto', plantas: 2, columnas: 4 })
+        + arcada(cx + 2.4 * k, suelo, 4, 1.4 * k, 3.0 * k, c2)
+        + escombroPie(cx + 6.2 * k, suelo, 1.6, c);
+
+    case 'lonja':      // cuerpo largo con torre central, tipo Lonja de los Panos
+      return ed({ cx: cx + 1.4 * k, w: 7.4 * k, h: 3.6 * k, tejado: 'roto', plantas: 2, columnas: 5 })
+        + ed({ cx: cx - 2.2 * k, w: 2.4 * k, h: 7.4 * k, tejado: 'roto', plantas: 3, columnas: 1 })
+        + escombroPie(cx + 5.6 * k, suelo, 1.5, c);
+
+    case 'abadia':     // bloque largo con portico de columnas
+      return ed({ cx, w: 8.2 * k, h: 4.4 * k, tejado: 'roto', plantas: 2, columnas: 6 })
+        + arcada(cx, suelo, 6, 1.3 * k, 2.6 * k, c2)
+        + escombroPie(cx - 5.4 * k, suelo, 1.6, c);
+
+    case 'estacion':   // cuerpo bajo + marquesina rota
+      return ed({ cx: cx - 1.6 * k, w: 5.6 * k, h: 3.4 * k, tejado: 'plano', plantas: 2, columnas: 4 })
+        + arcada(cx + 3.0 * k, suelo, 4, 1.5 * k, 3.4 * k, c2)
+        + escombroPie(cx + 6.0 * k, suelo, 1.4, c);
+
+    case 'fuerte':     // hormigon bajo y ancho, paredes en talud
+      return ed({ cx, w: 7.6 * k, h: 2.4 * k, tejado: 'plano', plantas: 1, columnas: 4 })
+        + ed({ cx: cx + 1.8 * k, w: 2.0 * k, h: 3.4 * k, tejado: 'plano', plantas: 1, columnas: 1 })
+        + escombroPie(cx - 4.6 * k, suelo, 1.7, c);
+
+    case 'puente':     // dos pilas y el tablero partido
+      return ed({ cx: cx - 3.0 * k, w: 1.8 * k, h: 4.2 * k, tejado: 'plano', plantas: 1, columnas: 1 })
+        + ed({ cx: cx + 3.0 * k, w: 1.8 * k, h: 4.2 * k, tejado: 'plano', plantas: 1, columnas: 1 })
+        + objeto([
+          caminoRedondeado([[cx - 4.4 * k, altoDe(suelo, cx - 4, cx + 4) + 3.4 * k],
+            [cx - 0.6 * k, altoDe(suelo, cx - 4, cx + 4) + 3.4 * k],
+            [cx - 1.1 * k, altoDe(suelo, cx - 4, cx + 4) + 2.7 * k],
+            [cx - 4.4 * k, altoDe(suelo, cx - 4, cx + 4) + 2.8 * k]], 0.1),
+          caminoRedondeado([[cx + 0.9 * k, altoDe(suelo, cx - 4, cx + 4) + 2.6 * k],
+            [cx + 4.4 * k, altoDe(suelo, cx - 4, cx + 4) + 3.4 * k],
+            [cx + 4.4 * k, altoDe(suelo, cx - 4, cx + 4) + 2.8 * k],
+            [cx + 1.1 * k, altoDe(suelo, cx - 4, cx + 4) + 2.0 * k]], 0.1),
+        ], c2, 0.11)
+        + escombroPie(cx, suelo, 1.8, c);
+
     case 'iglesia':
-      return edificio({ ...P, w: 2.6 * k, h: 7.6 * k, tejado: 'roto', plantas: 3, columnas: 1, material: PIEDRA(t) })
-        + escombroPie(cx + 2.0 * k, suelo, 1.4, PIEDRA(t));
-    case 'granero':
-      return edificio({ ...P, w: 6.6 * k, h: 3.2 * k, tejado: 'dos aguas', plantas: 2, columnas: 3, material: MADERA(t) })
-        + escombroPie(cx - 4.0 * k, suelo, 1.2, MADERA(t));
-    case 'adobe':
-      return edificio({ ...P, w: 5.6 * k, h: 2.7 * k, tejado: 'plano', plantas: 2, columnas: 3, material: ADOBE(t) })
-        + escombroPie(cx + 3.4 * k, suelo, 1.3, ADOBE(t));
-    case 'granja':
-      return edificio({ ...P, w: 6.2 * k, h: 3.4 * k, tejado: 'dos aguas', plantas: 2, columnas: 4, material: PIEDRA(t) })
-        + escombroPie(cx - 3.9 * k, suelo, 1.2, PIEDRA(t));
-    case 'haussmann':
-      return edificio({ ...P, w: 6.8 * k, h: 8.6 * k, tejado: 'mansarda', plantas: 4, columnas: 4, material: PIEDRA(t) })
-        + escombroPie(cx + 4.2 * k, suelo, 1.5, PIEDRA(t));
-    case 'casa':
-      return edificio({ ...P, w: 5.2 * k, h: 3.1 * k, tejado: 'dos aguas', plantas: 2, columnas: 3, material: PIEDRA(t) })
-        + escombroPie(cx + 3.3 * k, suelo, 1.1, PIEDRA(t));
-    default:
-      return edificio({ ...P, w: 6.4 * k, h: 6.2 * k, tejado: 'roto', plantas: 3, columnas: 4, material: LADRILLO(t) })
-        + escombroPie(cx - 4.1 * k, suelo, 1.5, LADRILLO(t));
+      return ed({ cx, w: 2.8 * k, h: 8.0 * k, tejado: 'roto', plantas: 3, columnas: 1 })
+        + escombroPie(cx + 2.2 * k, suelo, 1.5, c);
+
+    default:           // manzana: bloque de viviendas destripado y un ala baja
+      return ed({ cx, w: 6.8 * k, h: 8.2 * k, tejado: 'roto', plantas: 4, columnas: 4 })
+        + ed({ cx: cx + 5.0 * k, w: 3.4 * k, h: 4.4 * k, tejado: 'roto', plantas: 2, columnas: 2 })
+        + escombroPie(cx - 4.4 * k, suelo, 1.7, c);
   }
 }
 
 /** Ancho que reserva el hito, para que el decorado no se le meta debajo. */
 const ANCHO_HITO = {
-  bosque: 6.4, fabrica: 11.5, iglesia: 5.2, granero: 8.2, adobe: 7.6,
-  granja: 7.8, haussmann: 9.4, casa: 6.8, ladrillo: 8.6,
+  fabrica: 11.5, catedral: 13.0, lonja: 12.0, abadia: 10.5, estacion: 12.0,
+  fuerte: 9.5, puente: 10.5, iglesia: 5.6, manzana: 11.0,
 };
 
 // ── crestas de fondo ──────────────────────────────────────────────────────
 
 /**
- * Tres capas mezcladas hacia la parada de cielo del HORIZONTE, nunca hacia el
- * cenit: mezclando con el cenit el horizonte del desierto sale malva. Medido.
- */
-/**
- * Tres capas mezcladas hacia la parada de cielo del HORIZONTE, nunca hacia el
- * cenit: mezclando con el cenit el horizonte del desierto sale malva. Medido.
+ * El fondo de una ciudad arrasada es un PERFIL DE RUINAS, no unas colinas.
  *
- * Y arrancan MUY POR ENCIMA de la cota del campo. Con la cresta cercana a 5,2 u
- * y el terreno jugable a 3–5 u las dos se entrelazan, y como la cresta va mas
- * clara que el suelo se lee como si fuera la hierba de delante: el resultado es
- * que todo lo plantado en el terreno parece hundido en una loma que en realidad
- * esta detras. Era el defecto que hacia que las casas «flotaran».
+ * Tres capas de manzanas con el remate roto, cada una mas mezclada con el cielo
+ * y arrancando mas arriba que la de delante, de forma que la lejana asoma por
+ * encima de las otras dos. Es lo que da profundidad sin paralaje —la camara es
+ * ortografica— y lo que hace que el sitio se lea como una ciudad antes de mirar
+ * una sola pieza del suelo.
+ *
+ * Se mezcla hacia la parada de cielo del HORIZONTE, nunca hacia el cenit:
+ * mezclando con el cenit los tejados salen malva. Medido.
  */
 const CAPAS = [
-  { base: 12.4, alt: 5.5, k: 0.80 },
-  { base: 9.2, alt: 4.0, k: 0.64 },
-  { base: 6.6, alt: 3.0, k: 0.46 },
+  { base: 3.0, min: 5.5, max: 9.5, k: 0.72, ancho: [2.6, 5.5] },
+  { base: 2.0, min: 4.5, max: 8.0, k: 0.52, ancho: [2.2, 4.6] },
+  { base: 1.0, min: 3.5, max: 6.5, k: 0.30, ancho: [1.8, 3.8] },
 ];
 
-function crestas(t, x0, x1) {
+function ruinasDeFondo(t, x0, x1, rng) {
   let s = '';
+  const fab = FABRICA[t.fabrica];
   CAPAS.forEach((c, i) => {
-    const col = mezcla(t.cuerpo, t.cielo[i === 0 ? 3 : 2], c.k);
-    const pts = [[x0, -8]];
-    for (let x = x0; x <= x1 + 0.01; x += 0.6) {
-      pts.push([x, c.base + Math.sin(x * (0.13 + i * 0.05) + i * 2.1) * c.alt * 0.28 + Math.sin(x * 0.31 + i) * c.alt * 0.1]);
+    const col = mezcla(fab, t.cielo[i === 0 ? 3 : 2], c.k);
+    // Se listan las manzanas primero y se dibujan despues: asi las ventanas de
+    // la capa cercana pueden ir en rejilla DENTRO de su edificio. Sembradas al
+    // azar sobre la silueta se leen como suciedad, no como ventanas.
+    const bloques = [];
+    let x = x0;
+    while (x < x1) {
+      const aguja = rng() < 0.08;
+      const w = aguja ? 0.9 + rng() * 0.4 : c.ancho[0] + rng() * (c.ancho[1] - c.ancho[0]);
+      const h = c.base + (aguja ? c.max + 2.2 + rng() * 1.4 : c.min + rng() * (c.max - c.min));
+      bloques.push({ x, w, h, aguja });
+      x += w;
     }
-    pts.push([x1, -8]);
-    s += camino(polilinea(pts) + 'Z', { fill: col });  // el fondo lejano NO lleva contorno
+    const pts = [[x0, -9]];
+    for (const bl of bloques) {
+      // Remate roto de UNA muesca. Con tres dientes de medio metro cada manzana
+      // se lee como una montana y el fondo deja de parecer una ciudad.
+      const m = 0.28 + rng() * 0.34;
+      const p = 0.35 + rng() * 0.3;
+      pts.push([bl.x, bl.h], [bl.x + bl.w * p, bl.h],
+        [bl.x + bl.w * p, bl.h - m], [bl.x + bl.w * (p + 0.22), bl.h - m],
+        [bl.x + bl.w * (p + 0.22), bl.h - 0.06], [bl.x + bl.w, bl.h - 0.06],
+        [bl.x + bl.w, c.base]);
+    }
+    pts.push([x1, -9]);
+    s += camino(polilinea(pts) + 'Z', { fill: col });   // el fondo NO lleva contorno
+
+    if (i === 2) {
+      const hu = tono(col, -0.14);
+      for (const bl of bloques) {
+        if (bl.aguja) continue;
+        const cols = Math.max(1, Math.round(bl.w / 0.8));
+        const filas = Math.max(1, Math.floor((bl.h - c.base - 0.9) / 0.95));
+        for (let f = 0; f < filas; f++) {
+          for (let k = 0; k < cols; k++) {
+            if (rng() < 0.22) continue;
+            s += camino(caja(bl.x + (bl.w * (k + 0.5)) / cols - 0.14, c.base + 0.7 + f * 0.95, 0.28, 0.46, 0.05), { fill: hu });
+          }
+        }
+      }
+    }
   });
   return s;
 }
@@ -381,7 +459,7 @@ export function escena(clave, { bandoA, bandoB, fichaA, fichaB, composicion = 'a
   }
 
   // 2. fondo lejano
-  s += crestas(t, X0, X1);
+  s += ruinasDeFondo(t, X0, X1, mulberry32(semilla(`${clave}:fondo`)));
 
   // 3. suelo: cuatro franjas de color plano siguiendo el relieve, y ya.
   // Se pinta de la costra hacia abajo: cada franja es el perfil hundido su
@@ -483,12 +561,13 @@ export function escena(clave, { bandoA, bandoB, fichaA, fichaB, composicion = 'a
   for (let x = X0; x <= X1 + 0.01; x += 0.5) {
     frente.push([x, -3.0 + Math.sin(x * 0.42 + 2.0) * 0.42 + Math.sin(x * 1.3) * 0.16]);
   }
+  // Cascote en el borde inferior, no matojos de hierba: esto es una calle.
   const rf = mulberry32(semilla(`${clave}:frente`));
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 26; i++) {
     const x = X0 + rf() * (X1 - X0);
-    const h = 0.4 + rf() * 0.55;
+    const w = 0.3 + rf() * 0.5, h = 0.22 + rf() * 0.3;
     const b = -3.0 + Math.sin(x * 0.42 + 2.0) * 0.42;
-    s += camino(polilinea([[x, b], [x + 0.11, b + h], [x + 0.28, b]]) + 'Z', { fill: frenteCol });
+    s += camino(polilinea([[x, b], [x + w * 0.3, b + h], [x + w, b + h * 0.5], [x + w * 1.1, b]]) + 'Z', { fill: frenteCol });
   }
   s += camino(polilinea([[X0, -9], ...frente, [X1, -9]]) + 'Z', { fill: frenteCol });
 
@@ -520,14 +599,14 @@ function entibado(cx, suelo, t, rng) {
 export function repartoDe(clave) {
   const t = TEATROS[clave];
   const f = (id) => FICHAS.find((x) => x.id === id);
-  if (t.epoca < 1930) return { a: f('rombo'), b: f('a7v') };
+  if (t.epoca < 1918) return { a: f('rombo'), b: f('a7v') };
   if (t.epoca < 1941) return { a: f('tanqueta'), b: f('ruedas') };
-  if (clave === 'alamein') return { a: f('media'), b: f('ruedas') };
-  if (clave === 'stalingrado') return { a: f('asalto'), b: f('cazacarros') };
-  if (clave === 'paris') return { a: f('semioruga'), b: f('media') };
-  if (clave === 'seelow') return { a: f('pesado'), b: f('asalto') };
-  if (clave === 'ardenas') return { a: f('pesado'), b: f('media') };
-  return { a: f('media'), b: f('cazacarros') };
+  if (t.epoca < 1944) return { a: f('media'), b: f('cazacarros') };
+  if (['berlin', 'aquisgran', 'dresde'].includes(clave)) return { a: f('pesado'), b: f('asalto') };
+  if (['varsovia44', 'budapest'].includes(clave)) return { a: f('semioruga'), b: f('lanzallamas') };
+  if (clave === 'cassino') return { a: f('mortero'), b: f('obus') };
+  if (clave === 'arnhem') return { a: f('ruedas'), b: f('media') };
+  return { a: f('media'), b: f('pesado') };
 }
 
 export const X_ESCENA = { X0, X1 };
