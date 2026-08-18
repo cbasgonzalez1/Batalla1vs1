@@ -198,17 +198,17 @@ no después de probarlos.
 
 > x1,8 de daño en el impacto
 
-El proyectil la atraviesa y se lleva la carga pegada. Es el modificador mas simple y el que ensena el sistema: pasas por ella y pegas mas.
+El proyectil la atraviesa y se lleva la carga pegada. Es el modificador más simple y el que enseña el sistema: pasas por ella y pegas más.
 
-*El riesgo.* Cuelga en la parte alta del arco, donde tira el que va perdiendo. Si sale siempre en el mismo sitio, deja de ser una decision.
+*El riesgo.* Cuelga en la parte alta del arco, donde tira el que va perdiendo. Si sale siempre en el mismo sitio, deja de ser una decisión.
 
 **Bomba de racimo** · daño
 
 > El disparo se parte en tres
 
-Los tres siguen trayectorias con dispersion SEMBRADA, no aleatoria: los seis moviles tienen que ver los mismos tres impactos.
+Los tres siguen trayectorias con dispersión SEMBRADA, no aleatoria: los seis móviles tienen que ver los mismos tres impactos.
 
-*El riesgo.* Tres proyectiles reparten daño en area y castigan al que no se ha movido. Contra un blanco atrincherado puede ser peor que el disparo entero.
+*El riesgo.* Tres proyectiles reparten daño en área y castigan al que no se ha movido. Contra un blanco atrincherado puede ser peor que el disparo entero.
 
 **Espoleta de proximidad** · daño
 
@@ -218,54 +218,54 @@ Deja de necesitar tocar el suelo: estalla al pasar sobre el rival. Ignora el par
 
 *El riesgo.* Es la respuesta al atrincherado, y por eso hay que vigilarla: si aparece cada dos turnos, cavar deja de servir para nada.
 
-**Bote de fosforo** · defensa
+**Bote de fósforo** · defensa
 
 > Cortina de humo en tu mitad
 
-El unico del aire que no hace daño. El rival dispara a ciegas el turno siguiente: se le oculta el arco de puntería, no el blindado.
+El único del aire que no hace daño. El rival dispara a ciegas el turno siguiente: se le oculta el arco de puntería, no el blindado.
 
-*El riesgo.* Ocultar informacion al rival es lo mas facil de hacer injusto. Un turno, y que se vea claramente de quien es el humo.
+*El riesgo.* Ocultar información al rival es lo más fácil de hacer injusto. Un turno, y que se vea claramente de quién es el humo.
 
 **Globo de barrera** · daño
 
 > Si lo tocas, pierdes el tiro
 
-No es un premio: es el castigo del arco alto. Obliga a elegir entre la trayectoria comoda y la que esquiva.
+No es un premio: es el castigo del arco alto. Obliga a elegir entre la trayectoria cómoda y la que esquiva.
 
-*El riesgo.* Perder el turno entero es duro. Tiene que verse desde el plano de otear y no aparecer nunca detras del hito.
+*El riesgo.* Perder el turno entero es duro. Tiene que verse desde el plano de otear y no aparecer nunca detrás del hito.
 
 
 ### En el suelo — el proyectil cae sobre ellos
 
-**Mina de fosforo** · daño
+**Mina de fósforo** · daño
 
-> Crater y daño al doble
+> Cráter y daño al doble
 
-Cae tu disparo encima o cerca y detona con el. Es la trampa que convierte un tiro corto en un buen tiro.
+Cae tu disparo encima o cerca y detona con él. Es la trampa que convierte un tiro corto en un buen tiro.
 
-*El riesgo.* Se ve, y eso es a proposito: esquivarla es la decision, encontrarla no es el juego.
+*El riesgo.* Se ve, y eso es a propósito: esquivarla es la decisión, encontrarla no es el juego.
 
-**Deposito de combustible** · daño
+**Depósito de combustible** · daño
 
 > Fuego en el terreno, dos turnos
 
-El fuego dana a quien acabe el turno dentro. Es el unico modificador que sigue actuando cuando ya te has movido.
+El fuego daña a quien acabe el turno dentro. Es el único modificador que sigue actuando cuando ya te has movido.
 
-*El riesgo.* Un area negada dos turnos en un campo de 38 u es mucho campo. O dura menos, o el area es pequena.
+*El riesgo.* Un área negada dos turnos en un campo de 38 u es mucho campo. O dura menos, o el área es pequeña.
 
 **Placa de blindaje** · defensa
 
-> Escudo: absorbe el proximo impacto
+> Escudo: absorbe el próximo impacto
 
-No se dispara: se RECOGE avanzando hasta ella. Es lo que engancha el sistema con la mecanica de avanzar, que hoy solo sirve para colocarse.
+No se dispara: se RECOGE avanzando hasta ella. Es lo que engancha el sistema con la mecánica de avanzar, que hoy sólo sirve para colocarse.
 
 *El riesgo.* Un escudo que absorbe entero un impacto puede alargar la partida sin aportar. Empezar por absorber la mitad y medir.
 
-**Nido de municion** · daño
+**Nido de munición** · daño
 
 > Un disparo extra este turno
 
-Tambien se recoge avanzando. Dos disparos seguidos es la jugada mas fuerte del juego, y por eso solo hay uno por partida.
+También se recoge avanzando. Dos disparos seguidos es la jugada más fuerte del juego, y por eso solo hay uno por partida.
 
 *El riesgo.* Encadenado con la carga hueca son dos tiros al doble. Hay que probar si eso es emocionante o si decide la partida sola.
 
