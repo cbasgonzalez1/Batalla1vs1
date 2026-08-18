@@ -311,12 +311,20 @@ da paralaje sola.
 
 | Capa | Base | Altura | Mezcla con el cielo |
 |---|---|---|---|
-| Lejana | 13 u | 11 u | 0.74 |
-| Media | 9 u | 8 u | 0.50 (lleva los postes) |
-| Cercana | 5 u | 6 u | 0.28 |
+| Lejana | 12.4 u | 5.5 u | 0.80 |
+| Media | 9.2 u | 4.0 u | 0.64 (lleva los postes) |
+| Cercana | 6.6 u | 3.0 u | 0.46 |
 
-Están atadas al relieve del campo (cresta entre 5 y 15 u): una cresta de fondo a
-30 u no se lee como lejanía, se lee como un muro gris.
+**Arrancan muy por encima de la cota del campo, y esto no es un ajuste fino.**
+La versión anterior ponía la cresta cercana a 5 u con el terreno jugable entre 3
+y 5: las dos se entrelazaban, y como la cresta va **más clara** que el suelo se
+leía como si fuera la hierba de delante. Resultado: todo lo plantado en el
+terreno parecía hundido en una loma que en realidad estaba detrás — era la causa
+real de las «casas flotando», y no se veía mirando la escena. Se encontró
+superponiendo el perfil del terreno en magenta.
+
+Sigue en pie la otra mitad de la regla: una cresta de fondo a 30 u no se lee como
+lejanía, se lee como un muro gris.
 
 **Decorado:** sacos terreros, alambrada, tocones astillados, bidones y cajas de
 munición, repartidos con el `rng` de la semilla; un parapeto de sacos pegado a

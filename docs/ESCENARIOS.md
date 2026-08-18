@@ -24,12 +24,33 @@ tamaño. Probar a los lados de una x pedida y rendirse a las cinco unidades —q
 es lo que hacía la primera versión— deja el campo vacío, porque con dos
 emplazamientos y un hito reservados casi todo cae fuera de ese alcance.
 
-**0.2 · Nada flota.** Toda pieza se asienta muestreando el terreno en **su** x.
-Lo que ocupa más de dos unidades —un seto, un terraplén de vía, una barricada,
-un parapeto de sacos— construye su borde inferior **siguiendo el perfil**, no con
-una recta al punto más bajo: con la base recta la pieza apoya en una esquina y
-queda en voladizo en el resto. Los edificios arrancan **0,8 u por debajo del
-suelo** por el mismo motivo. Y toda pieza lleva su elipse de contacto.
+**0.2 · Ninguna pieza tiene base plana.** El borde **inferior** de todo lo que se
+apoya se construye con el perfil del terreno (`apoyado()` en `decorado.js`), no
+con una recta. Con base recta la pieza toca el suelo en un punto y flota en el
+resto, y como el decorado se pinta **después** del terreno el hueco no lo tapa
+nada. Hundirla un poco tampoco vale: en una cuesta la esquina de abajo se
+entierra y la de arriba sigue en el aire. Aplica a los edificios igual que a un
+bidón. La sombra de contacto también sigue el perfil: una elipse se despega por
+un lado y delata justo lo que venía a disimular.
+
+**0.2 bis · Lo ancho busca terreno llano.** Un edificio de siete unidades a
+caballo de una vaguada tiene que bajar y subir su base, y eso se lee como un
+cimiento en V. El motor evalúa varias posiciones dentro del hueco y se queda con
+la de menor desnivel.
+
+**0.2 ter · Los vehículos se giran con la pendiente.** Un blindado horizontal
+sobre una cuesta apoya una oruga y deja la otra en el aire — es el mismo defecto
+que el de las casas, y se corrige midiendo el terreno bajo los dos extremos de la
+huella.
+
+> **El fondo tampoco puede competir con el suelo.** Las tres crestas de
+> `ARTE.md` §13 arrancaban a 5,2 u con el terreno jugable a 3–5 u, y como van más
+> claras que el suelo se leían como la hierba de delante: todo lo plantado en el
+> terreno parecía hundido en una loma que en realidad estaba detrás. Ahora
+> arrancan a 6,6 / 9,2 / 12,4 u y mezclan 0,46 / 0,64 / 0,80 hacia el cielo. Fue
+> **la causa real** de las «casas flotando», y no se encontró mirando la escena:
+> se encontró superponiendo el perfil del terreno en magenta
+> (`globalThis.__DEPURA_SUELO`).
 
 **0.3 · Se coloca de mayor a menor.** El seto de 6 u tiene un solo sitio posible
 en el campo y las cajas de 2 u tienen diez. Colocando primero las pequeñas, éstas
