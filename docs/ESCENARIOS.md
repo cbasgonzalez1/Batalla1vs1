@@ -139,6 +139,25 @@ que es exactamente lo que pasaba.
 El parapeto de sacos no se declara: va siempre, **delante** del cañón y no
 detrás, porque detrás lo tapa la propia pieza y el jugador nunca lo ve.
 
+**Y se apila como un muro, con el remate a nivel.** Donde el suelo baja se ponen
+más hiladas; no se baja el muro. Colocando cada saco a la cota de su x salía una
+sarta de cuentas subiendo la cuesta en diagonal que no se entendía como nada. Las
+hiladas van trabadas —cada una desplazada media pieza— porque eso es lo que hace
+que se lea como aparejo y no como una rejilla.
+
+**El escombro son BLOQUES, no una mancha.** Un polígono único de tres vértices no
+se entiende: puede ser una roca, una rampa o una sombra. Lo que se lee como
+cascote es ver las piedras sueltas, cada una con su contorno, amontonadas —
+tocándose— de mayor abajo a menor arriba, sobre un vertido fino que las ata al
+suelo. Repartidas por todo el ancho se leen como piedras tiradas y el montón
+deja de existir.
+
+**Una fachada es una rejilla rígida.** Todos los huecos de un edificio —ventanas
+y puerta— se replantean desde la misma cota. La puerta se colocaba a la altura
+del terreno *en su x*, así que en cuanto había pendiente se movía respecto a las
+ventanas y se veía una ventana bailando según el escenario. Lo que varía con el
+terreno es cuánto tapa el suelo la fachada, nunca dónde están sus huecos.
+
 ---
 
 ### 3.1 Trincheras y parapetos

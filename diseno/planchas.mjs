@@ -355,6 +355,14 @@ footer{margin:80px 0 0;padding-top:22px;border-top:3px solid var(--tinta);color:
       <td>cuatro, y contraste bajo entre las de abajo</td><td>Diez bandas onduladas convierten media pantalla en un mapa topografico</td></tr>
     <tr><td>ESCENARIOS §2</td><td>«toda pieza se asienta en el terreno»</td>
       <td>+ nada se solapa, nada flota, de mayor a menor</td><td>La regla estaba escrita pero no habia nada que la hiciera cumplir</td></tr>
+    <tr><td>ARTE.md §13</td><td>crestas de fondo a 5 / 9 / 13 u</td>
+      <td>6,6 / 9,2 / 12,4 u y mas mezcladas con el cielo</td><td>A 5 u se entrelazaban con el campo y se leian como la hierba de delante</td></tr>
+    <tr><td>Parapeto de sacos</td><td>cada saco a la cota de su x</td>
+      <td>muro apilado con el remate a nivel e hiladas trabadas</td><td>Salia una sarta de cuentas subiendo la cuesta en diagonal</td></tr>
+    <tr><td>Escombro</td><td>un poligono de tres vertices</td>
+      <td>piedras sueltas amontonadas, cada una con su contorno</td><td>El poligono podia ser una roca, una rampa o una sombra</td></tr>
+    <tr><td>Fachadas</td><td>la puerta a la altura del terreno en su x</td>
+      <td>rejilla rigida desde una sola cota</td><td>En cuesta la puerta bailaba respecto a las ventanas</td></tr>
   </table></div>
 </section>
 

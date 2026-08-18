@@ -138,6 +138,49 @@ function sombraApoyada(suelo, x0, x1, alto = 0.16) {
   });
 }
 
+/**
+ * Pila de piedras irregulares. La usan el escombro suelto y el pie de las ruinas.
+ *
+ * Son BLOQUES, no una mancha. Un poligono unico de tres vertices no se entiende:
+ * puede ser una roca, una rampa o una sombra. Lo que se lee como cascote es ver
+ * las piedras sueltas, cada una con su contorno, de mayor abajo a menor arriba.
+ */
+export function monton(cx, suelo, ancho, c, rng, n = 9) {
+  const a = cx - ancho * 0.5, b = cx + ancho * 0.5;
+  const oscuroC = oscuro(c);
+  // El vertido fino ata la pila al suelo. Va BAJO y estrecho: extendido a todo
+  // el ancho y con joroba se lee como un barrizal, no como el pie de un monton.
+  let s = pieza([apoyado(suelo, a, b, [
+    [a, suelo(a) + 0.06], [cx - ancho * 0.18, suelo(cx - ancho * 0.18) + 0.24],
+    [cx + ancho * 0.16, suelo(cx + ancho * 0.16) + 0.2], [b, suelo(b) + 0.05],
+  ])], oscuroC, { grosor: 0.075 });
+  // Las piedras se AMONTONAN: repartidas por todo el ancho se leen como piedras
+  // sueltas tiradas, y el monton solo existe si se tocan entre si.
+  const alto = 0.32 + ancho * 0.2;
+  const piedras = [];
+  for (let i = 0; i < n; i++) {
+    const nivel = i / (n - 1);
+    const w = Math.max(0.36, (0.7 - nivel * 0.26) * (0.85 + rng() * 0.4));
+    const x = cx + (rng() - 0.5) * ancho * (0.72 - nivel * 0.5);
+    const y = suelo(x) - 0.05 + nivel * alto + rng() * 0.06;
+    piedras.push({ x, y, w, h: w * (0.62 + rng() * 0.24), g: (rng() - 0.5) * 0.55, nivel });
+  }
+  piedras.sort((p, q) => p.y - q.y);
+  for (const p of piedras) {
+    const cs = Math.cos(p.g), sn = Math.sin(p.g);
+    const q = [[-p.w / 2, 0], [p.w / 2, -0.04], [p.w / 2 - 0.05, p.h], [-p.w / 2 + 0.07, p.h - 0.03]]
+      .map(([dx, dy]) => [p.x + dx * cs - dy * sn, p.y + dx * sn + dy * cs]);
+    s += pieza([caminoRedondeado(q, 0.07)], p.nivel > 0.6 ? oscuroC : c, {
+      grosor: 0.075,
+      // junta de sillar en las mas grandes: es lo que las separa de un canto rodado
+      dentro: p.w > 0.6 ? camino(polilinea([[q[0][0], (q[0][1] + q[3][1]) / 2], [q[1][0], (q[1][1] + q[2][1]) / 2]]), {
+        stroke: contorno(c), 'stroke-width': 0.045, fill: 'none',
+      }) : '',
+    });
+  }
+  return s;
+}
+
 // ── las familias ──────────────────────────────────────────────────────────
 
 /**
@@ -341,23 +384,12 @@ function farola(cx, suelo, t) {
   return sombraApoyada(suelo, cx - 0.4, cx + 0.4, 0.1) + pieza(f, c, { grosor: 0.07 });
 }
 
-/** Escombro: monton con la junta de ladrillo y una barra de hierro asomando. */
+/** Escombro de ladrillo: pila de bloques con una barra de hierro asomando. */
 function escombro(cx, suelo, t, rng, ancho = 2.8) {
   const c = mezcla('#a8603f', t.cuerpo, 0.3);
-  const a = cx - ancho / 2, b = cx + ancho / 2;
-  const alto = 0.72 + rng() * 0.45;
-  let s = sombraApoyada(suelo, a - 0.2, b + 0.2, 0.14);
-  s += pieza([apoyado(suelo, a, b, [
-    [a, suelo(a) + alto * 0.28], [cx - ancho * 0.2, suelo(cx - ancho * 0.2) + alto],
-    [cx + ancho * 0.08, suelo(cx + ancho * 0.08) + alto * 0.66],
-    [cx + ancho * 0.3, suelo(cx + ancho * 0.3) + alto * 0.9], [b, suelo(b) + alto * 0.24],
-  ])], c, { grosor: 0.1 });
-  for (let i = 0; i < 3; i++) {
-    const bx = a + 0.3 + rng() * (ancho - 0.6), w = 0.3 + rng() * 0.18;
-    s += pieza([apoyado(suelo, bx - w / 2, bx + w / 2,
-      [[bx - w / 2, suelo(bx) + 0.24], [bx + w / 2, suelo(bx) + 0.24]], 0.1)], oscuro(c), { grosor: 0.07 });
-  }
-  s += camino(polilinea([[cx - ancho * 0.15, suelo(cx) + alto * 0.85], [cx - ancho * 0.02, suelo(cx) + alto * 1.4]]), {
+  let s = sombraApoyada(suelo, cx - ancho / 2 - 0.2, cx + ancho / 2 + 0.2, 0.14);
+  s += monton(cx, suelo, ancho, c, rng, 8);
+  s += camino(polilinea([[cx - ancho * 0.15, suelo(cx) + 0.75], [cx - ancho * 0.02, suelo(cx) + 1.3]]), {
     stroke: contorno(tenir(MATERIA.metal, t)), 'stroke-width': 0.07, fill: 'none', 'stroke-linecap': 'round',
   });
   return s;
@@ -469,21 +501,36 @@ function via(cx, suelo, t, rng, largo = 6.5) {
   return s;
 }
 
-/** Parapeto de sacos. Contra cada canon hay uno siempre (ARTE.md §13). */
+/**
+ * Parapeto de sacos terreros. Contra cada cañón hay uno siempre (ARTE.md §13).
+ *
+ * Es un MURO, y por eso se apila con el remate a nivel: donde el suelo baja se
+ * ponen mas hiladas, no se baja el muro. Colocando cada saco a la cota de su x
+ * salia una sarta de cuentas subiendo la cuesta en diagonal, que no se entendia
+ * como nada. Las hiladas van trabadas —cada una desplazada media pieza— porque
+ * eso es lo que hace que se lea como aparejo y no como una rejilla.
+ */
 export function sacos(cx, suelo, t, rng, ancho = 3.0) {
   const c = tenir(MATERIA.lona, t);
   const a = cx - ancho / 2, b = cx + ancho / 2;
-  let s = sombraApoyada(suelo, a - 0.1, b + 0.1, 0.12);
-  for (let fila = 0; fila < 2; fila++) {
-    const n = fila === 0 ? 6 : 5;
-    for (let i = 0; i < n; i++) {
-      const sx = a + (ancho / n) * (i + 0.5) + (fila ? ancho / n / 2 : 0);
-      // cada saco se asienta en SU x: con una cota comun el parapeto queda en
-      // voladizo, y sin contorno propio se lee como un churro
-      const y = suelo(sx) - 0.06 + fila * 0.3;
+  const bw = 0.54, bh = 0.29;
+  const n = Math.max(4, Math.round(ancho / bw));
+  const paso = ancho / n;
+  const nivel = altoDe(suelo, a, b) + 0.68;
+  let s = sombraApoyada(suelo, a - 0.15, b + 0.15, 0.12);
+  for (let i = 0; i < n; i++) {
+    const x = a + paso * (i + 0.5);
+    // el remate cae un saco en los dos extremos: con el canto vivo parece tapia
+    const tope = nivel - (i === 0 || i === n - 1 ? bh : 0);
+    const pie = suelo(x) - 0.1;
+    const filas = Math.max(1, Math.round((tope - pie) / bh));
+    for (let f = 0; f < filas; f++) {
+      const y = pie + f * bh;
+      const dx = f % 2 ? paso * 0.26 : 0;
       s += pieza([caminoRedondeado([
-        [sx - 0.3, y], [sx + 0.3, y], [sx + 0.3, y + 0.34], [sx - 0.3, y + 0.34],
-      ], 0.16)], c, { grosor: 0.065 });
+        [x - bw / 2 + dx, y], [x + bw / 2 + dx, y],
+        [x + bw / 2 + dx, y + bh + 0.05], [x - bw / 2 + dx, y + bh + 0.05],
+      ], 0.13)], c, { grosor: 0.06 });
     }
   }
   return s;

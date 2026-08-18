@@ -75,84 +75,91 @@ function blindado(base, negro) {
 // ── B. Pieza de campana ───────────────────────────────────────────────────
 
 /**
- * Canon de campana sobre curena, con escudo y ruedas de radios. La silueta es
- * la del canon, no la del vehiculo: rueda grande delante, escudo vertical,
- * tubo largo y fino, y una cola larga que se clava en el suelo detras.
+ * Canon de campana sobre curena. Cuatro masas y nada mas: RUEDA grande delante,
+ * ESCUDO alto detras de ella, TUBO largo y fino, y COLA larga que se clava en el
+ * suelo por detras.
+ *
+ * La version anterior las apilaba todas en la misma vertical y en negro salia un
+ * borron con un palo. Lo que hace legible una pieza remolcada es que las cuatro
+ * masas ocupen sitios distintos: la rueda asoma por detras del escudo, el tubo
+ * arranca por delante y la cola sale por el lado contrario.
  */
 function campana(base, negro) {
   const C = negro
     ? { banda: '#12140c', base: '#12140c', llanta: '#12140c', buje: '#12140c', contorno: '#12140c' }
     : { ...CAUCHO, base: '#6d5636' };
-  const R = 1.18;
-  let s = sombraContacto(-1.2, 6.4);
-  s += ruedaRadios(0.05, R, R, C);
-
   const f = [];
-  // escudo: plancha vertical con el borde superior recortado. Es lo primero que
-  // se ve y lo que separa esta silueta de la de un blindado.
+
+  // cola: dos largueros que de perfil se solapan, con el azadon en la punta
   f.push(caminoRedondeado([
-    [-0.62, 0.72], [0.62, 0.72], [0.66, 2.05], [0.5, 2.05],
-    [0.5, 2.62], [0.66, 2.62], [0.6, 3.24], [-0.68, 3.14], [-0.72, 0.72],
-  ], 0.12));
-  // cuna y freno de retroceso alrededor del pivote
-  f.push(caja(-0.72, Y_PIVOTE - 0.36, 1.9, 0.72, 0.16));
-  f.push(caja(0.5, Y_PIVOTE + 0.16, 1.5, 0.24, 0.1));
-  // cola: dos largueros que se juntan y acaban en el azadon. Se dibuja como una
-  // sola forma porque de perfil los dos largueros se solapan.
+    [-0.15, 1.62], [0.35, 1.3], [-4.15, 0.5], [-4.35, 0.72],
+    [-4.9, 0.5], [-4.72, 0.05], [-4.05, 0.12], [-0.3, 1.05],
+  ], 0.09));
+  // escudo: plancha alta con el borde superior recortado y la tronera del tubo
   f.push(caminoRedondeado([
-    [-0.5, 1.9], [-0.1, 1.62], [-3.9, 0.42], [-4.5, 0.5], [-4.42, 0.08], [-3.8, 0.02], [-0.62, 1.16],
+    [0.05, 0.62], [1.02, 0.62], [1.14, 2.02], [0.86, 2.02],
+    [0.86, 2.62], [1.16, 2.62], [1.24, 3.32], [0.2, 3.24], [0.02, 0.62],
   ], 0.1));
-  // eje y mamelon de union
-  f.push(caja(-0.34, 0.86, 0.7, 0.66, 0.2));
-  f.push(tubo({ raiz: [0.35, Y_PIVOTE], largo: 3.7, r: 0.15, freno: 'dos' }));
+  // cuna, freno de retroceso y recuperador sobre el tubo
+  f.push(caja(0.15, Y_PIVOTE - 0.34, 1.45, 0.68, 0.15));
+  f.push(caja(1.1, Y_PIVOTE + 0.28, 1.35, 0.22, 0.1));
+  f.push(caja(-0.55, 0.82, 0.75, 0.62, 0.2));          // mamelon del eje
+  f.push(tubo({ raiz: [1.15, Y_PIVOTE], largo: 3.3, r: 0.14, freno: 'dos' }));
 
   let dentro = '';
   if (!negro) {
-    dentro += camino(caja(-5, 0.0, 10, 1.35, 0), { fill: oscuro(base) });
-    dentro += filaRemaches(-0.6, 0.55, 1.35, contorno(base));
-    dentro += camino(polilinea([[-0.72, 2.05], [0.66, 2.05]]), { stroke: contorno(base), 'stroke-width': 0.06, fill: 'none' });
+    dentro += camino(caja(-6, -1, 12, 2.05, 0), { fill: oscuro(base) });
+    dentro += filaRemaches(0.1, 1.0, 1.35, contorno(base));
+    dentro += camino(polilinea([[0.02, 2.02], [1.14, 2.02]]), { stroke: contorno(base), 'stroke-width': 0.06, fill: 'none' });
   }
+  let s = sombraContacto(-1.6, 7.2, 0.16);
   s += cuerpo(f, base, { negro, dentro });
+  // La rueda va LA ULTIMA: de perfil es la pieza mas cercana, y tapada por el
+  // escudo se pierde justo lo que dice que esto se remolca.
+  s += ruedaRadios(-0.3, 1.12, 1.12, C);
   return s;
 }
 
-// ── C. Obus de sitio ──────────────────────────────────────────────────────
+// ── C. Mortero de sitio ───────────────────────────────────────────────────
 
 /**
- * Obus de sitio sobre plataforma. No se mueve: cuatro gatos clavados y una base
- * ancha. A cambio, el tubo es el mas gordo del juego y su parabola pasa por
- * encima de cualquier muro y de cualquier talud que levante Sotavento.
+ * Mortero de sitio: placa base, bipode y tubo gordo. Tres masas que no se
+ * parecen a nada mas del juego, y por eso se reconoce a 0,55x de zoom.
+ *
+ * Sustituye al «obus sobre plataforma», que era un pedestal con un tubo saliendo
+ * y en negro se leia como un yunque. Un mortero de verdad se distingue por la
+ * placa apoyada en el suelo y la pata del bipode abierta hacia delante.
  */
 function sitio(base, negro) {
   const f = [];
-  let s = sombraContacto(0, 6.0, 0.2);
+  // El tubo pasa POR el pivote: la boca sale de prolongarlo, no de colgarla.
+  const pie = [-0.55, 0.5];
+  const dx = 0.35 - pie[0], dy = Y_PIVOTE - pie[1];
+  const ang = Math.atan2(dy, dx);
+  const hasta = Math.hypot(dx, dy) + 1.5;
 
-  // base ancha y baja, con los gatos delantero y trasero clavados
+  // placa base: ancha, baja y con el labio levantado en los dos cantos
   f.push(caminoRedondeado([
-    [-2.2, 0.16], [-1.9, 0.9], [1.9, 0.9], [2.2, 0.16],
-  ], 0.14));
-  // Los dos brazos se clavan en el suelo y BAJAN hacia fuera: horizontales se
-  // leen como dos aletas y la pieza parece un yunque.
-  f.push(caminoRedondeado([[-3.7, -0.04], [-2.0, 0.42], [-2.0, 0.9], [-3.75, 0.42]], 0.1));
-  f.push(caminoRedondeado([[3.7, -0.04], [2.0, 0.42], [2.0, 0.9], [3.75, 0.42]], 0.1));
-  // pedestal giratorio, estrecho: si es tan ancho como la base, los tirantes se
-  // quedan dentro de la silueta y dejan de contar
-  f.push(caminoRedondeado([[-1.1, 0.9], [1.1, 0.9], [0.82, 1.9], [-0.82, 1.9]], 0.16));
-  // cuna, con los dos tirantes de retroceso que la atan a la base
-  f.push(caja(-1.05, Y_PIVOTE - 0.52, 2.1, 1.04, 0.2));
-  f.push(caminoRedondeado([[-2.15, 0.92], [-1.0, 1.98], [-0.6, 1.8], [-1.75, 0.84]], 0.08));
-  f.push(caminoRedondeado([[2.15, 0.92], [1.0, 1.98], [0.6, 1.8], [1.75, 0.84]], 0.08));
-  f.push(tubo({ raiz: [0.15, Y_PIVOTE], largo: 2.5, r: 0.34, ang: (52 * Math.PI) / 180, freno: 'ancho' }));
+    [-2.15, 0.02], [-1.75, 0.44], [1.75, 0.44], [2.15, 0.02],
+    [1.95, -0.02], [1.55, 0.2], [-1.55, 0.2], [-1.95, -0.02],
+  ], 0.08));
+  f.push(caminoRedondeado([[-1.0, 0.3], [1.0, 0.3], [0.72, 0.78], [-0.72, 0.78]], 0.12));
+  // bipode: la pata larga hacia delante y el travesano de nivelacion
+  f.push(caminoRedondeado([[0.28, 2.5], [2.32, 0.16], [2.6, 0.42], [0.56, 2.72]], 0.07));
+  // la segunda pata TERMINA EN LA PLACA: acabada en el aire se lee como una
+  // varilla suelta y rompe el trapecio del bipode
+  f.push(caminoRedondeado([[0.08, 2.14], [1.42, 0.42], [1.66, 0.62], [0.32, 2.34]], 0.07));
+  f.push(caja(1.02, 1.16, 0.9, 0.18, 0.06));
+  f.push(caja(0.02, Y_PIVOTE - 0.3, 0.86, 0.62, 0.14));   // collar de elevacion
+  f.push(tubo({ raiz: pie, largo: hasta, r: 0.29, ang, freno: 'ancho' }));
 
   let dentro = '';
   if (!negro) {
-    dentro += camino(caja(-5, 0.0, 10, 0.9, 0), { fill: oscuro(base) });
-    dentro += camino(circulo(-1.9, 1.4, 0.34), { fill: camuflaje(base) });
-    dentro += camino(circulo(1.9, 1.4, 0.4), { fill: camuflaje(base) });
-    dentro += filaRemaches(-2.0, 2.0, 0.9, contorno(base));
+    dentro += camino(caja(-4, -1, 8, 1.4, 0), { fill: oscuro(base) });
+    dentro += camino(circulo(-1.25, 0.34, 0.22), { fill: camuflaje(base) });
+    dentro += filaRemaches(-1.8, 1.8, 0.34, contorno(base));
   }
-  s += cuerpo(f, base, { negro, dentro });
-  return s;
+  return sombraContacto(0.2, 5.4, 0.18) + cuerpo(f, base, { negro, dentro });
 }
 
 // ── el catalogo de propuestas ─────────────────────────────────────────────
@@ -186,15 +193,15 @@ export const PIEZAS = [
   },
   {
     id: 'sitio',
-    nombre: 'Obus de sitio',
+    nombre: 'Mortero de sitio',
     lema: 'La que ignora los muros',
     dibujar: sitio,
     tiro: 'Parabola altisima',
     avance: 'Ninguno — se ancla y se queda',
     aguante: 'Alto — 150, pero es un blanco quieto',
     epoca: '1916 · 1945',
-    tesis: 'No se mueve. A cambio, su trayectoria pasa por encima de cualquier muro y de cualquier talud que levante Sotavento: es el unico que no puede quedar encerrado en su propio hoyo.',
-    cuesta: 'Poco dibujo: base, pedestal, cuna y un tubo gordo. Lo caro es de reglas, porque hay que decidir que pasa con `avance.js` cuando una pieza no avanza.',
+    tesis: 'Placa base clavada en el suelo, bipode abierto y un tubo casi vertical. No se mueve; a cambio su trayectoria pasa por encima de cualquier muro y de cualquier talud que levante Sotavento, y es la unica pieza que no puede quedar encerrada en su propio hoyo.',
+    cuesta: 'Poco dibujo: placa base, bipode y un tubo gordo. Lo caro es de reglas, porque hay que decidir que pasa con `avance.js` cuando una pieza no avanza.',
     riesgo: 'Un jugador que no se mueve no toma la decision del turno. Como pieza unica mata la mecanica nueva; como una entre quince, es la excepcion que la hace interesante.',
   },
 ];

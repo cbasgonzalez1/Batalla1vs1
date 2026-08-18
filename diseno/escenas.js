@@ -12,7 +12,7 @@ import {
 } from './primitivas.js';
 import { TEATROS, NEVADOS, mezcla, tono, claro, oscuro, contorno, MATERIA } from './paleta.js';
 import { construir, FICHAS } from './vehiculos.js';
-import { crearReserva, FAMILIAS, sacos, tenir, apoyado, perfilBase, altoDe, bajoDe } from './decorado.js';
+import { crearReserva, FAMILIAS, sacos, tenir, apoyado, perfilBase, altoDe, bajoDe, monton } from './decorado.js';
 
 // ── azar sembrado ─────────────────────────────────────────────────────────
 
@@ -191,23 +191,31 @@ function edificio({ cx, suelo, w, h, tejado, plantas, columnas, material, rng })
     f.push(caminoRedondeado([[x0 - 0.16, yc], [x1 + 0.16, yc], [x1 + 0.16, yc + 0.26], [x0 - 0.16, yc + 0.26]], 0.06));
   }
 
-  // Huecos MAS ALTOS QUE ANCHOS y una puerta en la planta baja. Con ventanas
-  // cuadradas en rejilla el edificio se lee como una hoja de calculo.
+  // Huecos MAS ALTOS QUE ANCHOS y una puerta en la planta baja.
+  //
+  // TODO se replantea desde la misma cota, `suelto`. La puerta se colocaba antes
+  // a la altura del terreno EN SU X, asi que en cuanto el suelo tenia pendiente
+  // se movia respecto a las ventanas y la fachada dejaba de ser una rejilla: se
+  // veia una ventana bailando segun el escenario. Una fachada es rigida; lo que
+  // varia es cuanto la tapa el suelo, no donde estan sus huecos.
   let dentro = '';
   const hueco = contorno(c);
-  const mw = (w / (columnas + 1)) * 0.46;
+  const mw = (w / (columnas + 1)) * 0.44;
   const paso = (cuerpoAlto - 0.8) / plantas;
+  const mh = Math.min(1.0, paso * 0.62);
   for (let p = 0; p < plantas; p++) {
     for (let k = 1; k <= columnas; k++) {
-      if (rng() < 0.14) continue;       // un hueco tapiado o derrumbado
+      if (p === 0 && k === 1) continue;          // el hueco de la puerta
+      if (rng() < 0.13) continue;                // uno tapiado o derrumbado
       const hx = x0 + (w * k) / (columnas + 1) - mw / 2;
-      const hy = suelto + 0.5 + paso * p;
-      dentro += camino(caja(hx, hy, mw, Math.min(1.0, paso * 0.66), 0.07), { fill: hueco });
+      dentro += camino(caja(hx, suelto + 0.55 + paso * p, mw, mh, 0.07), { fill: hueco });
     }
   }
-  const pw = Math.min(1.1, w * 0.16);
-  const px = cx - w * 0.3;
-  dentro += camino(caja(px - pw / 2, suelo(px) - 0.1, pw, Math.min(1.5, paso * 0.95), 0.16), { fill: hueco });
+  // La puerta arranca en la cota de fachada y BAJA por debajo de ella: lo que la
+  // recorta es el terreno, que se dibuja delante.
+  const pw = Math.min(1.05, w * 0.15);
+  const px = x0 + w / (columnas + 1) - pw / 2;
+  dentro += camino(caja(px, suelto - 1.2, pw, 1.2 + Math.min(1.5, paso * 0.9), 0.16), { fill: hueco });
   dentro += camino(caja(x1 - w * 0.12, suelto - 2, w * 0.2, h * 2 + 2, 0), { fill: oscuro(c) });
   for (let i = 1; i < 4; i++) {
     dentro += camino(polilinea([[x0, suelto + (cuerpoAlto * i) / 4], [x1, suelto + (cuerpoAlto * i) / 4]]), {
@@ -217,19 +225,16 @@ function edificio({ cx, suelo, w, h, tejado, plantas, columnas, material, rng })
   return objeto(f, c, 0.12, dentro);
 }
 
-/** Monton de escombro al pie. Un muro sin escombro parece a medio construir. */
+/**
+ * Montón de escombro al pie. Un muro sin escombro parece a medio construir.
+ *
+ * Son BLOQUES, no una mancha. El polígono único con tres vértices que salía
+ * antes no se entendía: podía ser una roca, una rampa o una sombra. Lo que se
+ * lee como cascote es ver las piedras sueltas, cada una con su contorno, de
+ * mayor abajo a menor arriba (docs/ESCENARIOS.md §3.3).
+ */
 function escombroPie(cx, suelo, w, c) {
-  const a = cx - w, b = cx + w;
-  // Perfil de MONTON: sube deprisa y baja irregular. Con dos puntos bajos y uno
-  // medio sale una rampa, y una rampa junto a un muro no se lee como escombro.
-  return objeto([apoyado(suelo, a, b, [
-    [a, suelo(a) + 0.1],
-    [a + w * 0.4, suelo(a + w * 0.4) + 0.62],
-    [cx, suelo(cx) + 0.86],
-    [cx + w * 0.45, suelo(cx + w * 0.45) + 0.5],
-    [cx + w * 0.75, suelo(cx + w * 0.75) + 0.62],
-    [b, suelo(b) + 0.1],
-  ])], oscuro(c), 0.1);
+  return monton(cx, suelo, w * 1.6, c, mulberry32(semilla(`escombro:${cx.toFixed(1)}:${w}`)), 8);
 }
 
 /** Tocon gigante: el hito de Passchendaele. Mismo modulo, con copa muerta. */
