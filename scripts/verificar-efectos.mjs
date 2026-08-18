@@ -91,7 +91,7 @@ const MUESTREADOR = `
 // ── retroceso ──────────────────────────────────────────────────────────────
 console.log('retroceso del tubo:');
 {
-  const pg = await abrir(`${URL}/?seed=efectos&biome=alamein&trampas=0`);
+  const pg = await abrir(`${URL}/?seed=efectos&biome=berlin&trampas=0`);
   // Toda la espera va DENTRO de la pagina. Esperar desde fuera con
   // `waitForTimeout` daba el tubo congelado a media carrera: sin nada que
   // hacer, el navegador deja de dar cuadros y el retroceso se queda a medias.
@@ -116,7 +116,7 @@ console.log('retroceso del tubo:');
 // ── sacudida proporcional al daño ──────────────────────────────────────────
 console.log('\nsacudida segun el daño:');
 {
-  const pg = await abrir(`${URL}/?seed=efectos&biome=alamein&trampas=0`);
+  const pg = await abrir(`${URL}/?seed=efectos&biome=berlin&trampas=0`);
 
   /** Sacude a mano con un daño dado y devuelve la amplitud maxima medida. */
   const sacudidaCon = (daño) =>
@@ -141,7 +141,7 @@ console.log('\nsacudida segun el daño:');
 // ── prefers-reduced-motion ─────────────────────────────────────────────────
 console.log('\nmovimiento reducido:');
 {
-  const pg = await abrir(`${URL}/?seed=efectos&biome=alamein&trampas=0`, {
+  const pg = await abrir(`${URL}/?seed=efectos&biome=berlin&trampas=0`, {
     reducedMotion: 'reduce',
   });
   const max = await pg.evaluate(async (fuente) => {
@@ -165,7 +165,7 @@ console.log('\nmovimiento reducido:');
 console.log('\nmisma semilla, misma decoracion:');
 {
   const huella = async () => {
-    const pg = await abrir(`${URL}/?seed=repetible&biome=alamein&trampas=0`);
+    const pg = await abrir(`${URL}/?seed=repetible&biome=berlin&trampas=0`);
     const h = await pg.evaluate(() => {
       const G = window.GAME;
       G.aim(46, 0.8);
@@ -193,7 +193,7 @@ console.log('\nmisma semilla, misma decoracion:');
 console.log('\nla decoracion no toca la simulacion:');
 {
   const jugar = async (movimientoReducido) => {
-    const pg = await abrir(`${URL}/?seed=puro&biome=alamein&trampas=0.6`, {
+    const pg = await abrir(`${URL}/?seed=puro&biome=berlin&trampas=0.6`, {
       reducedMotion: movimientoReducido ? 'reduce' : 'no-preference',
     });
     const texto = await pg.evaluate(() => {

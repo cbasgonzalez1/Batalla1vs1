@@ -198,6 +198,9 @@ export function crearEfectos({ escena, rng, acento, z = 0.25, movimientoReducido
 
   const colorAcento = new THREE.Color(acento);
   const colorHumo = new THREE.Color(0xb9b3a6);
+  // El humo de averia es OSCURO: el polvo de un impacto es claro y revienta de
+  // golpe, y si los dos fueran del mismo gris no se distinguirian.
+  const colorAveria = new THREE.Color(0x4a453f);
   const colorPolvo = new THREE.Color(0xcfc4ad);
   const colorBrasa = new THREE.Color(0xffb15a);
 
@@ -279,6 +282,7 @@ export function crearEfectos({ escena, rng, acento, z = 0.25, movimientoReducido
   let desdeUltimaEstela = 0;
 
   const azar = (a, b) => a + rng() * (b - a);
+  let desdeUltimaAveria = 0;
 
   return {
     /** Se llama al resize y al zoom: convierte tamaños de mundo a pixeles. */
@@ -355,6 +359,32 @@ export function crearEfectos({ escena, rng, acento, z = 0.25, movimientoReducido
         tam0: 0.42, tam1: 0.08,
         color: colorAcento,
         gravedad: 0, rozamiento: 0,
+      });
+    },
+
+    /**
+     * La columna del blindado averiado.
+     *
+     * Sale del motor —atras y arriba— y no de todo el casco: humo por todas
+     * partes se lee como niebla. Va lento y oscuro a proposito, para que no se
+     * confunda con el polvo de un impacto, que es claro y explota de golpe.
+     *
+     * `fuerza` de 0 a 1 con la vida perdida: al 44 % de vida es un hilo, al 5 %
+     * es una columna. Es la unica forma de leer cuanto le queda al rival sin
+     * mirar el marcador.
+     */
+    averia(x, y, dt, fuerza = 1) {
+      desdeUltimaAveria += dt;
+      const cada = 0.14 - 0.07 * fuerza;
+      if (desdeUltimaAveria < cada) return;
+      desdeUltimaAveria = 0;
+      humo.emitir({
+        x: x + azar(-0.25, 0.25), y: y + azar(0, 0.3), z: z - 0.06,
+        vx: azar(-0.35, 0.35), vy: azar(0.9, 1.9) * (0.6 + fuerza * 0.6),
+        vida: azar(1.1, 2.0),
+        tam0: azar(0.3, 0.55), tam1: azar(1.6, 2.6) * (0.7 + fuerza * 0.5),
+        color: colorAveria,
+        gravedad: -0.5, rozamiento: 1.4,
       });
     },
 

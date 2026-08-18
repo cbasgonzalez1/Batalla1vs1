@@ -68,6 +68,38 @@ const ESTRATOS = [
 ];
 
 /**
+ * Cuanto se APLANA cada estrato: 0 calca la superficie, 1 es horizontal.
+ *
+ * Es la correccion que hace que la mitad inferior del cuadro deje de verse
+ * falsa, y no era la paleta. Con TODAS las bandas calcando el perfil, el suelo
+ * se lee como una tarta de capas: seis lineas paralelas ondulando a la vez,
+ * que es una forma que no existe en ningun sitio. Un estrato de verdad es casi
+ * horizontal y lo que varia es CUANTO terreno tiene encima.
+ *
+ * Y no es solo mirarlo: `ARTE.md` §12 dice desde el principio que el suelo por
+ * estratos «da escala — se ve cuanto ha excavado un crater porque se ve cuantas
+ * capas ha atravesado», y con las bandas calcando la superficie eso era FALSO.
+ * La costra se movia con el crater y el hoyo salia del mismo color que el borde.
+ * Con las bandas hondas ancladas al lecho, un crater CORTA los estratos y
+ * ensena por donde va.
+ *
+ * La curva es suave y sin saltos porque depende solo de la profundidad: las dos
+ * filas que comparten borde de banda tienen que caer exactamente a la misma y,
+ * o el corte duro entre colores se convierte en un degradado.
+ */
+const aplanado = (prof) => 1 - 1 / (1 + prof / 4.5);
+
+/** Separacion minima entre dos filas que NO comparten profundidad. */
+const SEPARACION_FILA = 0.02;
+
+/**
+ * Ventana del lecho, en columnas a cada lado. A 0,1 u por columna son 12
+ * unidades: mas corto y el lecho copia cada loma —volvemos a la tarta—; mas
+ * largo y sale una recta, que tampoco es un estrato.
+ */
+const LECHO_VENTANA = 120;
+
+/**
  * Profundidad de cada fila de la cara frontal, y a que banda pertenece.
  *
  * Los bordes van repetidos: la fila 1 y la 2 estan las dos a 0,42 pero una es
@@ -114,6 +146,66 @@ const REPOSO_MAX_PASADAS = 288;
 // de unidad sobre un terreno de 14 de amplitud.
 const REPOSO_UMBRAL = 1e-3;
 
+/**
+ * Las tres composiciones de calle, y son OTROS SUELOS, no otra decoracion.
+ *
+ * Lo que cambia entre ellas es COMO ESTA CORTADO EL SUELO, nada mas: mismo
+ * teatro, mismas piezas y misma semilla. Y cada una cambia la partida entera
+ * (`docs/ESCENARIOS.md` §3 ter):
+ *
+ *  - AVENIDA. La calle despejada entre dos manzanas. Todo el arco a la vista,
+ *    cero cobertura, y avanzar da mucho. Es la que se entiende sola en el primer
+ *    turno y la que mas necesita las trampas para no decidirse en dos ajustes.
+ *  - ZANJA EN LA CALZADA. Los dos emplazamientos estan DENTRO del terreno, con
+ *    el labio levantado con el cascote excavado. El tiro tenso se estrella
+ *    contra tu propio parapeto y salir cuesta arriba se paga en deposito. El
+ *    foso es MAS ANCHO que la pieza a proposito: con un foso justo, el blindado
+ *    se apoya en los dos labios y la trinchera desaparece.
+ *  - MONTON CENTRAL. Cascote amontonado en medio, con el hito encima. El
+ *    decorado no colisiona —eso son las trampas— pero el monton SI ES TERRENO,
+ *    y por eso avanzar hacia el es la jugada: quien lo corona domina.
+ *
+ * El monton pide bajar el peso del cuenco: el cuenco hunde el centro y es
+ * exactamente donde va el monton, asi que con los dos a plena fuerza se anulan y
+ * queda una avenida con una loma.
+ */
+export const COMPOSICIONES = ['avenida', 'zanja', 'monton'];
+
+const ZANJA = {
+  llano: 3.4,    // suelo del foso, plano bajo el blindado
+  pared: 6.6,    // hasta donde sube la pared: 2 u en 3,2 da 0,63 de pendiente,
+  hondo: 2.0,    // por debajo de los 0,9 que la oruga ya no sube
+  // El labio se derrama LARGO hacia fuera: 0,95 de alto en 0,9 unidades daba una
+  // cara exterior de pendiente 1,05, o sea un escalon que la oruga no sube. El
+  // blindado podia moverse dentro del foso y no salir de el jamas, que no es
+  // «caro» — es una jaula. Derramado hasta 10,5 la cara exterior baja a 0,35.
+  labio: 10.5,
+  alto: 0.95,    // el cascote excavado, amontonado fuera
+};
+
+const MONTON = {
+  medio: 15,     // medio ancho del monton
+  // Cuanto CORONA el monton por encima del emplazamiento mas alto. No es una
+  // altura absoluta a proposito: sumar 5 unidades al relieve que salga del ruido
+  // deja el monton por debajo de los dos canones la mitad de las veces, y
+  // entonces no es un monton central, es una loma. Medido asi, siempre es lo
+  // mas alto del campo y coronarlo siempre es la jugada.
+  corona: 4.5,
+  bowl: 0.45,    // lo que queda del cuenco cuando hay monton
+};
+
+/**
+ * El labio del crater. Sin el, un crater es una hondonada natural: hunde y ya.
+ *
+ * `docs/ESCENARIOS.md` §3.4 pide 0,25 u de alto. Se reparte hasta 1,75 radios y
+ * NUNCA pasa de un quinto de lo excavado: con un crater a ras de la roca madre
+ * apenas se saca tierra, y el labio no puede inventarsela — la masa que sube al
+ * borde se descuenta de la que vuela a sotavento.
+ */
+const LABIO_ALTO = 0.25;
+const LABIO_ALCANCE = 1.75;
+const LABIO_FRACCION = 0.2;
+
 // Unidades de mundo que ocupa una repeticion del grano. A 6, con el encuadre
 // de apuntado, cada baldosa mide algo mas de un quinto de pantalla: se ve como
 // textura y no como un patron que se repite.
@@ -135,6 +227,7 @@ export class Terrain {
     bowlWeight = 0.48,
     pads = [],
     grano = null,
+    composicion = 'avenida',
   }) {
     this.width = width;
     this.cols = columns;
@@ -146,6 +239,7 @@ export class Terrain {
     this.baseY = baseY;   // hasta donde baja la cara frontal (fuera de cuadro)
     this.floorY = floorY; // lo mas hondo que puede excavar un crater
     this.biome = biome;
+    this.composicion = COMPOSICIONES.includes(composicion) ? composicion : 'avenida';
 
     // Float64 y no Float32: con Sotavento el heightmap deja de ser un perfil
     // que se dibuja y pasa a ser un libro de contabilidad. La masa total ronda
@@ -169,7 +263,15 @@ export class Terrain {
     this.lift0 = new Float64Array(columns);
     this.hundiendo = null;
 
+    // El lecho: el perfil del terreno suavizado a lo bruto, y la cota de la que
+    // cuelgan los estratos hondos. Se calcula UNA vez, al generar, y NO se
+    // actualiza nunca — ni con un crater ni con un deposito. Ese es justo el
+    // punto: la roca de debajo no se mueve porque encima caiga un obus, y por
+    // eso un crater corta las capas en vez de arrastrarlas consigo.
+    this.lecho = new Float64Array(columns);
+
     this._generate(rng, minHeight, amplitude, pads, bowlHalfWidth, bowlWeight);
+    this._asentarLecho();
 
     this.crest = new THREE.Color(biome.crest);
     this.body = new THREE.Color(biome.body);
@@ -226,7 +328,8 @@ export class Terrain {
     // maxima potencia se estrella a 5 unidades de la boca. Ademas es la forma
     // clasica de arena de artilleria: los dos tiran cuesta abajo.
     const bowlK = bowlHalfWidth > 0 ? Math.PI / bowlHalfWidth : 0;
-    const w = bowlHalfWidth > 0 ? bowlWeight : 0;
+    const peso = this.composicion === 'monton' ? bowlWeight * MONTON.bowl : bowlWeight;
+    const w = bowlHalfWidth > 0 ? peso : 0;
     // Desplazamientos con semilla para que dos partidas no compartan relieve.
     const o1 = rng() * 500;
     const o2 = rng() * 500;
@@ -252,6 +355,82 @@ export class Terrain {
     this._cicatrices(rng, pads);
 
     for (const pad of pads) this._flattenPad(pad.x, pad.halfWidth, pad.feather);
+
+    // La composicion va LA ULTIMA, despues de aplanar los emplazamientos: el
+    // foso baja una meseta que ya es plana y sigue siendolo, y el labio no se
+    // lo come el difuminado del `pad`. Al reves, aplanar despues rellenaria
+    // media zanja y no quedaria trinchera ninguna.
+    this._componer(pads);
+  }
+
+  /**
+   * Corta el suelo segun la composicion. Es lo unico que las separa.
+   */
+  _componer(pads) {
+    if (this.composicion === 'zanja') {
+      for (const pad of pads) {
+        // Primero se nivela LA CALLE entera, no solo la meseta del blindado.
+        // Sin esto el foso es un delta sobre el relieve de siempre: donde el
+        // terreno ya caia hacia el centro, el labio de ese lado sale POR DEBAJO
+        // del fondo del foso y no cubre nada. Una zanja en la calzada es un
+        // corte en algo llano; sobre una ladera es una cuneta.
+        this._flattenPad(pad.x, ZANJA.labio, 4.0);
+        const i0 = Math.max(0, Math.floor((pad.x - ZANJA.labio - this.x0) / this.dx));
+        const i1 = Math.min(this.cols - 1, Math.ceil((pad.x + ZANJA.labio - this.x0) / this.dx));
+        for (let i = i0; i <= i1; i++) {
+          const d = Math.abs(this.x0 + i * this.dx - pad.x);
+          if (d < ZANJA.llano) {
+            this.heights[i] -= ZANJA.hondo;
+          } else if (d < ZANJA.pared) {
+            const t = (d - ZANJA.llano) / (ZANJA.pared - ZANJA.llano);
+            this.heights[i] -= ZANJA.hondo * (0.5 + 0.5 * Math.cos(t * Math.PI));
+          } else if (d < ZANJA.labio) {
+            const t = (ZANJA.labio - d) / (ZANJA.labio - ZANJA.pared);
+            this.heights[i] += ZANJA.alto * Math.sin(t * Math.PI);
+          }
+        }
+      }
+      return;
+    }
+
+    if (this.composicion === 'monton') {
+      let emplazamiento = -Infinity;
+      for (const pad of pads) emplazamiento = Math.max(emplazamiento, this.heightAt(pad.x));
+      if (emplazamiento === -Infinity) emplazamiento = this.heightAt(0);
+      // Y con tope. La pendiente maxima de un coseno al cuadrado de este ancho
+      // es `alto * pi / (2 * medio)` = alto * 0,105, asi que por encima de 8,6
+      // el monton pasa de los 0,9 que sube una oruga y deja de ser una decision
+      // para ser una pared. Ocho deja margen.
+      const alto = Math.min(8, Math.max(1.5, emplazamiento + MONTON.corona - this.heightAt(0)));
+      for (let i = 0; i < this.cols; i++) {
+        const x = this.x0 + i * this.dx;
+        const t = Math.abs(x) / MONTON.medio;
+        if (t >= 1) continue;
+        // Coseno al cuadrado: sube sin canto y con la pendiente maxima en la
+        // ladera, no en la cima. Una campana de Gauss deja la cima demasiado
+        // aguda y el monton se lee como un pico, no como escombro apilado. Y la
+        // pendiente maxima sale 0,47: se sube, caro, que es lo que se pide.
+        this.heights[i] += alto * Math.cos((t * Math.PI) / 2) ** 2;
+      }
+    }
+  }
+
+  /**
+   * El lecho: media movil ancha del perfil recien generado.
+   *
+   * Suma acumulada, asi que cuesta una pasada por columna por ancha que sea la
+   * ventana. Es lo que sostiene los estratos hondos, y por eso se calcula
+   * DESPUES de las cicatrices y de las plataformas: el lecho tiene que ser el
+   * del campo que se juega, no el del ruido de antes de tocarlo.
+   */
+  _asentarLecho() {
+    const suma = new Float64Array(this.cols + 1);
+    for (let i = 0; i < this.cols; i++) suma[i + 1] = suma[i] + this.heights[i];
+    for (let i = 0; i < this.cols; i++) {
+      const a = Math.max(0, i - LECHO_VENTANA);
+      const b = Math.min(this.cols - 1, i + LECHO_VENTANA);
+      this.lecho[i] = (suma[b + 1] - suma[a]) / (b - a + 1);
+    }
   }
 
   /**
@@ -395,10 +574,47 @@ export class Terrain {
       }
     }
 
+    // ── el labio ────────────────────────────────────────────────────────
+    //
+    // Un crater sin labio es una hondonada natural: hunde, y ya. Lo que da la
+    // lectura de IMPACTO es el anillo levantado alrededor (`ESCENARIOS.md` §3.4).
+    //
+    // La masa sale de la que se excavo y se descuenta del volumen que se
+    // devuelve, asi que Sotavento sigue conservandose exactamente: lo que no
+    // vuela a sotavento es porque se ha quedado en el borde del hoyo.
+    const jl0 = Math.max(0, Math.floor((cx - r * LABIO_ALCANCE - this.x0) / this.dx));
+    const jl1 = Math.min(this.cols - 1, Math.ceil((cx + r * LABIO_ALCANCE - this.x0) / this.dx));
+    const forma = [];
+    let masaLabio = 0;
+    for (let i = jl0; i <= jl1; i++) {
+      const d = Math.abs(this.x0 + i * this.dx - cx);
+      if (d < r || d > r * LABIO_ALCANCE) { forma.push(0); continue; }
+      // Coseno: maximo pegado al borde del hoyo y cero al final. La eyeccion se
+      // amontona en el labio, no a media distancia.
+      const t = (d - r) / (r * (LABIO_ALCANCE - 1));
+      const alto = LABIO_ALTO * Math.cos((t * Math.PI) / 2);
+      forma.push(alto);
+      masaLabio += alto * this.dx;
+    }
+    // Y nunca mas de lo que se ha sacado: con un crater a ras de la roca madre
+    // apenas se excava nada y el labio no puede inventarse tierra.
+    const escala = masaLabio > 0 ? Math.min(1, (volumen * LABIO_FRACCION) / masaLabio) : 0;
+    if (escala > 0) {
+      for (let i = jl0; i <= jl1; i++) {
+        const alto = forma[i - jl0] * escala;
+        if (alto <= 0) continue;
+        this.heights[i] += alto;
+        // Es tierra removida: se apila suelta y se derrumba como tal.
+        this.suelta[i] += alto;
+        volumen -= alto * this.dx;
+      }
+    }
+
     if (hundimiento) this.hundiendo = { i0, i1 };
 
-    // La AO mira a los vecinos, asi que hay que refrescar mas ancho que el crater.
-    if (rehacerMalla) this.rebuild(i0 - AO_WINDOW, i1 + AO_WINDOW);
+    // La AO mira a los vecinos, asi que hay que refrescar mas ancho que el
+    // crater; y el labio se sale del crater, asi que se refresca desde el.
+    if (rehacerMalla) this.rebuild(jl0 - AO_WINDOW, jl1 + AO_WINDOW);
     return { i0, i1, volumen };
   }
 
@@ -627,17 +843,37 @@ export class Terrain {
       const span = h - this.baseY;
 
       // --- cara frontal
+      //
+      // La costra cuelga de la SUPERFICIE y las bandas hondas del LECHO. En
+      // medio, la curva de `aplanado`. Es lo que convierte seis lineas
+      // paralelas ondulando a la vez en un corte de terreno.
+      const lecho = this.lecho[i];
+      let anterior = Infinity;
+      let profAnterior = -1;
       for (let j = 0; j < ROWS; j++) {
         const [prof, banda] = FILAS[j];
         // La ultima fila y cualquiera mas honda que la columna se pegan a la
         // base: las filas sobrantes salen degeneradas y no se ven.
         const depth = Math.min(prof, span);
+        const a = aplanado(depth);
+        let y = h - depth + a * (lecho - h);
+        // Dos filas que comparten profundidad son un BORDE de banda y tienen que
+        // caer exactamente a la misma y: separadas, el corte duro entre dos
+        // colores se convierte en el degradado que las bandas venian a quitar.
+        // Y ninguna fila puede subirse por encima de la anterior: en una vaguada
+        // honda el lecho esta por encima del suelo y sin este tope las capas se
+        // cruzarian y la malla saldria del reves.
+        if (prof === profAnterior) y = anterior;
+        else y = Math.min(y, anterior - SEPARACION_FILA);
+        anterior = y;
+        profAnterior = prof;
+
         const k = (i * ROWS + j) * 3;
         fPos[k + 0] = x;
-        fPos[k + 1] = h - depth;
+        fPos[k + 1] = y;
         fPos[k + 2] = this.zFront;
         fUv[(i * ROWS + j) * 2 + 0] = x / GRANO_ESCALA;
-        fUv[(i * ROWS + j) * 2 + 1] = (h - depth) / GRANO_ESCALA;
+        fUv[(i * ROWS + j) * 2 + 1] = y / GRANO_ESCALA;
 
         const capa = ESTRATOS[banda];
         // La costra sale de la cresta; el resto, del cuerpo al hondo.
@@ -658,8 +894,18 @@ export class Terrain {
       const hl = this._visual(Math.max(0, i - 1));
       const hr = this._visual(Math.min(this.cols - 1, i + 1));
       const dhdx = (hr - hl) / (2 * this.dx);
-      const nlen = Math.hypot(dhdx, 1);
-      const nx = -dhdx / nlen;
+      // La normal se endereza hacia arriba antes de usarla.
+      //
+      // Con la normal real, una ladera que cae a la derecha apunta al lado
+      // contrario de la key —que entra desde arriba-izquierda a 48°— y la franja
+      // de superficie se iba a NEGRO: en pantalla salia una raya oscura pegada
+      // al perfil que se leia como un agujero, no como la cresta del suelo. Con
+      // la normal a medio camino de la vertical la franja sigue dando forma
+      // (una cuesta se distingue de un llano) pero no se apaga nunca.
+      const ENDEREZADO = 0.6;
+      const px = -dhdx * (1 - ENDEREZADO);
+      const nlen = Math.hypot(px, 1);
+      const nx = px / nlen;
       const ny = 1 / nlen;
 
       const kf = i * 2 * 3;

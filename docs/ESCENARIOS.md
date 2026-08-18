@@ -43,6 +43,12 @@ sobre una cuesta apoya una oruga y deja la otra en el aire — es el mismo defec
 que el de las casas, y se corrige midiendo el terreno bajo los dos extremos de la
 huella.
 
+En el juego lo hace `cannon.asentar()`, con media huella de 1,7 u y tope de 14°
+—a 20° el blindado se lee como un juguete volcado—, y la altura es la **menor**
+entre la media de los dos extremos y la del centro: sobre una loma, la media deja
+el vientre en el aire. Gira el rig **entero**, casco y arma: con el casco girado
+y la torreta a nivel, el anillo se despega en cuanto hay dos grados de cuesta.
+
 > **El fondo tampoco puede competir con el suelo.** Las tres crestas de
 > `ARTE.md` §13 arrancaban a 5,2 u con el terreno jugable a 3–5 u, y como van más
 > claras que el suelo se leían como la hierba de delante: todo lo plantado en el
@@ -81,6 +87,13 @@ Presupuesto por escena, y es un tope de **piezas fusionadas**, no de mallas:
 **Tope duro: 14 llamadas de dibujo para todo el decorado**, más las 8 × 6 de los
 vehículos, más terreno, cielo y fondo. Si una escena se pasa, se quitan
 instancias, nunca detalle: cuatro tocones buenos son mejores que doce pobres.
+
+**En el juego van tres.** `src/art/decorado/` funde TODAS las piezas del campo en
+dos geometrías —cuerpos y calcomanías— y las pinta con tres llamadas contando el
+shell de contorno. Cada pieza conserva su geometría por separado para poder
+reconstruir sólo la que un cráter ha descalzado, y se refunde el conjunto. La
+tabla de arriba sigue mandando en cuántas piezas y cuánto detalle lleva cada
+familia; lo que ya no hace falta racionar son las llamadas.
 
 Las seis reglas de `ARTE.md` §1 aplican tal cual: contorno 2,5 px en plano medio
 y 3,5 px en primer plano, tres tonos, luz arriba-izquierda, sombra de contacto,
@@ -141,6 +154,12 @@ quemado— y lo que cambia es la fábrica con la que está hecho.
 
 El parapeto de sacos no se declara: va siempre, **delante** del cañón y no
 detrás, porque detrás lo tapa la propia pieza y el jugador nunca lo ve.
+
+Las `props` de cada teatro viven en `src/art/direction.js`, junto al resto de su
+paleta, y las piezas en `src/art/decorado/piezas.js`, con los mismos números que
+la plancha. `veces` es **por cada 38 unidades de campo** —lo que encuadra la
+plancha—: el campo del juego mide 140 y las repeticiones se multiplican, o el
+teatro se queda con nueve piezas perdidas en todo el mapa.
 
 **Y se apila como un muro, con el remate a nivel.** Donde el suelo baja se ponen
 más hiladas; no se baja el muro. Colocando cada saco a la cota de su x salía una
@@ -227,9 +246,21 @@ falta es que **se vean como cráteres y no como ondulaciones**.
 - **Labio elevado**: el cráter no solo hunde, **levanta un anillo** de 0,25 u
   alrededor. Es lo que da la lectura de impacto. La masa sale de la que se
   excavó, así que Sotavento sigue conservándose.
+
+  Hecho (`terrain.carve`): coseno con el máximo pegado al borde del hoyo y cero
+  a 1,75 radios, y **nunca más de un quinto de lo excavado** — con un cráter a
+  ras de la roca madre apenas se saca tierra y el labio no puede inventársela.
+  Lo que sube al borde se **descuenta** del volumen que se devuelve para la
+  pluma, y `pnpm verificar:sotavento` sigue cuadrando la masa a 1e-12. Es tierra
+  removida, así que cuenta como arena **suelta** y se derrumba como tal.
 - **Anillo de color**: la banda de terreno del cráter usa `socavón` en el fondo y
   la `cresta` en el labio, con **borde duro**, como los estratos de `ARTE.md`
   §12. Sin cambio de color un cráter es invisible a contraluz.
+
+  Sale **solo** desde que los estratos hondos cuelgan del lecho y no de la
+  superficie (`ARTE.md` §12): el cráter corta las bandas en vez de arrastrarlas,
+  así que el fondo enseña la banda honda y el labio sigue siendo costra. Antes no
+  había anillo posible — la costra bajaba con el hoyo.
 - **Barro**: los cráteres viejos (los de generación, no los del combate) llevan
   una **elipse plana de agua** en el fondo, color `cielo.medio` mezclado 0,5 con
   el terreno, con un borde claro de 1 px. Cero reflejo, cero transparencia
@@ -239,6 +270,9 @@ falta es que **se vean como cráteres y no como ondulaciones**.
   geometría.
 - Los cráteres frescos del combate **no llevan agua**. Que se distingan los
   viejos de los nuevos es información de juego: te dice dónde ya has tirado.
+
+> **Pendiente:** el agua de los cráteres viejos y las salpicaduras del labio no
+> están en el juego todavía. El labio y el anillo de color sí.
 
 ### 3.5 Nieve y hielo
 
@@ -359,6 +393,26 @@ cinco planos, mismo teatro y misma semilla.
 | **Avenida** | Todo el arco visible | Ninguna: estás al descubierto | Muy útil — hay montón que ganar |
 | **Zanja en la calzada** | Hay que pasar por encima del labio propio | Alta: estás metido en el suelo | Caro — salir cuesta arriba |
 | **Montón central** | Por encima del montón o rodeando | Media: el montón tapa el tiro raso | Decisivo — quien lo corona domina |
+
+Las tres están en el juego (`src/world/terrain.js`), las sortea la semilla y
+`?suelo=avenida|zanja|monton` las clava. Los números del corte están en
+`ARTE.md` §12; lo que sigue es lo que cambian en la partida.
+
+**Caro no es imposible.** El primer labio de la zanja tenía 0,95 u de alto
+derramados en 0,9 de ancho: pendiente 1,05, por encima del 0,9 que sube una
+oruga. El blindado podía moverse dentro del foso y no salir de él jamás. El labio
+se derrama ahora hasta 10,5 u —cara exterior 0,35— y salir cuesta unos dos
+depósitos. Lo mismo con el montón: su altura se mide **contra el emplazamiento
+más alto** y no en absoluto, con tope de 8 u, porque su pendiente máxima es
+`alto · π / (2 · 15)` y por encima de 8,6 deja de ser una decisión para ser una
+pared. Las dos cosas las vigila `tests/world/composicion.test.js`, midiendo con
+`mover()` y no con la pendiente cruda: el relieve generado trae laderas naturales
+de hasta 72°, así que medir la pendiente total mide el ruido y no la
+composición.
+
+Y las tres pasan `pnpm verificar:sotavento` por separado —200 combates de 16
+disparos cada una—, porque la zanja mete a los dos blindados en un hoyo y un
+blindado en un hoyo es justo el que Sotavento puede tapiar con dos paladas.
 
 - **Avenida.** La calle despejada entre dos manzanas. Es la que mejor enseña la
   trayectoria y la que se entiende sola en el primer turno. En contra: sin nada

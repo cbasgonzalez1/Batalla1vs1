@@ -7,6 +7,7 @@ import {
   anillo, cupula as cupulaGeo, filaRemaches, mancha,
 } from './primitivas.js';
 import { materialRelleno, materialContorno } from './toon.js';
+import { crearDeterioro, cicatricesDe } from './deterioro.js';
 import { MATERIA, claro, oscuro, camuflaje, contorno } from './paleta.js';
 
 /**
@@ -210,7 +211,13 @@ export function ensamblar(ficha, base) {
     banda.translate(0, 0, z * Z_CINTA);
     piezas.push(pintarPiezas(banda, MATERIA.cinta, false));
   }
-  bloque(casco, fusionarPintadas(piezas), 3);
+  // Las cicatrices van LAS ULTIMAS y dentro del mismo bloque: asi el deterioro
+  // sabe que ocupan la cola del atributo de color, y no cuesta ni una llamada de
+  // dibujo mas (`deterioro.js`).
+  const marcas = cicatricesDe(f, base);
+  piezas.push(...marcas.piezas);
+  const geoCasco = fusionarPintadas(piezas);
+  bloque(casco, geoCasco, 3);
 
   // ── arma: torreta + cupula + mantelete + tubo ────────────────────────────
   // Todo cuelga del pivote, y por eso se expresa RELATIVO a el: la torreta gira
@@ -254,7 +261,8 @@ export function ensamblar(ficha, base) {
   canon.scale(ESCALA, ESCALA, ESCALA);
   // Del color del BANDO, no de acero: el tubo es parte de la silueta unica del
   // cuerpo (§12.1), y en acero se lee como una pieza pegada encima.
-  bloque(tubo, pintar(canon, base), 3);
+  const geoTubo = pintar(canon, base);
+  bloque(tubo, geoTubo, 3);
 
   // ── sombra de contacto ──────────────────────────────────────────────────
   const sombra = new THREE.Mesh(
@@ -275,6 +283,14 @@ export function ensamblar(ficha, base) {
     casco,
     arma,
     tubo,
+    // El deterioro tiñe el color POR VERTICE de estas tres geometrias, que son
+    // de este vehiculo y de nadie mas. El material es unico y compartido por los
+    // quince: tocarlo tiznaria a los dos bandos a la vez.
+    deterioro: crearDeterioro({
+      geometrias: [geoCasco, fijo, geoTubo],
+      revelado: marcas.revelado,
+      porCicatriz: marcas.porCicatriz,
+    }),
     retroceso: f.retroceso,
     // El ancla `boca`: el extremo del tubo, en unidades de juego y relativo al
     // pivote. La balistica lee SOLO esto; nunca calcula de la geometria.

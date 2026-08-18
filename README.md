@@ -108,6 +108,7 @@ abiertas. Es a propósito, no hay nada que valga la pena persistir.
 | `?biome=` | `ypres`, `verdun`, `varsovia39`, `rotterdam`, `coventry`, `stalingrado`, `jarkov`, `cassino`, `caen`, `saintlo`, `varsovia44`, `arnhem`, `aquisgran`, `budapest`, `dresde`, `berlin` | Teatro; cambia paleta, fábrica de la ciudad, época del blindado y color del proyectil |
 | `?blindado=` | `media`, `cazacarros`, `pesado` | Qué ficha del catálogo se monta. Solo para revisar arte |
 | `?trampas=` | `0` … `1` | Minas, deflectores y muros en el campo |
+| `?suelo=` | `avenida`, `zanja`, `monton` | Clava la composición de calle. Sin él la sortea la semilla |
 | `?online` | — | Abre la pantalla de sala |
 | `?sala=` | código de 4 letras | Entra directo a esa sala |
 | `?servidor=` | `ws://host:puerto` | Otro servidor de salas |
@@ -137,6 +138,39 @@ cronómetros ni capturas.
 
 Hecho: terreno destructible, cañones, arco, disparo, cámara con barrido y
 zoom, vida con destrucción y pantalla de victoria, y reacción en vuelo.
+
+### El sitio: decorado urbano y composición de calle
+
+El campo ya no es un perfil de ruido con cuatro bidones. Cada una de las
+dieciséis ciudades declara **sus** familias de decorado —muro suelto, viga
+retorcida, coche quemado, tranvía volcado, escombro, barricada, erizo checo,
+alambrada, vía retorcida, bidones, cajas, árbol quemado, farola y poste— y **su
+hito**, uno de los nueve edificios que salen del mismo constructor. Nada se
+solapa: cada pieza declara el ancho que ocupa y pasa por un registro que niega la
+colocación si no cabe, y se coloca de mayor a menor. Ninguna tiene base plana: el
+borde inferior se construye con el perfil del terreno, y se reasienta cuando un
+cráter le quita el suelo. Todo el campo cuesta **tres llamadas de dibujo**.
+
+Y el suelo se corta de tres maneras, sorteadas por la semilla (`?suelo=`):
+
+| Composición | Trayectoria | Cobertura | Avanzar |
+|---|---|---|---|
+| **Avenida** | Todo el arco visible | Ninguna | Muy útil |
+| **Zanja en la calzada** | Hay que pasar por encima del labio propio | Alta | Caro: salir cuesta arriba |
+| **Montón central** | Por encima del montón o rodeando | Media | Decisivo: quien lo corona domina |
+
+Las tres pasan `pnpm verificar:sotavento` por separado y las mide
+`tests/world/composicion.test.js` con `mover()`, no con la pendiente cruda: el
+relieve generado trae laderas naturales de hasta 72°, así que medir la pendiente
+total mide el ruido y no la composición.
+
+### El castigo se ve en el blindado
+
+Un vehículo con 4 puntos de vida se veía igual que uno recién salido de fábrica.
+Ahora se tizna hacia el hollín, descubre una de sus cinco cicatrices por cada
+quinto de vida perdida y humea del motor por debajo del 45 %. No cuesta ni una
+llamada de dibujo más: las cicatrices van **dentro** de la geometría del casco,
+pintadas del color del casco, y se descubren repintando sus vértices.
 
 ### Sotavento
 
@@ -279,6 +313,8 @@ src/
              combat.js     ← vida, daño por proximidad, cargas de reacción
   art/       direction.js  ← todos los colores, luces y materiales
              geometry.js   ← caja biselada, texturas de punto y cielo
+             vehiculo/     ← primitivas, ensamblado y deterioro del blindado
+             decorado/     ← las catorce familias urbanas y los nueve hitos
   world/     terrain.js    ← heightmap + malla extruida + destrucción
              cannon.js     ← vehículo del jugador
              gamecamera.js ← ortográfica con barrido, seguimiento y límites

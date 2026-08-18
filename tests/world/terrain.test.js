@@ -61,16 +61,45 @@ describe('destruccion', () => {
     t.carve(x, t.heightAt(x), r);
   }
 
-  it('el crater rebaja el terreno y no lo levanta', () => {
+  it('el crater rebaja dentro del radio y LEVANTA el labio fuera', () => {
+    // Un crater sin labio es una hondonada natural: hunde, y ya. Lo que da la
+    // lectura de impacto es el anillo levantado (`docs/ESCENARIOS.md` §3.4).
     const t = construir('vostok');
-    const antes = Float32Array.from(t.heights);
+    const antes = Float64Array.from(t.heights);
     excavar(t, 0, 2.6);
+    let levantado = 0;
     for (let i = 0; i < antes.length; i++) {
-      expect(t.heights[i]).toBeLessThanOrEqual(antes[i] + 1e-6);
+      const d = Math.abs(t.x0 + i * t.dx);
+      if (d < 2.6) expect(t.heights[i]).toBeLessThanOrEqual(antes[i] + 1e-6);
+      if (t.heights[i] > antes[i] + 1e-6) {
+        levantado++;
+        expect(d).toBeGreaterThanOrEqual(2.6);
+        expect(d).toBeLessThanOrEqual(2.6 * 1.75 + t.dx);
+      }
     }
+    expect(levantado).toBeGreaterThan(0);
   });
 
-  it('el crater no toca las columnas fuera de su radio', () => {
+  it('el labio sale de lo excavado: nunca se inventa tierra', () => {
+    // La masa que sube al borde se descuenta de la que vuela a sotavento, o la
+    // conservacion de Sotavento seria mentira.
+    const t = construir('vostok');
+    const antes = Float64Array.from(t.heights);
+    const { volumen } = t.carve(0, t.heightAt(0), 2.6);
+    let subido = 0;
+    let bajado = 0;
+    for (let i = 0; i < antes.length; i++) {
+      const d = t.heights[i] - antes[i];
+      if (d > 0) subido += d * t.dx;
+      else bajado -= d * t.dx;
+    }
+    expect(subido).toBeGreaterThan(0);
+    expect(subido).toBeLessThan(bajado);
+    // Y lo que se devuelve para sotavento es exactamente el resto.
+    expect(volumen).toBeCloseTo(bajado - subido, 8);
+  });
+
+  it('el crater no toca las columnas fuera del labio', () => {
     const t = construir('vostok');
     const antes = Float32Array.from(t.heights);
     excavar(t, 0, 2.6);

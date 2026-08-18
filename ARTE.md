@@ -319,9 +319,63 @@ su banda, que es exactamente lo que dice esta sección. La superficie de arriba 
 se ilumina: es la única cara del terreno con relieve y la que da la forma de la
 cresta.
 
+**Las bandas hondas no calcan la superficie: cuelgan del LECHO.** Esta es la
+corrección que hace que la mitad inferior del cuadro deje de verse falsa, y no
+era la paleta. Con las seis franjas siguiendo el perfil, el suelo se lee como una
+tarta de capas — seis líneas paralelas ondulando a la vez, una forma que no
+existe en ningún sitio. Un estrato de verdad es casi horizontal y lo que varía es
+**cuánto terreno tiene encima**.
+
+El lecho es la media móvil del perfil recién generado con una ventana de ±12 u,
+y **no se actualiza nunca**: ni con un cráter ni con un depósito. La costra
+cuelga de la superficie, las bandas hondas del lecho, y en medio va la curva
+`aplanado(p) = 1 − 1/(1 + p/4,5)`, que depende **sólo** de la profundidad — las
+dos filas que comparten borde de banda tienen que caer a la misma Y o el corte
+duro entre colores se vuelve un degradado.
+
+Y arregla algo más que el aspecto. Esta misma sección promete desde el principio
+que el suelo por estratos «da escala — se ve cuánto ha excavado un cráter porque
+se ve cuántas capas ha atravesado», y con las bandas calcando el perfil eso era
+**falso**: la costra bajaba con el hoyo y el cráter salía del mismo color que el
+borde. Con el lecho quieto, un cráter **corta** los estratos.
+
+| Profundidad (u) | Aplanado |
+|---|---|
+| 0,42 (costra) | 0,09 |
+| 2,6 | 0,37 |
+| 6,5 | 0,59 |
+| 14 | 0,76 |
+| 26 | 0,85 |
+
+**La superficie superior se ilumina con la normal ENDEREZADA al 60 %.** Con la
+normal real, una ladera que cae a la derecha apunta al lado contrario de la key
+—que entra desde arriba-izquierda a 48°— y la franja se iba a negro: en pantalla
+salía una raya oscura pegada al perfil que se leía como un agujero, no como la
+cresta del suelo. A medio camino de la vertical la franja sigue dando forma y no
+se apaga nunca.
+
 Encima, una línea de contorno de `0.1` en el perfil: es lo que separa el suelo
 del cielo y de las crestas de fondo, y sin ella el terreno se funde con el
 horizonte.
+
+### Las tres composiciones de calle
+
+El suelo no es uno. Lo que cambia entre las tres es **cómo está cortado**, nada
+más: mismo teatro, mismas piezas y misma semilla. La composición **la sortea la
+semilla** —`?suelo=avenida|zanja|monton` la clava para revisar— porque los seis
+móviles tienen que cortar el suelo igual y el servidor no manda nada de esto.
+El detalle de qué cambia en la partida está en `docs/ESCENARIOS.md` §3 ter.
+
+| Composición | Cómo se corta |
+|---|---|
+| **Avenida** | El cuenco de siempre. No se toca nada. |
+| **Zanja en la calzada** | Se nivela la calle a ±10,5 u de cada emplazamiento y se excava: suelo plano hasta 3,4 u, pared que sube 2,0 u en 3,2 y labio de 0,95 u derramado hasta 10,5. |
+| **Montón central** | Coseno al cuadrado de 15 u de medio ancho que **corona 4,5 u por encima del emplazamiento más alto**, con tope de 8 u; el cuenco baja al 45 %. |
+
+Los tres números de la zanja y el tope del montón salen de la pendiente que sube
+una oruga (`AVANCE.pendienteMaxima` = 0,9): el primer labio que se probó tenía
+0,95 u de alto en 0,9 de ancho —pendiente 1,05— y encerraba al blindado en su
+propio hoyo para siempre. Eso no es «caro», es una jaula.
 
 Oclusión de horizonte **0.34** (era 0.62, y ensuciaba de gris toda la ladera).
 Hundimiento del fondo **0.14** hasta 26 u (era 0.42 hasta 14, y se comía la
@@ -352,15 +406,24 @@ la cercana a 5 u con el terreno jugable entre 3 y 5: se entrelazaban, y como el
 fondo va más claro que el suelo se leía como la hierba de delante — era la causa
 real de que todo lo plantado en el terreno pareciera flotar.
 
-**Decorado:** sacos terreros, alambrada, tocones astillados, bidones y cajas de
-munición, repartidos con el `rng` de la semilla; un parapeto de sacos pegado a
-cada cañón; y **un hito por teatro** — torre de iglesia rota (Somme), tocón
-gigante (Flandes), casa de adobe (Alamein), isba (Frente del Este), chimenea de
-fábrica (Stalingrado), casa nevada (Ardenas). Los tonos del decorado se tiñen
-hacia el terreno del teatro para que pertenezca al sitio.
+**Decorado:** las catorce familias urbanas de `docs/ESCENARIOS.md` §3 — muro
+suelto, viga retorcida, coche quemado, tranvía volcado, escombro de ladrillo,
+barricada de adoquines, erizo checo, alambrada, vía retorcida, bidones, cajas de
+munición, árbol de calle quemado, farola y poste—, repartidas con el `rng` de la
+semilla y **sólo las que el teatro declara** en su `props`; un parapeto de sacos
+pegado a cada cañón, siempre y por delante; y **el hito de la ciudad**, uno de
+los nueve de §3 bis. Los tonos del decorado se tiñen 0,35 hacia el terreno del
+teatro para que pertenezca al sitio; la fábrica se tiñe sólo 0,22, porque es el
+rasgo que separa Varsovia de Caen.
 
-Cada pieza acaba en **una sola malla** con color por vértice. Veinte piezas de
-cinco cajas serían cien llamadas de dibujo.
+Ninguna pieza tiene base plana: el borde inferior se construye con el perfil del
+terreno. Y el decorado vive a **z = −0,6**, no más atrás: a 15° de cámara cada
+unidad de z baja el objeto 0,26 u en pantalla, así que a −1,3 —donde vivía el
+atrezo viejo— la cara frontal del terreno tapaba un tercio de unidad de cada
+pieza y todas se veían medio enterradas.
+
+Todo el campo acaba en **tres llamadas de dibujo**: cuerpos, su shell de contorno
+y las calcomanías. El tope son catorce (`docs/ESCENARIOS.md` §1).
 
 ## 14. Movimiento
 

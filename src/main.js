@@ -15,9 +15,10 @@ import { crearEfectos } from './art/efectos.js';
 import { crearFondo } from './art/fondo.js';
 import { crearCalidad, NIVELES } from './art/calidad.js';
 import { actualizarContorno, materialRelleno, materialContorno } from './art/vehiculo/toon.js';
+import { HUMO_DESDE } from './art/vehiculo/deterioro.js';
 import { pintar, fusionar } from './art/vehiculo/primitivas.js';
-import { crearAtrezo } from './art/atrezo.js';
-import { Terrain } from './world/terrain.js';
+import { crearDecorado } from './art/decorado/index.js';
+import { Terrain, COMPOSICIONES } from './world/terrain.js';
 import { buildCannon } from './world/cannon.js';
 import { GameCamera } from './world/gamecamera.js';
 import { TrajectoryArc } from './world/trajectory.js';
@@ -69,10 +70,10 @@ aplicarTraduccion(document, t);
 const params = new URLSearchParams(location.search);
 
 const CONFIG = {
-  seed: params.get('seed') || 'alamein-01',
+  seed: params.get('seed') || 'berlin-01',
   // El teatro decide paleta Y epoca: en el Somme y en Flandes se combate con
   // rombos de la Gran Guerra, en los demas con blindados de torreta.
-  biome: params.get('biome') || 'alamein',
+  biome: params.get('biome') || 'berlin',
   // Que ficha del catalogo se monta. Solo para revisar arte: en partida lo
   // elegira el jugador, y de momento los tres que hay son intercambiables
   // porque comparten pivote (docs/CATALOGO-VEHICULOS.md §0).
@@ -126,6 +127,11 @@ const CONFIG = {
   // lo ajusta solo mirando lo que tarda cada cuadro.
   calidad: params.get('calidad'),
 
+  // ?suelo=avenida|zanja|monton clava la composicion de calle. Sin el la
+  // sortea la SEMILLA, que es lo unico que vale en red: los seis moviles tienen
+  // que cortar el suelo igual, y el servidor no manda nada de esto.
+  suelo: params.get('suelo'),
+
   craterRadius: 2.6,
   // La pluma dura 1,4 s: lo que tarda la arena en verse caer sin que el turno
   // se haga largo. Se suelta en 12 tandas, no de golpe.
@@ -142,7 +148,11 @@ const HUNDIMIENTO_MS = 180;
 // ─────────────────────────────────────────────────────────────────── montaje
 
 const stage = document.getElementById('stage');
-const biome = BIOMES[CONFIG.biome] ?? BIOMES.alamein;
+// El teatro por defecto tiene que ser UNO DE LOS DIECISEIS. Se quedo en
+// `alamein` al cambiar los seis teatros de campo por las ciudades, y como el
+// respaldo apuntaba al mismo sitio inexistente, abrir el juego SIN `?biome=`
+// reventaba antes de exponer los ganchos: `projectileAccent(undefined)`.
+const biome = BIOMES[CONFIG.biome] ?? BIOMES.berlin;
 const accent = projectileAccent(biome);
 const granGuerra = esGranGuerra(biome);
 
@@ -431,7 +441,7 @@ function construirTrampa(trampa) {
 
 const world = { terrain: null, cannons: [], shields: [], trampas: [] };
 let fondo = null;
-let atrezo = null;
+let decorado = null;
 
 const state = {
   phase: 'aiming',   // aiming | flying | pluma | victory
@@ -526,10 +536,17 @@ function buildWorld(seedText) {
   fondo = crearFondo({ rng: mulberry32(hashSeed(`${seedText}:fondo`)), biome });
   scene.add(fondo.grupo);
 
+  // La composicion de calle sale de la semilla, en su propio hilo: cambiar el
+  // relieve no puede convertir una avenida en una trinchera a mitad de revancha.
+  const composicion = CONFIG.suelo && COMPOSICIONES.includes(CONFIG.suelo)
+    ? CONFIG.suelo
+    : COMPOSICIONES[Math.floor(mulberry32(hashSeed(`${seedText}:suelo`))() * COMPOSICIONES.length)];
+
   world.terrain = new Terrain({
     rng,
     biome,
     grano: granoDelSuelo,
+    composicion,
     ...CONFIG.world,
     bowlHalfWidth: CONFIG.cannonX,
     // Una plataforma plana bajo cada vehiculo, sea cual sea el numero.
@@ -556,23 +573,26 @@ function buildWorld(seedText) {
     world.trampas.push(malla);
   }
 
-  // Decorado del teatro: sacos, alambrada, tocones y el hito del sitio. Sale
-  // de su propio hilo de azar para que cambiar el relieve no mueva la iglesia.
-  if (atrezo) scene.remove(atrezo.grupo);
-  atrezo = crearAtrezo({
-    rng: mulberry32(hashSeed(`${seedText}:atrezo`)),
+  // Decorado del teatro: las familias que declara esta ciudad y el hito que le
+  // pone nombre. Sale de su propio hilo de azar para que cambiar el relieve no
+  // mueva la catedral de sitio.
+  if (decorado) scene.remove(decorado.grupo);
+  decorado = crearDecorado({
+    semilla: `${seedText}:decorado`,
     biome,
     alturaEn: (x) => world.terrain.heightAt(x),
     anchoMundo: CONFIG.world.width,
-    separacionCanones: CONFIG.cannonX * 2,
+    emplazamientos: state.plantel.map((p) => p.x),
+    composicion,
   });
-  scene.add(atrezo.grupo);
+  scene.add(decorado.grupo);
 
   for (const spec of state.plantel) {
     // La epoca la manda el teatro, no el jugador: los dos bandos combaten con
     // el material de la guerra en la que estan.
     const c = buildCannon({ ...spec, granGuerra, ficha: CONFIG.blindado });
-    c.group.position.set(spec.x, world.terrain.heightAt(spec.x), CONFIG.cannonZ);
+    c.group.position.set(spec.x, 0, CONFIG.cannonZ);
+    c.asentar((u) => world.terrain.heightAt(u));
 
     // Cupula de escudo, oculta salvo cuando se gasta una carga. Lleva el color
     // del propio vehiculo para que se lea de quien es sin mirar el marcador.
@@ -841,9 +861,9 @@ function pedirAvance(delta) {
 
 /** Deja el vehiculo activo en una x, apoyado en el terreno. */
 function colocarActivo(x) {
-  const g = activeCannon().group;
-  g.position.x = x;
-  g.position.y = world.terrain.heightAt(x);
+  const c = activeCannon();
+  c.group.position.x = x;
+  c.asentar((u) => world.terrain.heightAt(u));
   const f = aimFraming(state.active);
   state.goal = f;
 }
@@ -1036,10 +1056,9 @@ function onImpact(hit) {
   // flotando sobre el hueco. El decorado, igual.
   for (let i = 0; i < state.plantel.length; i++) {
     if (state.players[i].hop) continue;
-    const g = world.cannons[i].group;
-    g.position.y = world.terrain.heightAt(g.position.x);
+    world.cannons[i].asentar((u) => world.terrain.heightAt(u));
   }
-  atrezo?.reasentar();
+  decorado?.reasentar(hit.x);
 
   // La metralla alcanza a los dos: un tiro corto puede volarte a ti mismo.
   let mayorDaño = 0;
@@ -1337,12 +1356,12 @@ function advanceHops() {
     const t = Math.min(1, p.hop.step / REACTION.hopSteps);
     const x = lerp(p.hop.fromX, p.hop.toX, easeOutQuad(t));
     const lift = Math.sin(Math.PI * t) * REACTION.hopLift;
-    const g = world.cannons[i].group;
-    g.position.x = x;
-    g.position.y = world.terrain.heightAt(x) + lift;
+    const c = world.cannons[i];
+    c.group.position.x = x;
+    c.asentar((u) => world.terrain.heightAt(u), lift);
     if (t >= 1) {
       p.hop = null;
-      g.position.y = world.terrain.heightAt(x);
+      c.asentar((u) => world.terrain.heightAt(u));
     }
   }
 }
@@ -1559,10 +1578,11 @@ function avanzarPluma() {
     // Reasentar: la arena que cae encima de un vehiculo lo levanta con ella.
     for (let i = 0; i < state.plantel.length; i++) {
       if (state.players[i].hop) continue;
-      const g = world.cannons[i].group;
-      g.position.y = world.terrain.heightAt(g.position.x);
+      world.cannons[i].asentar((u) => world.terrain.heightAt(u));
     }
-    atrezo?.reasentar();
+    // Y solo alrededor de donde cae: reconstruir el campo entero doce veces por
+    // turno —una por tanda— es un tiron de cuadro por cada puñado de arena.
+    decorado?.reasentar(p.centro, p.anchura * 3.2);
   }
 
   if (p.paso >= CONFIG.plumaSteps) {
@@ -1619,6 +1639,25 @@ function frame(now) {
   // Todo lo decorativo va con el reloj de pared, no con el paso fijo. Si el
   // navegador se atasca se pierde humo, nunca simulacion.
   for (const c of world.cannons) c.animar(dt);
+
+  // El castigo, en el propio blindado. Antes el daño solo existia en la barra
+  // del marcador: un impacto directo sonaba, sacudia la pantalla y no dejaba ni
+  // una marca, asi que la partida no se podia leer mirando el campo.
+  for (let i = 0; i < world.cannons.length; i++) {
+    const jugador = state.players[i];
+    if (!jugador) continue;
+    const vida = Math.max(0, jugador.hp) / MAX_HP;
+    if (!world.cannons[i].dañar(vida)) continue;
+    const g = world.cannons[i].group;
+    // Del motor: atras y arriba. Atras es -x mirando a donde mira el vehiculo.
+    efectos.averia(
+      g.position.x - state.plantel[i].facing * 1.5,
+      g.position.y + 1.3,
+      dt,
+      1 - vida / HUMO_DESDE,
+    );
+  }
+
   efectos.actualizar(dt);
   cam.setSacudida(efectos.sacudida.x, efectos.sacudida.y);
 
@@ -1789,6 +1828,7 @@ exponerGanchos({
       anguloGrados: aim.phi * RAD_TO_DEG,
       potencia: aim.power,
       viento: state.wind,
+      suelo: world.terrain.composicion,
       proyectil: state.shot ? { ...state.shot } : null,
       alturaTerreno: world.terrain.heightAt(state.shot ? state.shot.x : bajoElCanon),
       pasosDeVuelo: state.flightSteps,

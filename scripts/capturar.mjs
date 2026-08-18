@@ -2,7 +2,8 @@ import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 /**
- * Fotos de los seis teatros, y una secuencia del disparo cuadro a cuadro.
+ * Fotos de las dieciseis ciudades, de las tres composiciones de calle, del
+ * deterioro de un blindado y una secuencia del disparo cuadro a cuadro.
  *
  * Es la unica forma honesta de revisar arte: leer los hex del fichero no dice
  * si la trazadora se ve contra el terreno, y una direccion de arte que solo
@@ -11,7 +12,12 @@ import { mkdirSync } from 'node:fs';
 
 const URL = process.env.URL ?? 'http://localhost:5173';
 const SALIDA = process.env.SALIDA ?? '/tmp/capturas';
-const TEATROS = ['somme', 'flandes', 'alamein', 'rzhev', 'stalingrado', 'ardenas'];
+const TEATROS = [
+  'ypres', 'verdun', 'varsovia39', 'rotterdam', 'coventry', 'stalingrado',
+  'jarkov', 'cassino', 'caen', 'saintlo', 'varsovia44', 'arnhem',
+  'aquisgran', 'budapest', 'dresde', 'berlin',
+];
+const SUELOS = ['avenida', 'zanja', 'monton'];
 
 mkdirSync(SALIDA, { recursive: true });
 
@@ -49,8 +55,54 @@ for (const teatro of TEATROS) {
   await pg.close();
 }
 
+// ── las tres composiciones de calle, en el mismo teatro y la misma semilla ─
+// Lo que cambia entre ellas es COMO ESTA CORTADO EL SUELO, y por eso se
+// fotografian con todo lo demas igual: con teatros distintos no se compara nada.
+for (const suelo of SUELOS) {
+  const pg = await abrir(`${URL}/?seed=frente&biome=caen&trampas=0&suelo=${suelo}`);
+  await pg.evaluate(() => {
+    const G = window.GAME;
+    G.state.goal = { x: 0, y: G.world.terrain.heightAt(0) + 12, w: 104 };
+    G.cam.snap(G.state.goal.x, G.state.goal.y, G.state.goal.w);
+  });
+  await pg.waitForTimeout(320);
+  await pg.screenshot({ path: `${SALIDA}/suelo-${suelo}.png` });
+  // Y el emplazamiento de cerca: la zanja solo se entiende desde dentro.
+  await pg.evaluate(() => {
+    const G = window.GAME;
+    const x = G.world.cannons[0].group.position.x;
+    G.state.goal = { x, y: G.world.terrain.heightAt(x) + 3, w: 26 };
+    G.cam.snap(G.state.goal.x, G.state.goal.y, G.state.goal.w);
+  });
+  await pg.waitForTimeout(320);
+  await pg.screenshot({ path: `${SALIDA}/suelo-${suelo}-cerca.png` });
+  await pg.close();
+  console.log(`suelo ${suelo} listo`);
+}
+
+// ── el deterioro, de entero a casi muerto ─────────────────────────────────
+// El daño tiene que verse EN EL CAMPO (docs/ARTE-VEHICULOS.md §13), y eso no se
+// comprueba leyendo el modulo: se comprueba mirando los cuatro juntos.
+{
+  const pg = await abrir(`${URL}/?seed=frente&biome=caen&trampas=0&suelo=avenida`);
+  for (const vida of [100, 60, 28, 6]) {
+    await pg.evaluate((vida) => {
+      const G = window.GAME;
+      G.state.players[0].hp = vida;
+      const x = G.world.cannons[0].group.position.x;
+      G.state.goal = { x, y: G.world.terrain.heightAt(x) + 1.6, w: 13 };
+      G.cam.snap(G.state.goal.x, G.state.goal.y, G.state.goal.w);
+    }, vida);
+    // El humo tarda en formar columna: sin esperar, el de 6 se ve como el de 60.
+    await pg.waitForTimeout(900);
+    await pg.screenshot({ path: `${SALIDA}/dano-${vida}.png` });
+  }
+  await pg.close();
+  console.log('deterioro listo');
+}
+
 // ── primer plano de las dos epocas ────────────────────────────────────────
-for (const [teatro, epoca] of [['somme', '1916'], ['alamein', '1942']]) {
+for (const [teatro, epoca] of [['ypres', '1916'], ['berlin', '1942']]) {
   const cerca = await abrir(`${URL}/?seed=frente&biome=${teatro}&trampas=0`);
   await cerca.evaluate(() => {
     const G = window.GAME;
@@ -65,7 +117,7 @@ for (const [teatro, epoca] of [['somme', '1916'], ['alamein', '1942']]) {
 }
 
 // ── el disparo, cuadro a cuadro ───────────────────────────────────────────
-const pg = await abrir(`${URL}/?seed=frente&biome=alamein&trampas=0`);
+const pg = await abrir(`${URL}/?seed=frente&biome=berlin&trampas=0&suelo=avenida`);
 await pg.evaluate(() => {
   const G = window.GAME;
   G.aim(46, 0.82);

@@ -30,6 +30,18 @@ const BOCA_1916 = { x: 1.875, y: 0 };
 const RETROCESO_MS = 90;
 const VUELTA_MS = 260;
 
+/**
+ * Media huella del tren de rodaje, en unidades de juego. El casco de la MEDIA
+ * mide 5,6 de plancha y entra a 0,625, o sea 3,5: 1,7 es lo que apoya.
+ */
+const MEDIA_HUELLA = 1.7;
+
+/**
+ * Tope de inclinacion. Un blindado a 20 grados sobre el labio de un crater se
+ * lee como un juguete volcado, no como un carro subiendo una cuesta.
+ */
+const INCLINACION_MAXIMA = (14 * Math.PI) / 180;
+
 export function buildCannon({ chassis, facing, bando, granGuerra = false, ficha = 'media' }) {
   const group = new THREE.Group();
   group.name = facing > 0 ? 'cannonA' : 'cannonB';
@@ -37,7 +49,7 @@ export function buildCannon({ chassis, facing, bando, granGuerra = false, ficha 
 
   // El de 1942 ya sale del catalogo nuevo; el rombo de 1916 sigue con el modelo
   // viejo hasta que le toque (orden de `docs/CATALOGO-VEHICULOS.md` §3).
-  const { casco, arma, tubo, retroceso, boca } = granGuerra
+  const { casco, arma, tubo, retroceso, boca, deterioro } = granGuerra
     ? { ...construirBlindado({ chassis, bando: bando ?? 'a', granGuerra }), boca: BOCA_1916 }
     : ensamblar(fichaDe(ficha), chassis.color ?? chassis);
   group.add(casco);
@@ -68,6 +80,51 @@ export function buildCannon({ chassis, facing, bando, granGuerra = false, ficha 
     muzzle,
     facing,
     granGuerra,
+
+    /**
+     * Enseña el castigo. `vida` de 0 a 1.
+     *
+     * Devuelve si a este le toca humear, que es lo unico que el bucle necesita
+     * saber: el resto —tizne y cicatrices— se resuelve dentro y sin tocar el
+     * material, que es unico para los quince. El rombo de 1916 todavia sale del
+     * modelo viejo y no lo tiene; contesta que no y ya.
+     */
+    dañar(vida) {
+      return deterioro ? deterioro.aplicar(vida) : false;
+    },
+
+    /**
+     * Apoya el blindado en el terreno de su x, Y LO GIRA CON LA PENDIENTE.
+     *
+     * Un blindado horizontal sobre una cuesta apoya una oruga y deja la otra en
+     * el aire — es el mismo defecto que el de las casas flotando, y se corrige
+     * igual: midiendo el terreno bajo los DOS extremos de la huella
+     * (`docs/ESCENARIOS.md` §0.2 ter).
+     *
+     * La altura es la MENOR entre la media de los dos extremos y la del centro:
+     * sobre una loma, la media deja el vientre en el aire.
+     *
+     * Gira el rig entero —casco y arma— y no solo el casco: con el casco girado
+     * y la torreta a nivel, el anillo se despega en cuanto hay dos grados de
+     * cuesta. La boca se mueve con el, y eso es correcto: el invariante de
+     * `ARTE-VEHICULOS.md` §8 es que los QUINCE tengan la boca a la misma Y en
+     * reposo, no que la boca no dependa del terreno — la Y ya cambiaba al
+     * apoyarse en una cota distinta.
+     *
+     * @param {(x:number) => number} alturaEn
+     * @param {number} [lift] lo que el salto de reaccion levanta al vehiculo
+     */
+    asentar(alturaEn, lift = 0) {
+      const x = group.position.x;
+      const ya = alturaEn(x - MEDIA_HUELLA);
+      const yb = alturaEn(x + MEDIA_HUELLA);
+      group.position.y = Math.min((ya + yb) / 2, alturaEn(x)) + lift;
+      const ang = Math.atan2(yb - ya, 2 * MEDIA_HUELLA);
+      // El bando B lleva el rig girado media vuelta en Y, y esa rotacion voltea
+      // Z: sin el `facing`, los dos se inclinarian en sentidos contrarios sobre
+      // la misma cuesta.
+      group.rotation.z = facing * Math.max(-INCLINACION_MAXIMA, Math.min(INCLINACION_MAXIMA, ang));
+    },
 
     /** phi = elevacion en radianes sobre la direccion de tiro del vehiculo. */
     setAim(phi) {

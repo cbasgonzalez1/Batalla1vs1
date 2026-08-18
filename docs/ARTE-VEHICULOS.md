@@ -458,3 +458,47 @@ de aquí y solo cambia lo que su ficha diga:
    bastidor de cohetes, depósito), esa silueta **se integra en el path del
    cuerpo**, no se pega encima.
 4. Verificar la Y de la boca (§8) y pasar la fila de comparación.
+
+
+## 13. Deterioro: que el daño se vea en el campo
+
+Un blindado con 4 puntos de vida se veía **exactamente igual** que uno recién
+salido de fábrica. El único sitio donde el daño existía era la barra del
+marcador, y eso rompe lo primero que se le pide a un juego de tiro por turnos:
+que la partida se lea **mirando el campo**. De paso hacía que un impacto directo
+se sintiera gratis — sonaba, sacudía la pantalla y no dejaba marca.
+
+Tres cosas, y **ninguna cuesta una llamada de dibujo más** (`§7`):
+
+| | Qué | Cómo |
+|---|---|---|
+| **Tizne** | El casco, la torreta y el tubo se ensucian hacia el hollín `#2B2823` | Color **por vértice** de la geometría de ese vehículo, hasta 0,5 con la vida a cero |
+| **Cicatrices** | Cinco impactos, uno por cada quinto de vida perdida | Van **dentro de la geometría del casco** desde el primer cuadro, pintadas del color del casco; se «descubren» repintando sus vértices |
+| **Humo** | Columna lenta y oscura del motor por debajo del 45 % de vida | `art/efectos.js`, con el sistema de partículas que ya existe |
+
+**El tizne va en el color por vértice y nunca en el material.** El material de
+relleno es **uno solo** para los quince (`toon.js`): teñirlo tiznaría a los dos
+bandos a la vez.
+
+**Las cicatrices no van en una malla aparte.** Colgarlas de su propia malla con
+`drawRange` es lo primero que se probó y es lo que hay que **no** hacer: sube el
+vehículo de nueve llamadas de dibujo a diez y se lleva por delante el presupuesto
+de §7. Además `fusionar()` borra todo atributo que no sea posición y normal, así
+que la malla suelta salía **sin color** y las cinco marcas se pintaban de negro
+puro — lunares, no chapa castigada.
+
+**El tiznón es el tono oscuro del propio casco (`tono(base, −0,5)`), no negro.**
+El boquete de dentro sí es hollín, porque un boquete es un agujero — y es el
+mismo criterio que la tronera del búnker de `docs/ESCENARIOS.md` §3.8.
+
+**Los cinco sitios salen de la ficha, no de una tabla suelta**, para que un
+PESADO de siete unidades no lleve las marcas apiñadas en el morro. Y van todas
+dentro del **casco**: las cicatrices viven en su geometría, así que una marca
+puesta a la altura de la torreta queda flotando fuera de la silueta.
+
+**El daño no se repinta cada cuadro.** Llega a saltos —un impacto son decenas de
+puntos— así que sólo se recalcula el color cuando la vida cambia de veinteavo.
+Y siempre **desde el original guardado**: mezclando sobre lo ya mezclado, un
+vehículo que recupera vida no vuelve a su color y acaba negro a base de cuadros.
+
+Lo vigila `tests/art/deterioro.test.js` sobre las quince fichas.

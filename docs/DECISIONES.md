@@ -109,6 +109,26 @@ es ese número y ninguno más.
 
 ---
 
+## 2 quater. El campo, el suelo y el castigo
+
+| Se creía | Es | Por qué importa |
+|---|---|---|
+| El decorado del juego era el de las ciudades | Era el de los **seis teatros de campo abierto** | `art/atrezo.js` repartía sacos, alambrada, tocones y bidones con un repertorio indexado por `biome.id`. Al pasar a las dieciséis ciudades ninguna id casaba, así que **las dieciséis caían en el repertorio del Somme**: el mismo campo con la misma torre, dieciséis veces. Las catorce familias urbanas sólo existían en la plancha |
+| Los estratos con el borde duro daban un corte de terreno | Daban una **tarta de capas** | Las seis bandas calcaban el perfil, así que la mitad inferior del cuadro eran seis líneas paralelas ondulando a la vez — una forma que no existe en ningún sitio. Las hondas cuelgan ahora del **lecho**, la media móvil de ±12 u del perfil generado, que **no se actualiza nunca** |
+| «Se ve cuánto ha excavado un cráter porque se ve cuántas capas ha atravesado» (`ARTE.md` §12, desde el principio) | Era **falso** | Con las bandas midiendo profundidad bajo la superficie *local*, la costra bajaba con el hoyo y el cráter salía del mismo color que el borde. Con el lecho quieto, un cráter **corta** los estratos y la frase pasa a ser verdad |
+| La superficie superior se ilumina con su normal | Con la normal **enderezada al 60 %** | Una ladera que cae a la derecha apunta al lado contrario de la key y la franja se iba a negro: en pantalla salía una raya oscura pegada al perfil que se leía como un agujero |
+| El decorado va detrás, a z = −1,3 | A **z = −0,6** | A 15° de cámara cada unidad de z baja el objeto 0,26 u en pantalla: a −1,3 la cara frontal del terreno tapaba un tercio de unidad de cada pieza y todas se veían medio enterradas por mucho que su base siguiera el perfil |
+| El decorado proyecta sombra de contacto | **No proyecta** | La superficie superior del terreno son 4,2 u de profundidad vistas a 15°, así que la sombra de cualquier pieza la cubre entera: salía una franja negra pegada al perfil que se leía como un agujero. La pieza ya se ancla por donde se ancla de verdad — su base **es** el perfil |
+| El labio de la zanja son 0,95 u derramados en 0,9 | Derramados hasta **10,5 u** | Pendiente 1,05 contra los 0,9 que sube una oruga: el blindado podía moverse dentro del foso y no salir jamás. Eso no es «caro», es una jaula |
+| El montón central se define por su altura | Por lo que **corona** sobre el emplazamiento más alto | Sumar 5 u al relieve que salga del ruido dejaba el montón por debajo de los dos cañones la mitad de las veces: entonces no es un montón central, es una loma |
+| El daño se ve en la barra de vida | Se ve **en el blindado** | Un vehículo con 4 de vida se veía igual que uno nuevo. Tizne por vértice, cinco cicatrices y humo del motor — y las cicatrices **dentro de la geometría del casco**, porque en malla aparte suben el vehículo de nueve llamadas de dibujo a diez |
+| El teatro por defecto era `alamein` | Es **`berlin`** | Al cambiar los seis teatros de campo por las dieciséis ciudades, ni el valor por defecto ni el respaldo se movieron: `BIOMES['alamein'] ?? BIOMES.alamein` daba `undefined`, y abrir el juego **sin `?biome=`** reventaba en `projectileAccent(undefined)` antes de exponer los ganchos. Lo cazó `pnpm verificar:determinismo`, no una captura: todas las capturas pasaban un `?biome=` |
+| El cráter del combate solo hunde | Hunde **y levanta el labio** | Sin anillo levantado un cráter es una hondonada natural. La masa sale de lo excavado y se descuenta del volumen que vuela a sotavento, así que la conservación sigue cuadrando a 1e-12 |
+| El blindado se apoya horizontal en el terreno | **Se gira con la pendiente** | Horizontal sobre una cuesta apoya una oruga y deja la otra en el aire. Gira el rig entero y no solo el casco: con la torreta a nivel, el anillo se despega a dos grados de cuesta |
+| La barra de vida de B se pintaba | Medía **dos píxeles** | El lado B alineaba sus tarjetas con `align-items:flex-end`, y eso encoge los hijos a su contenido: la barra está vacía —relleno y fantasma van absolutos dentro— así que se quedaba en el ancho del borde. El nombre y las cargas ya se alineaban solos con `justify-content` |
+
+---
+
 ## 3. Mecánica
 
 | Decía | Dice | Por qué |

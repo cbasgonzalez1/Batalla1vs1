@@ -149,8 +149,14 @@
   /* Cada lado apila a los suyos: con tres por bando el marcador crece hacia
      abajo en vez de estrujar el ancho, que en vertical es lo escaso. */
   .lado{ display:flex; flex-direction:column; gap:calc(var(--u)*8); flex:1 1 0; min-width:0; }
-  .lado#lado-b .player{ align-items:flex-end; }
   .lado .player{ display:flex; flex-direction:column; gap:calc(var(--u)*4); }
+  /* La barra de B se quedaba en una raya de dos pixeles pegada al borde.
+     El lado B alineaba sus tarjetas con `align-items:flex-end`, y eso hace que
+     los hijos se encojan a su contenido: la barra esta VACIA —relleno y
+     fantasma van absolutos dentro— asi que se quedaba en el ancho del borde.
+     El nombre y las cargas ya se alinean solos con `justify-content`, asi que
+     la regla no daba nada y se llevaba por delante la mitad del marcador. */
+  .lado .bar{ align-self:stretch; }
   .player.turno .pname{ color:var(--ink); }
   .player.turno .bar{ box-shadow:0 0 0 1px var(--trazadora); }
   .player.fuera{ opacity:.35; }

@@ -35,6 +35,11 @@ export function describirPartida(d) {
     `viento: ${n(d.viento, 2)}`,
   ];
 
+  // La composicion de calle sale de la semilla y corta el suelo de otra manera.
+  // Va en el volcado porque si dos moviles no la sortean igual, el terreno
+  // diverge desde el primer cuadro y todo lo demas ya es mentira.
+  if (d.suelo) lineas.push(`suelo: ${d.suelo}`);
+
   if (d.proyectil) {
     lineas.push(
       `proyectil: x=${n(d.proyectil.x)} y=${n(d.proyectil.y)}`,

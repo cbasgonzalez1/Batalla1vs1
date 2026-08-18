@@ -41,7 +41,7 @@ async function abrir(direccion) {
 // ── el vehiculo se mueve y el tiro sale de donde esta ───────────────────────
 console.log('avanzar mueve el vehiculo Y la boca:');
 {
-  const pg = await abrir(`${URL}/?seed=avance&biome=alamein&trampas=0`);
+  const pg = await abrir(`${URL}/?seed=avance&biome=berlin&trampas=0`);
   const r = await pg.evaluate(() => {
     const G = window.GAME;
     const antes = {
@@ -72,7 +72,7 @@ console.log('avanzar mueve el vehiculo Y la boca:');
 // ── el deposito se repone por turnos, no de golpe ──────────────────────────
 console.log('\nel deposito:');
 {
-  const pg = await abrir(`${URL}/?seed=avance&biome=alamein&trampas=0`);
+  const pg = await abrir(`${URL}/?seed=avance&biome=berlin&trampas=0`);
   const r = await pg.evaluate(() => {
     const G = window.GAME;
     // Pedir mucho mas avance del que da el deposito. OJO: hasta que no se
@@ -101,7 +101,7 @@ console.log('\nel deposito:');
 // ── un muro de arena encierra ──────────────────────────────────────────────
 console.log('\narena amontonada = carcel:');
 {
-  const pg = await abrir(`${URL}/?seed=avance&biome=alamein&trampas=0`);
+  const pg = await abrir(`${URL}/?seed=avance&biome=berlin&trampas=0`);
   const r = await pg.evaluate(() => {
     const G = window.GAME;
     const t = G.world.terrain;

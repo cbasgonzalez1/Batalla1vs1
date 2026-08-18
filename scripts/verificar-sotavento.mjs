@@ -20,7 +20,17 @@ const RADIO = 2.6;
 const RADIO_LETAL = 5.2;          // BLAST.radius: mas cerca que esto hace dano
 const VELOCIDAD = { min: 14, max: 56 };  // CONFIG.speed de main.js
 
-const construir = (semilla) =>
+/**
+ * Las tres composiciones de calle se miden POR SEPARADO.
+ *
+ * No es por completismo: la zanja mete a los dos blindados en un hoyo, y un
+ * blindado metido en un hoyo es justo el que Sotavento puede tapiar con dos
+ * paladas. Si una composicion rompe mas partidas que las otras, hay que verlo
+ * aqui y no en una partida de verdad.
+ */
+const SUELOS = ['avenida', 'zanja', 'monton'];
+
+const construir = (semilla, composicion) =>
   new Terrain({
     rng: mulberry32(hashSeed(semilla)),
     biome: BIOMA,
@@ -30,6 +40,10 @@ const construir = (semilla) =>
     minHeight: 6,
     amplitude: 14,
     bowlHalfWidth: 44,
+    composicion,
+    // Con las mesetas de tiro, como en la partida: la zanja se excava DENTRO de
+    // ellas y sin pads no habria zanja que medir.
+    pads: [-44, 44].map((x) => ({ x, halfWidth: 2.6, feather: 3.2 })),
   });
 
 const masa = (t) => {
@@ -82,8 +96,16 @@ let sinSolucion = 0;
 let sinSolucionAntes = 0;
 let sumaRatio = 0;
 
+const informes = [];
+for (const composicion of SUELOS) {
+peorMasa = 0;
+aplanados = 0;
+sinSolucion = 0;
+sinSolucionAntes = 0;
+sumaRatio = 0;
+
 for (let c = 0; c < COMBATES; c++) {
-  const t = construir(`combate-${c}`);
+  const t = construir(`combate-${c}`, composicion);
   const rng = mulberry32(hashSeed(`disparos-${c}`));
 
   const masaInicial = masa(t);
@@ -114,13 +136,25 @@ for (let c = 0; c < COMBATES; c++) {
   if (jugableAntes && !jugable(t)) sinSolucion++;
 }
 
-const media = sumaRatio / COMBATES;
-console.log(`combates:                 ${COMBATES} de ${DISPAROS} disparos`);
-console.log(`peor error de masa:       ${peorMasa.toExponential(2)} u²  (limite 1e-3)`);
-console.log(`relieve conservado:       ${(media * 100).toFixed(1)} % de media`);
-console.log(`combates que aplanan:     ${aplanados} de ${COMBATES}`);
-console.log(`ya nacian sin solucion:   ${sinSolucionAntes} de ${COMBATES}  (culpa de la generacion, no de Sotavento)`);
-console.log(`los rompe Sotavento:      ${sinSolucion} de ${COMBATES - sinSolucionAntes} jugables`);
+informes.push({
+  composicion,
+  media: sumaRatio / COMBATES,
+  peorMasa,
+  aplanados,
+  sinSolucionAntes,
+  sinSolucion,
+});
+}
+
+for (const r of informes) {
+  console.log(`\n── ${r.composicion} ──`);
+  console.log(`combates:                 ${COMBATES} de ${DISPAROS} disparos`);
+  console.log(`peor error de masa:       ${r.peorMasa.toExponential(2)} u²  (limite 1e-3)`);
+  console.log(`relieve conservado:       ${(r.media * 100).toFixed(1)} % de media`);
+  console.log(`combates que aplanan:     ${r.aplanados} de ${COMBATES}`);
+  console.log(`ya nacian sin solucion:   ${r.sinSolucionAntes} de ${COMBATES}  (culpa de la generacion, no de Sotavento)`);
+  console.log(`los rompe Sotavento:      ${r.sinSolucion} de ${COMBATES - r.sinSolucionAntes} jugables`);
+}
 
 /**
  * La masa es un criterio duro: o cuadra o la mecanica es mentira.
@@ -132,12 +166,15 @@ console.log(`los rompe Sotavento:      ${sinSolucion} de ${COMBATES - sinSolucio
  * media vaya en la direccion correcta, no que no existan.
  */
 const TOLERANCIA = { aplanados: 0.05, rotos: 0.02 };
-const jugablesIniciales = COMBATES - sinSolucionAntes;
 
-const fallos =
-  (peorMasa >= 1e-3 ? 1 : 0) +
-  (aplanados / COMBATES > TOLERANCIA.aplanados ? 1 : 0) +
-  (sinSolucion / jugablesIniciales > TOLERANCIA.rotos ? 1 : 0);
+let fallos = 0;
+for (const r of informes) {
+  const jugablesIniciales = Math.max(1, COMBATES - r.sinSolucionAntes);
+  fallos +=
+    (r.peorMasa >= 1e-3 ? 1 : 0) +
+    (r.aplanados / COMBATES > TOLERANCIA.aplanados ? 1 : 0) +
+    (r.sinSolucion / jugablesIniciales > TOLERANCIA.rotos ? 1 : 0);
+}
 
 console.log(`\ntolerancias: aplanados <= ${TOLERANCIA.aplanados * 100} %  ·  rotos <= ${TOLERANCIA.rotos * 100} %`);
 console.log(fallos === 0 ? 'LOS TRES CRITERIOS SE CUMPLEN' : `${fallos} CRITERIOS INCUMPLIDOS`);
