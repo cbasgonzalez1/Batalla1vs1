@@ -14,6 +14,7 @@ import { makeDotTexture, makeSkyTexture, makeGrainTexture } from './art/geometry
 import { crearEfectos } from './art/efectos.js';
 import { crearFondo } from './art/fondo.js';
 import { crearCalidad, NIVELES } from './art/calidad.js';
+import { actualizarContorno } from './art/vehiculo/toon.js';
 import { crearAtrezo } from './art/atrezo.js';
 import { Terrain } from './world/terrain.js';
 import { buildCannon } from './world/cannon.js';
@@ -1530,6 +1531,14 @@ function updateCamera(dt) {
   // abierto sale del tamaño del de un primer plano.
   const altoMundo = cam.camera.top - cam.camera.bottom;
   if (altoMundo > 0) efectos.setEscala(renderer.domElement.height / altoMundo);
+
+  // El contorno de los blindados se engorda en PIXELES, no en unidades de
+  // mundo: es la unica forma de que el trazo se vea igual a 0,55x y a 2,6x de
+  // zoom (docs/ARTE-VEHICULOS.md §3). Va aqui y no en `resize()` porque el zoom
+  // cambia cada cuadro y el tamaño de la ventana casi nunca.
+  // En pixeles CSS, no de dispositivo: el grosor esta escrito en px de diseño
+  // (`ARTE.md` §1.1) y en una pantalla 2x saldria la mitad de gordo.
+  actualizarContorno(cam.camera, renderer.domElement.height / renderer.getPixelRatio());
 }
 
 function frame(now) {

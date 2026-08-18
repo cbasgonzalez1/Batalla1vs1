@@ -69,6 +69,33 @@ línea, y cualquier defecto de apoyo se ve al momento en vez de discutirse.
 
 ---
 
+## 2 bis. Modelar la MEDIA en Three
+
+Cinco cosas que se dieron por sabidas y no lo eran. Todas salieron de ver el
+vehículo en pantalla, ninguna de leer el código.
+
+| Se creía | Es | Por qué importa |
+|---|---|---|
+| El color por vértice basta para las bandas | **Interpola** entre anillos de la extrusión | Pintando el casco por altura sale un **degradado**, que `ARTE.md` §1.6 prohíbe. La banda oscura de barcaza va **modelada** como faldón |
+| `Color.setHex()` da un color de trabajo listo | Ya convierte de sRGB | Llamando además a `convertSRGBToLinear()` se convierte **dos veces** y el vehículo entero sale apagado y sucio |
+| La cinta puede ser un aro y las ruedas verse por el hueco | El hueco mide siempre menos que la rueda | La cinta es una cápsula **maciza** y las ruedas van un poco más cerca de la cámara, encima de ella — como en la plancha |
+| El grosor del contorno se mide en píxeles del lienzo | En píxeles **CSS** | En una pantalla 2× salía la mitad de gordo, y el trazo está escrito en px de diseño |
+| Escalar el grupo del arma es inofensivo | Dentro cuelga el ancla `boca` | Escalando el grupo, la boca se escala otra vez y el proyectil sale de un sitio que no es. Se escala la **geometría** |
+
+**El presupuesto de dibujo pasa de 8 a 9 llamadas** para un vehículo con torreta.
+`ARTE-VEHICULOS.md` §7 fundía tubo y torreta en un bloque «porque giran juntos»,
+pero el tubo **retrocede solo** (`ARTE.md` §14) y no puede compartir geometría con
+lo que no se mueve. Nueve por vehículo son 54 en un 3v3: sigue sin ser el
+problema.
+
+**La escala.** Las planchas tienen la MEDIA a 5,6 u de largo con el pivote a
+2,32; el juego tiene el pivote a 1,45 desde que existe. `ESCALA = 1,45 / 2,32`
+mete las proporciones aprobadas sin mover el pivote, y por tanto sin tocar el
+encuadre ni el arco de apuntado. Si algún día hay que agrandar el parque móvil,
+es ese número y ninguno más.
+
+---
+
 ## 3. Mecánica
 
 | Decía | Dice | Por qué |

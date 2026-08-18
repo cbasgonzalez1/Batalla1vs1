@@ -29,6 +29,14 @@ export const PIVOTE = Object.freeze({ x: -0.1, y: 1.45 });
 export const BOCA = Object.freeze({ x: 2.25, y: 0.06 });
 
 /**
+ * PROVISIONAL. El rombo de 1916 todavia es el modelo viejo; el de 1942 ya sale
+ * de `vehiculo/ensamblar.js`, cuyo tubo es mas corto. Mientras conviven, el
+ * rombo recorta el suyo para que la boca comun siga cayendo en su punta.
+ * Se borra al remodelar ROMBO (paso 3 del orden de `CATALOGO-VEHICULOS.md` §3).
+ */
+export const RECORTE_1916 = 0.375;
+
+/**
  * @param {object} opciones
  * @param {object} opciones.chassis  material de casco del bando. Es lo unico
  *   que distingue un bando de otro: no hay banda de reconocimiento.
@@ -265,10 +273,10 @@ function rombo(mats) {
 
   const canonGeo = new THREE.CylinderGeometry(0.17, 0.21, 1.35, 16);
   canonGeo.rotateZ(-Math.PI / 2);
-  pieza(tuboArma, canonGeo, mats.acero, 1.48, 0.06, zBarbeta);
+  pieza(tuboArma, canonGeo, mats.acero, 1.48 - RECORTE_1916, 0.06, zBarbeta);
   const bocacha = new THREE.CylinderGeometry(0.25, 0.21, 0.24, 16);
   bocacha.rotateZ(-Math.PI / 2);
-  pieza(tuboArma, bocacha, mats.acero, 2.16, 0.06, zBarbeta);
+  pieza(tuboArma, bocacha, mats.acero, 2.16 - RECORTE_1916, 0.06, zBarbeta);
 
   // Retroceso mas corto: pieza mas pequeña, freno hidraulico mas basto.
   return { casco, arma, tubo: tuboArma, retroceso: 0.26 };

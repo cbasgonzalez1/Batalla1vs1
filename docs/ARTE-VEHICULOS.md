@@ -274,9 +274,16 @@ vehículo**:
 | 7 | Sombra de contacto |
 | 8 | Reserva: efecto propio del vehículo (chorro, humo de escape) |
 
-Cazacarros y obús no tienen torreta: gastan 6. Si una ficha necesita la novena
-llamada, la pieza se fusiona con otra o se cae. **No hay excepciones aprobadas
-por adelantado.**
+Cazacarros y obús no tienen torreta: gastan 6.
+
+**Corrección salida de modelar la MEDIA: son NUEVE, no ocho, cuando hay torreta.**
+Esta tabla fundía el tubo con la torreta «porque giran juntos», pero el tubo
+**retrocede solo** (`ARTE.md` §14) y no puede compartir geometría con lo que no se
+mueve. Son dos llamadas más —relleno y shell del tubo— y a cambio el retroceso
+existe. Nueve por vehículo son 54 en un 3v3: sigue sin ser el problema.
+
+Si una ficha necesita la décima, la pieza se fusiona con otra o se cae. **No hay
+más excepciones aprobadas por adelantado.**
 
 Y sigue mandando `ARTE.md` §15: la calidad adaptativa toca densidad de píxeles y
 sombra, **nunca** el número de piezas de un vehículo. Un vehículo con menos

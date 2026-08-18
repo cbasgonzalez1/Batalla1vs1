@@ -72,6 +72,25 @@ describe('la simulacion no conoce la presentacion', () => {
   });
 });
 
+describe('una ficha de catalogo es un objeto de numeros', () => {
+  const fichas = ficherosDe(join('art', 'vehiculo', 'fichas')).map(leer);
+
+  it('hay fichas que comprobar', () => {
+    expect(fichas.length).toBeGreaterThan(0);
+  });
+
+  // Si una ficha importa Three deja de poder probarse sin escena, y en cuanto
+  // pueda modelar geometria a pelo los quince dejan de ser familia: la forma
+  // sale de `primitivas.js` o no sale (docs/ARTE-VEHICULOS.md §2).
+  it.each(fichas)('$ruta no importa Three', ({ texto }) => {
+    expect(importaThree(texto)).toBe(false);
+  });
+
+  it.each(fichas)('$ruta no importa nada, punto', ({ texto }) => {
+    expect(/^\s*import\s/m.test(texto)).toBe(false);
+  });
+});
+
 describe('determinismo', () => {
   const simulables = [...ficherosDe('core'), ...ficherosDe('game')].map(leer);
 

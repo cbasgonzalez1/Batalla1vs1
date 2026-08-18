@@ -1,6 +1,11 @@
 import * as THREE from 'three';
-import { construirBlindado, PIVOTE, BOCA } from '../art/blindados.js';
+import { construirBlindado } from '../art/blindados.js';
+import { ensamblar, PIVOTE } from '../art/vehiculo/ensamblar.js';
+import { media } from '../art/vehiculo/fichas/media.js';
 import { easeOutExpo, easeOutBack } from '../core/easing.js';
+
+/** El rombo todavia declara su propia boca; desaparece al remodelarlo. */
+const BOCA_1916 = { x: 1.875, y: 0 };
 
 /**
  * El blindado del jugador, con su rig.
@@ -30,11 +35,11 @@ export function buildCannon({ chassis, facing, bando, granGuerra = false }) {
   group.name = facing > 0 ? 'cannonA' : 'cannonB';
   if (facing < 0) group.rotation.y = Math.PI;
 
-  const { casco, arma, tubo, retroceso } = construirBlindado({
-    chassis,
-    bando: bando ?? (facing > 0 ? 'a' : 'b'),
-    granGuerra,
-  });
+  // El de 1942 ya sale del catalogo nuevo; el rombo de 1916 sigue con el modelo
+  // viejo hasta que le toque (orden de `docs/CATALOGO-VEHICULOS.md` §3).
+  const { casco, arma, tubo, retroceso, boca } = granGuerra
+    ? { ...construirBlindado({ chassis, bando: bando ?? 'a', granGuerra }), boca: BOCA_1916 }
+    : ensamblar(media, chassis.color ?? chassis);
   group.add(casco);
 
   arma.position.set(PIVOTE.x, PIVOTE.y, 0);
@@ -47,7 +52,7 @@ export function buildCannon({ chassis, facing, bando, granGuerra = false }) {
   // La z solo la mira el fogonazo: la balistica usa x/y y el proyectil vuela en
   // su plano fijo. Por eso la barbeta lateral del rombo puede estar sacada
   // hacia el espectador sin tocar la simulacion.
-  muzzle.position.set(BOCA.x, BOCA.y, granGuerra ? 1.42 : 0);
+  muzzle.position.set(boca.x, boca.y, granGuerra ? 1.42 : 0);
   tubo.add(muzzle);
 
   // Estado del retroceso. Se anima con tiempo real, no con el paso fijo: es

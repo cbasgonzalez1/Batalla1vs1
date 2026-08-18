@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import * as THREE from 'three';
 import { buildCannon } from '../../src/world/cannon.js';
-import { PIVOTE, BOCA } from '../../src/art/blindados.js';
+import { PIVOTE, ESCALA } from '../../src/art/vehiculo/ensamblar.js';
+import { media } from '../../src/art/vehiculo/fichas/media.js';
 import { MATERIALS } from '../../src/art/direction.js';
 
 /**
@@ -46,8 +47,15 @@ describe('la boca esta en el mismo sitio en las dos epocas', () => {
     const canon = buildCannon({ chassis: MATERIALS.chassisA, facing: 1, bando: 'a' });
     expect(canon.arma.position.x).toBe(PIVOTE.x);
     expect(canon.arma.position.y).toBe(PIVOTE.y);
-    expect(canon.muzzle.position.x).toBe(BOCA.x);
-    expect(canon.muzzle.position.y).toBe(BOCA.y);
+  });
+
+  it('la boca sale del largo de tubo de la ficha, no de la geometria', () => {
+    // Es la mitad util del invariante: la balistica lee un ancla calculada de
+    // un numero de la ficha. Midiendola de la malla, cualquier retoque de arte
+    // moveria el punto de salida del proyectil sin que nadie se enterara.
+    const canon = buildCannon({ chassis: MATERIALS.chassisA, facing: 1, bando: 'a' });
+    expect(canon.muzzle.position.x).toBeCloseTo(media.tubo.largo * ESCALA, 10);
+    expect(canon.muzzle.position.y).toBe(0);
   });
 });
 
