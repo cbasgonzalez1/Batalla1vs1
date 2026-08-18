@@ -562,7 +562,19 @@ export class Terrain {
       const bottom = cy - Math.sqrt(k);
       if (this.heights[i] > bottom) {
         const antes = this.heights[i];
-        this.heights[i] = Math.max(this.floorY, bottom);
+        // El borde del crater se FUNDE con el terreno, no lo corta.
+        //
+        // Restar el semicirculo entero deja un escalon vertical en cuanto el
+        // suelo esta en cuesta: en el borde, el fondo del circulo vale la cota
+        // del impacto y el terreno de al lado sigue dos unidades mas arriba. Lo
+        // que se veia era un pozo de paredes rectas, y con los estratos anclados
+        // al lecho —que dejan ver el corte— se leia como un tajo cuadrado.
+        //
+        // Se quita lo mismo en el centro y nada en el borde, asi que el crater
+        // se apoya en el terreno cualquiera que sea su pendiente.
+        const borde = 1 - smoothstep(0.55, 1, Math.abs(dx) / r);
+        const objetivo = Math.max(this.floorY, lerp(antes, bottom, borde));
+        this.heights[i] = objetivo;
         const quitado = antes - this.heights[i];
         volumen += quitado * this.dx;
         // Lo que se lleva el crater incluye la arena suelta que hubiera ahi.

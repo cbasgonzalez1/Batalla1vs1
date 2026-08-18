@@ -22,6 +22,7 @@ import { Terrain, COMPOSICIONES } from './world/terrain.js';
 import { buildCannon } from './world/cannon.js';
 import { GameCamera } from './world/gamecamera.js';
 import { TrajectoryArc } from './world/trajectory.js';
+import { crearProyectil } from './art/proyectil.js';
 import { attachDragControl } from './ui/input.js';
 import { FIXED_DT, simulate, step, sweepTerrain, launchVelocity } from './game/ballistics.js';
 import { crearViento, flechaDe } from './game/viento.js';
@@ -207,56 +208,26 @@ scene.add(new THREE.HemisphereLight(LIGHT.bounceSky, biome.bounceGround, LIGHT.b
 
 // ── proyectil y arco ─────────────────────────────────────────────────────
 const dotTexture = makeDotTexture(accent.css, PROJECTILE_RIM);
+// El anillo oscuro del proyectil esta escrito en CSS porque lo comparte el HUD.
+// Aqui hace falta en entero, y se convierte en un sitio en vez de repetir el hex.
+const RIM = parseInt(PROJECTILE_RIM.slice(1), 16);
 // Una sola vez para toda la sesion: la misma baldosa de grano vale para
 // cualquier teatro porque solo modula, no colorea.
 const granoDelSuelo = makeGrainTexture();
 
-const arc = new TrajectoryArc({ texture: dotTexture, pixelRatio: renderer.getPixelRatio() });
+const arc = new TrajectoryArc({
+  acento: accent.hex,
+  rim: RIM,
+  pixelRatio: renderer.getPixelRatio(),
+});
 scene.add(arc.points);
 
-const projectile = new THREE.Group();
-projectile.visible = false;
-
-// El proyectil es un OBUS, no una bola: cuerpo cilindrico y ojiva. Se orienta
-// con la velocidad, que es lo que hace un proyectil estabilizado de verdad y
-// ademas deja leer de un vistazo si el tiro sube o baja.
-const shellMat = new THREE.MeshStandardMaterial({
-  color: 0xffffff,
-  emissive: accent.hex,
-  emissiveIntensity: 1.9,
-  roughness: 0.35,
-  metalness: 0.0,
-});
-
-const cuerpoGeo = new THREE.CylinderGeometry(0.19, 0.19, 0.5, 12);
-cuerpoGeo.rotateZ(-Math.PI / 2);
-const shellCore = new THREE.Mesh(cuerpoGeo, shellMat);
-shellCore.castShadow = true;
-projectile.add(shellCore);
-
-const ojivaGeo = new THREE.ConeGeometry(0.19, 0.34, 12);
-ojivaGeo.rotateZ(-Math.PI / 2);
-ojivaGeo.translate(0.42, 0, 0);
-const ojiva = new THREE.Mesh(ojivaGeo, shellMat);
-ojiva.castShadow = true;
-projectile.add(ojiva);
-
-// Halo con el anillo oscuro de la direccion de arte: garantiza que el
-// proyectil se separe del terreno por VALOR, no solo por tono.
-// depthTest activo a proposito: la esfera opaca ya escribio profundidad, asi
-// que tapa el centro del halo y solo queda el anillo asomando alrededor.
-const halo = new THREE.Sprite(
-  new THREE.SpriteMaterial({
-    map: dotTexture,
-    transparent: true,
-    depthWrite: false,
-    depthTest: true,
-    opacity: 0.85,
-  }),
-);
-halo.scale.setScalar(1.5);
-projectile.add(halo);
-scene.add(projectile);
+// El proyectil es un OBUS de cuatro partes con su contorno, no una bola: lo que
+// se veia antes era el halo de 1,5 u tapando un cuerpo de 0,5. Se orienta con la
+// velocidad —un obus estabilizado va de morro— y deja una cinta de trazadora que
+// dice por donde ha venido. `src/art/proyectil.js`.
+const proyectil = crearProyectil({ acento: accent.hex, rim: RIM, halo: dotTexture });
+scene.add(proyectil.grupo, proyectil.cinta);
 
 // ── efectos ──────────────────────────────────────────────────────────────
 // El azar de la decoracion cuelga de su propio hilo con semilla y se
@@ -980,9 +951,7 @@ function dispararDeVerdad(avancePedido = state.avance) {
     retroceso: 0.6 + apuntado.power * 0.6,
   });
 
-  projectile.position.set(start.x, start.y, CONFIG.playZ);
-  projectile.rotation.z = Math.atan2(start.vy, start.vx);
-  projectile.visible = true;
+  proyectil.lanzar(start.x, start.y, CONFIG.playZ, start.vx, start.vy);
   state.phase = 'flying';
   arc.hide();
 
@@ -1020,7 +989,7 @@ function golpearTrampa(s, px, py) {
     if (malla) malla.grupo.visible = false;
   } else if (efecto === 'rebota') {
     sonidos.sonar('escudo');
-    projectile.position.set(s.x, s.y, CONFIG.playZ);
+    proyectil.mover(s.x, s.y, CONFIG.playZ, s.vx, s.vy);
     // El arco de prevision dejo de valer en cuanto el tiro cambio de rumbo:
     // seguir enseñandolo seria mentirle al jugador.
     arc.hide();
@@ -1048,7 +1017,7 @@ function onImpact(hit) {
     hundimiento: true,
   });
   state.hundimientoMs = 0;
-  projectile.visible = false;
+  proyectil.guardar();
   state.shot = null;
   closeReaction();
 
@@ -1168,7 +1137,7 @@ function indiceDelActivo() {
 }
 
 function endTurn() {
-  projectile.visible = false;
+  proyectil.guardar();
   state.shot = null;
 
   // El turno lo lleva la partida de roster, en local y en red: una sola
@@ -1526,7 +1495,7 @@ function fixedUpdate() {
     const choque = golpearTrampa(s, px, py);
     if (choque === 'detona') return onImpact({ x: s.x, y: s.y, multiplicador: s.multiplicador });
     if (choque === 'absorbe') {
-      projectile.visible = false;
+      proyectil.guardar();
       state.shot = null;
       closeReaction();
       return endTurn();
@@ -1540,10 +1509,9 @@ function fixedUpdate() {
       closeReaction();
       return endTurn();
     }
-    projectile.position.set(s.x, s.y, CONFIG.playZ);
     // Un obus estabilizado va siempre de morro: orientarlo con la velocidad
     // deja leer si el tiro sube o baja sin mirar el arco.
-    projectile.rotation.z = Math.atan2(s.vy, s.vx);
+    proyectil.mover(s.x, s.y, CONFIG.playZ, s.vx, s.vy);
     efectos.estela(s.x, s.y, FIXED_DT);
     return;
   }
@@ -1613,7 +1581,13 @@ function updateCamera(dt) {
   // pixeles mide una unidad de mundo AHORA — si no, el humo de un plano
   // abierto sale del tamaño del de un primer plano.
   const altoMundo = cam.camera.top - cam.camera.bottom;
-  if (altoMundo > 0) efectos.setEscala(renderer.domElement.height / altoMundo);
+  if (altoMundo > 0) {
+    const px = renderer.domElement.height / altoMundo;
+    efectos.setEscala(px);
+    // Al arco le hace falta por otro motivo: recortar el trazo al hueco que
+    // queda hasta el siguiente, o al abrir plano se solapan en un tubo.
+    arc.setEscala(px / renderer.getPixelRatio());
+  }
 
   // El contorno de los blindados se engorda en PIXELES, no en unidades de
   // mundo: es la unica forma de que el trazo se vea igual a 0,55x y a 2,6x de
@@ -2001,6 +1975,8 @@ window.GAME = {
   scene,
   efectos,
   biome,
+  /** El decorado del campo. Trae `xHito` y `xSena` para poder encuadrarlos. */
+  get decorado() { return decorado; },
   calidad,
   renderer,
   setAssist(v) {

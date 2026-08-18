@@ -105,6 +105,13 @@ export const SEGUNDA = 1942;
  * de sus casas, no la falta de luz: Stalingrado y Dresde son los unicos con el
  * cielo ardiendo, porque ahi el fuego ES el sitio.
  *
+ * `sena` es la pieza UNICA de esa ciudad, y no se repite en ninguna otra. Seis
+ * llevan el hito «manzana» y tres la «catedral»: sin algo propio, Varsovia,
+ * Rotterdam, Saint-Lo, Budapest y Berlin son el mismo campo con otra paleta.
+ * Cada una sale de algo que estuvo alli de verdad y que se lee en silueta — la
+ * grua del puerto, el silo, los dientes de dragon, la boca de alcantarilla.
+ * Estan en `src/art/decorado/senas.js`.
+ *
  * `props` son las familias de decorado que ESTE teatro declara, y ninguna mas.
  * Con el mismo decorado en los dieciseis serian uno repintado dieciseis veces:
  * lo que queda en pie en Berlin y en Coventry es lo mismo —muro suelto, viga
@@ -122,6 +129,7 @@ export const BIOMES = {
     // La Lonja de los Panos en pie a medias sobre el barro. La primera ciudad que se borro del mapa a canonazos.
     fabrica: 0x9e5540,
     hito: 'lonja',
+    sena: 'puertaArco',
     props: ['escombro', 'muro', 'viga', 'alambrada', 'cajas'],
     crest: 0x9d9578,
     body: 0x7a7358,
@@ -140,6 +148,7 @@ export const BIOMES = {
     // Creta y hormigon. De los nueve pueblos del sector no quedo ni el trazado de las calles.
     fabrica: 0x9a9a94,
     hito: 'fuerte',
+    sena: 'cupulaAcorazada',
     props: ['escombro', 'alambrada', 'viga', 'sacos', 'cajas'],
     crest: 0xdcd6c2,
     body: 0xb6ae97,
@@ -158,6 +167,7 @@ export const BIOMES = {
     // Septiembre del 39. La manzana de viviendas destripada y el tranvia volcado en mitad de la calzada.
     fabrica: 0x9e5540,
     hito: 'manzana',
+    sena: 'columna',
     props: ['escombro', 'tranvia', 'farola', 'muro', 'arbol'],
     crest: 0xc9a877,
     body: 0xa2814f,
@@ -176,6 +186,7 @@ export const BIOMES = {
     // El centro entero ardio en un par de horas. Ladrillo oscuro, cielo bajo y el suelo siempre mojado.
     fabrica: 0x7d4436,
     hito: 'manzana',
+    sena: 'grua',
     props: ['escombro', 'viga', 'coche', 'farola', 'muro'],
     crest: 0x9a8f80,
     body: 0x776d60,
@@ -194,6 +205,7 @@ export const BIOMES = {
     // De la catedral quedo el campanario y el perimetro. Es el hito mas alto de los dieciseis.
     fabrica: 0xbd8a5c,
     hito: 'catedral',
+    sena: 'campanario',
     props: ['escombro', 'muro', 'viga', 'coche', 'cajas'],
     crest: 0xb9ac93,
     body: 0x94886f,
@@ -212,6 +224,7 @@ export const BIOMES = {
     // La fabrica y el silo. El unico teatro con el cielo ardiendo desde el primer turno.
     fabrica: 0x9a9a94,
     hito: 'fabrica',
+    sena: 'silo',
     props: ['escombro', 'via', 'viga', 'bidones', 'sacos'],
     crest: 0xb9b0a6,
     body: 0x8a8078,
@@ -230,6 +243,7 @@ export const BIOMES = {
     // Nieve sucia sobre el escombro. La estacion cambio de mano cuatro veces en seis meses.
     fabrica: 0xc39a63,
     hito: 'estacion',
+    sena: 'torreDeAgua',
     props: ['escombro', 'tranvia', 'viga', 'muro', 'sacos'],
     crest: 0xdfe4e4,
     body: 0xa8aca9,
@@ -248,6 +262,7 @@ export const BIOMES = {
     // Piedra caliza machacada hasta el polvo. La abadia es un bloque largo con el campanario en una esquina y la terraza arcada al pie: masa horizontal, no un templo con columnas.
     fabrica: 0xd8d2bd,
     hito: 'abadia',
+    sena: 'terrazas',
     props: ['escombro', 'muro', 'viga', 'alambrada', 'cajas'],
     crest: 0xe7e0cb,
     body: 0xc0b69c,
@@ -266,6 +281,7 @@ export const BIOMES = {
     // Piedra de Caen, la misma con la que se construyo media Inglaterra, hecha grava en una noche.
     fabrica: 0xb3aa98,
     hito: 'iglesia',
+    sena: 'muralla',
     props: ['escombro', 'coche', 'farola', 'muro', 'arbol'],
     crest: 0xded5bd,
     body: 0xb8ad92,
@@ -284,6 +300,7 @@ export const BIOMES = {
     // La llamaron «la capital de las ruinas». No quedo una sola manzana con las cuatro paredes.
     fabrica: 0xb3aa98,
     hito: 'manzana',
+    sena: 'mojon',
     props: ['escombro', 'viga', 'muro', 'coche', 'cajas'],
     crest: 0xd4cdb9,
     body: 0xaba28c,
@@ -302,6 +319,7 @@ export const BIOMES = {
     // Barricadas de adoquin levantado en cada bocacalle. Es el teatro con mas obstaculos apoyados.
     fabrica: 0x9e5540,
     hito: 'manzana',
+    sena: 'alcantarilla',
     props: ['barricada', 'escombro', 'tranvia', 'muro', 'farola'],
     crest: 0xb5a58c,
     body: 0x8d7f68,
@@ -320,6 +338,7 @@ export const BIOMES = {
     // El puente al fondo y las villas de ladrillo alrededor. Otono: los arboles de calle todavia tienen algo de copa.
     fabrica: 0x9e5540,
     hito: 'puente',
+    sena: 'planeador',
     props: ['escombro', 'coche', 'arbol', 'muro', 'sacos'],
     crest: 0xc6ac82,
     body: 0x9c8459,
@@ -338,6 +357,7 @@ export const BIOMES = {
     // La primera ciudad alemana que cayo. Granito gris y erizos soldados en cada cruce.
     fabrica: 0x8d8f92,
     hito: 'catedral',
+    sena: 'dientes',
     props: ['escombro', 'erizo', 'viga', 'muro', 'sacos'],
     crest: 0xadaba3,
     body: 0x868580,
@@ -356,6 +376,7 @@ export const BIOMES = {
     // Estuco ocre y balcones de hierro colgando. El asedio duro cincuenta dias dentro de la ciudad.
     fabrica: 0xc39a63,
     hito: 'manzana',
+    sena: 'balcon',
     props: ['escombro', 'tranvia', 'farola', 'muro', 'coche'],
     crest: 0xd3bb8e,
     body: 0xa89065,
@@ -374,6 +395,7 @@ export const BIOMES = {
     // Arenisca ennegrecida por la tormenta de fuego. El teatro mas oscuro de los dieciseis, y a proposito.
     fabrica: 0x6b625c,
     hito: 'catedral',
+    sena: 'cupulaCaida',
     props: ['escombro', 'viga', 'muro', 'arbol', 'coche'],
     crest: 0x9d9086,
     body: 0x75695f,
@@ -392,6 +414,7 @@ export const BIOMES = {
     // El ultimo. Manzanas destripadas, erizos en las avenidas y escombro hasta la altura del primer piso.
     fabrica: 0x9e5540,
     hito: 'manzana',
+    sena: 'columnata',
     props: ['escombro', 'erizo', 'barricada', 'viga', 'muro'],
     crest: 0xb0a493,
     body: 0x877c6c,

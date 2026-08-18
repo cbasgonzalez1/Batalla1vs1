@@ -5,6 +5,7 @@ import { materialRelleno, materialContorno } from '../vehiculo/toon.js';
 import { tonosDe } from './paleta.js';
 import { FAMILIAS, sacos } from './piezas.js';
 import { ANCHO_HITO, plantarHito } from './hitos.js';
+import { SENAS } from './senas.js';
 import { crearReserva, cola, llano } from './colocar.js';
 
 /**
@@ -118,6 +119,26 @@ export function crearDecorado({
   }
   encargos.push({ x: xHito, construir: (ctx, x) => plantarHito(ctx, biome.hito, x) });
 
+  // La seña de la ciudad va DESPUES del hito y ANTES que el decorado suelto:
+  // es la segunda pieza mas grande del campo y la unica que no comparte con
+  // ninguna otra ciudad, asi que no puede quedarse fuera porque una barricada le
+  // haya cogido el sitio. Se planta al otro lado del hito para que las dos
+  // grandes no se apilen en la misma mitad del campo.
+  let xSena = null;
+  const sena = SENAS[biome.sena];
+  if (sena) {
+    const preferido = -Math.sign(xHito || 1);
+    const huecos = reserva.libres(0.6).filter(([a, b]) => b - a >= sena.ancho);
+    const elegido = huecos.find(([a, b]) => Math.sign((a + b) / 2) === preferido) ?? huecos[0];
+    if (elegido) {
+      const x = llano(alturaEn, elegido[0] + sena.ancho / 2,
+        elegido[1] - elegido[0] - sena.ancho, sena.ancho, 8);
+      reserva.ocupar(x, sena.ancho);
+      encargos.push({ x, construir: sena.construir });
+      xSena = x;
+    }
+  }
+
   for (const fam of cola(biome.props ?? ['escombro'], FAMILIAS, densidad)) {
     const x = reserva.colocar(fam.ancho, rngCola, 0.45, alturaEn);
     if (x === null) continue;          // no cabe: no se mete a la fuerza
@@ -176,6 +197,11 @@ export function crearDecorado({
 
   return {
     grupo,
+
+    /** Donde han caido las dos piezas grandes. Lo usan `pnpm capturar` y la
+     *  revision de arte: sin esto, encuadrar la seña es adivinar. */
+    xHito,
+    xSena,
 
     /**
      * Vuelve a apoyar el decorado sobre el terreno.

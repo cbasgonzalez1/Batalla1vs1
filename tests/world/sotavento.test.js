@@ -54,9 +54,14 @@ describe('carve mide lo que se lleva', () => {
   it('la roca madre limita lo que se puede excavar', () => {
     // Cavando muchas veces en el mismo punto se llega a floorY y deja de salir
     // arena: el pozo no es infinito.
+    //
+    // Cuarenta y no doce: desde que el borde del crater se FUNDE con el terreno
+    // en vez de cortarlo, el labio sigue comiendo un poco en cada pasada —cada
+    // vez menos, geometricamente— asi que llegar a cero cuesta mas cañonazos.
+    // Lo que se comprueba sigue siendo lo mismo: que llega.
     const t = construir();
     const volumenes = [];
-    for (let i = 0; i < 12; i++) {
+    for (let i = 0; i < 40; i++) {
       volumenes.push(t.carve(0, t.heightAt(0), 2.6).volumen);
     }
     expect(volumenes.at(-1)).toBeLessThan(volumenes[0]);

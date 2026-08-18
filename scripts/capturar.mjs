@@ -51,6 +51,19 @@ for (const teatro of TEATROS) {
   });
   await pg.waitForTimeout(350);
   await pg.screenshot({ path: `${SALIDA}/${teatro}.png` });
+
+  // Y la SEÑA de cerca: es la unica pieza que no comparte con ninguna otra
+  // ciudad, y a plano abierto no se distingue de una ruina cualquiera.
+  const xSena = await pg.evaluate(() => window.GAME.decorado?.xSena);
+  if (xSena != null) {
+    await pg.evaluate((x) => {
+      const G = window.GAME;
+      G.state.goal = { x, y: G.world.terrain.heightAt(x) + 4, w: 34 };
+      G.cam.snap(x, G.state.goal.y, 34);
+    }, xSena);
+    await pg.waitForTimeout(320);
+    await pg.screenshot({ path: `${SALIDA}/sena-${teatro}.png` });
+  }
   console.log(`${teatro} listo`);
   await pg.close();
 }

@@ -448,6 +448,42 @@ viajar, parece un muelle. El fogonazo dura menos de 4 cuadros a 60 fps; más
 largo y es una bengala. La estela va lineal a propósito — cualquier easing
 acumularía los puntos en un extremo.
 
+### El arco de puntería y el proyectil
+
+Eran **bolas**: discos redondos, todos del mismo tamaño y del mismo color, una
+sarta de cuentas cruzando la pantalla. Un arco de tiro tiene que contar tres
+cosas más que «por dónde pasa», y las cuenta la forma.
+
+| Qué | Cómo |
+|---|---|
+| Hacia dónde va cada tramo | Los trazos van **girados con la tangente**: el arco se lee como una trayectoria y no como un collar |
+| Cuánta certeza queda | Menguan a lo largo del vuelo, tope de 23 px a 12: el principio del tiro es lo que controlas y el final lo que estimas |
+| La cadencia para medir a ojo | Cada **seis** trazos va uno más **ancho** — no más largo: alargándolo, seis seguidos se funden en una línea |
+| Dónde cae | **Cruz de caída**: un anillo en el punto de impacto, y **sólo** con la ayuda al máximo. Con el arco recortado, el punto de caída no se regala |
+
+**El largo del trazo lo decide el hueco hasta el siguiente, no el zoom.** Se
+recorta al 80 % de la separación en píxeles **de ese cuadro**, y por eso se
+calcula en el vertex shader: cocido en el atributo, abrir plano dejaba los trazos
+del tamaño del encuadre anterior y se solapaban otra vez en un tubo. Al ver el
+campo entero eso lo deja en una línea de puntos finos, que es lo correcto — a esa
+escala el arco es información de encuadre, no la mira de tiro.
+
+Todo el arco cuesta **una llamada de dibujo**: son `Points` y la forma la pone el
+fragmento rotando `gl_PointCoord`. Con una malla por trazo serían noventa y seis
+llamadas por cuadro mientras el dedo arrastra.
+
+**El proyectil ya era un obús y se veía como una bola**, porque encima llevaba un
+halo de 1,5 u sobre un cuerpo de 0,5: a la escala de juego el halo tapaba la
+pieza entera. Ahora la pieza manda:
+
+| Pieza | Por qué |
+|---|---|
+| Cuatro partes: culote, cinturón, cuerpo y ojiva | Sin una banda que corte el tubo, un cilindro con punta se lee como una gota |
+| **Contorno propio**, con el mismo shell de los blindados | Separa el proyectil del terreno por VALOR y no sólo por tono (§2), y lo hace visible contra el cielo claro |
+| Sin luz (`MeshBasicMaterial`) | Un proyectil incandescente no se sombrea, y así se ve igual en el lado de sombra del campo |
+| Halo de 0,95 u y **detrás** del cuerpo | Grande, vuelve a ser la bola |
+| **Trazadora de cinta**, 14 muestras (~120 ms) | Los puntos de la estela ya daban el resplandor; faltaba el trazo continuo que dice a qué velocidad va y por dónde ha venido. Se afila y se apaga hacia la cola; sólo la cabeza va blanca — con media cinta blanca, sobre cielo claro se lee como un rayajo gris |
+
 ### Impacto
 
 | Momento | Duración | Curva | Qué hace |

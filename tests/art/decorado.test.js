@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { crearReserva, llano, cola } from '../../src/art/decorado/colocar.js';
 import { FAMILIAS } from '../../src/art/decorado/piezas.js';
 import { ANCHO_HITO } from '../../src/art/decorado/hitos.js';
+import { SENAS } from '../../src/art/decorado/senas.js';
 import { tonosDe, mezcla, TINTE } from '../../src/art/decorado/paleta.js';
 import { BIOMES } from '../../src/art/direction.js';
 import { mulberry32, hashSeed } from '../../src/core/rng.js';
@@ -153,6 +154,26 @@ describe('los dieciseis teatros declaran su decorado', () => {
 
   it('los nueve hitos, y ninguno mas', () => {
     expect(Object.keys(ANCHO_HITO).length).toBe(9);
+  });
+
+  it.each(Object.entries(BIOMES))('%s tiene su seña, y existe', (_, b) => {
+    expect(SENAS[b.sena]).toBeTruthy();
+    expect(SENAS[b.sena].ancho).toBeGreaterThan(0);
+    expect(typeof SENAS[b.sena].construir).toBe('function');
+  });
+
+  it('ninguna ciudad comparte seña con otra', () => {
+    // Es lo unico que las distingue de verdad: seis llevan el hito «manzana» y
+    // tres la «catedral». Con una seña repetida, esas dos vuelven a ser el mismo
+    // campo con otra paleta.
+    const usadas = Object.values(BIOMES).map((b) => b.sena);
+    expect(new Set(usadas).size).toBe(usadas.length);
+    expect(usadas.length).toBe(16);
+  });
+
+  it('el catalogo de señas no tiene piezas de sobra', () => {
+    const usadas = new Set(Object.values(BIOMES).map((b) => b.sena));
+    for (const id of Object.keys(SENAS)) expect(usadas.has(id)).toBe(true);
   });
 });
 

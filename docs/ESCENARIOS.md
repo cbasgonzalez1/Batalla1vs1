@@ -383,6 +383,51 @@ varias posiciones candidatas.
 
 ---
 
+## 3 quater. La seña: una pieza única por ciudad
+
+Los nueve hitos hacen que las dieciséis parezcan **del mismo mundo**. La seña es
+lo que impide que parezcan **la misma**: seis llevan el hito «manzana» y tres la
+«catedral», así que sin algo propio Varsovia, Rotterdam, Saint-Lô, Budapest y
+Berlín son literalmente el mismo campo con otra paleta.
+
+Una por ciudad, **ninguna compartida** —lo vigila `tests/art/decorado.test.js`—,
+sacada de algo que estuvo allí de verdad y que se lee **en silueta** a la escala
+del juego. Nada de carteles con nombres: el sitio se cuenta con formas.
+
+| Ciudad | Seña | Ancho |
+|---|---|---|
+| Ypres | Puerta de Menin: arco monumental de una sola bóveda | 6,4 u |
+| Verdún | Cúpula acorazada de fuerte, con la tapa corrida | 4,2 u |
+| Varsovia 39 | Columna conmemorativa partida, con el fuste al pie | 4,0 u |
+| Rotterdam | Grúa de pórtico volcada, la pluma clavada en el suelo | 6,0 u |
+| Coventry | Campanario esbelto con la esfera del reloj | 3,2 u |
+| Stalingrado | Silo de grano: tres cilindros y un boquete | 5,8 u |
+| Járkov | Depósito de agua sobre patas, el de la estación | 3,6 u |
+| Montecassino | Muro de contención en terrazas, el que sube al monte | 7,2 u |
+| Caen | Lienzo de muralla almenada del castillo, con saetera | 7,4 u |
+| Saint-Lô | Mojón de carretera con la chapa doblada | 3,2 u |
+| Varsovia 44 | Boca de alcantarilla abierta, con la tapa de canto | 3,6 u |
+| Arnhem | Planeador estrellado: el ala clavada de canto | 5,2 u |
+| Aquisgrán | Dientes de dragón de la línea Sigfrido | 5,6 u |
+| Budapest | Balcón de hierro descolgado de un paño de muro | 3,4 u |
+| Dresde | Cúpula caída: los nervios asomando del montón | 5,4 u |
+| Berlín | Columnata con el entablamento partido | 6,2 u |
+
+**Se coloca después del hito y antes que el decorado suelto**, y en la mitad
+opuesta del campo: es la segunda pieza más grande y la única irrepetible, así que
+no puede quedarse fuera porque una barricada le haya cogido el sitio, ni apilarse
+con el hito en la misma mitad.
+
+**El ala del planeador va clavada de canto y la pluma de la grúa caída, no
+tumbadas.** Una pieza tumbada sobre el terreno no tiene silueta contra el cielo,
+y a esta escala lo que no tiene silueta no existe. Lo mismo con los dientes de
+dragón: **cinco escalonados y de altura creciente**, porque una sola fila
+uniforme se lee como un bordillo.
+
+Cero figuras humanas también aquí. Son máquinas, obra civil y escombro.
+
+---
+
 ## 3 ter. Las tres composiciones de calle
 
 Lo que cambia entre ellas es **cómo está cortado el suelo**, nada más: mismos

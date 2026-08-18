@@ -145,7 +145,10 @@ El campo ya no es un perfil de ruido con cuatro bidones. Cada una de las
 dieciséis ciudades declara **sus** familias de decorado —muro suelto, viga
 retorcida, coche quemado, tranvía volcado, escombro, barricada, erizo checo,
 alambrada, vía retorcida, bidones, cajas, árbol quemado, farola y poste— y **su
-hito**, uno de los nueve edificios que salen del mismo constructor. Nada se
+hito**, uno de los nueve edificios que salen del mismo constructor — más **su
+seña**, una pieza que no lleva ninguna otra ciudad: la grúa del puerto de
+Rotterdam, el silo de Stalingrado, los dientes de dragón de Aquisgrán, la boca de
+alcantarilla del Levantamiento de Varsovia, la cúpula caída de Dresde. Nada se
 solapa: cada pieza declara el ancho que ocupa y pasa por un registro que niega la
 colocación si no cabe, y se coloca de mayor a menor. Ninguna tiene base plana: el
 borde inferior se construye con el perfil del terreno, y se reasienta cuando un
@@ -163,6 +166,19 @@ Las tres pasan `pnpm verificar:sotavento` por separado y las mide
 `tests/world/composicion.test.js` con `mover()`, no con la pendiente cruda: el
 relieve generado trae laderas naturales de hasta 72°, así que medir la pendiente
 total mide el ruido y no la composición.
+
+### El arco y el proyectil
+
+El arco de puntería eran bolas naranjas todas iguales. Ahora son **trazos
+girados con la tangente**, que menguan a lo largo del vuelo, con uno más ancho
+cada seis para medir a ojo y una **cruz de caída** que sólo aparece con la ayuda
+al máximo. El largo de cada trazo se recorta al hueco hasta el siguiente **en el
+zoom de ese cuadro**, así que al abrir plano el arco pasa a línea de puntos finos
+en vez de fundirse en un tubo. Una llamada de dibujo para los noventa y seis.
+
+El proyectil ya era un obús pero llevaba un halo el triple de grande encima:
+sólo se veía la mancha. Ahora se ve la pieza —culote, cinturón, cuerpo y ojiva,
+con su contorno— y deja una **cinta de trazadora** que se afila hacia la cola.
 
 ### El castigo se ve en el blindado
 
