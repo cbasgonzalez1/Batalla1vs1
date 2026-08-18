@@ -105,7 +105,7 @@ abiertas. Es a propósito, no hay nada que valga la pena persistir.
 |---|---|---|
 | `?seed=` | cualquier texto | Semilla del terreno y del viento |
 | `?assist=` | `0` … `1` | Recorte del arco. `1` arco entero, `0` solo 3 puntos |
-| `?biome=` | `somme`, `flandes`, `alamein`, `rzhev`, `stalingrado`, `ardenas` | Teatro; cambia paleta, época del blindado y color del proyectil |
+| `?biome=` | `ypres`, `verdun`, `varsovia39`, `rotterdam`, `coventry`, `stalingrado`, `jarkov`, `cassino`, `caen`, `saintlo`, `varsovia44`, `arnhem`, `aquisgran`, `budapest`, `dresde`, `berlin` | Teatro; cambia paleta, fábrica de la ciudad, época del blindado y color del proyectil |
 | `?blindado=` | `media`, `cazacarros`, `pesado` | Qué ficha del catálogo se monta. Solo para revisar arte |
 | `?trampas=` | `0` … `1` | Minas, deflectores y muros en el campo |
 | `?online` | — | Abre la pantalla de sala |
@@ -114,7 +114,7 @@ abiertas. Es a propósito, no hay nada que valga la pena persistir.
 | `?ia=` | `facil`, `normal`, `dificil` | La máquina lleva el bando B |
 | `?replay=` | código del enlace | Repite un combate guardado |
 
-Ejemplo: `http://localhost:5173/?seed=vostok&biome=stalingrado&assist=0.4`
+Ejemplo: `http://localhost:5173/?seed=vostok&biome=berlin&assist=0.4`
 
 ## Consola
 

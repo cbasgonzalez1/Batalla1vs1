@@ -62,9 +62,9 @@ const ESTRATOS = [
   // naranja plano del tamaño de media pantalla. Bajan en valor de golpe para que
   // el fondo RETROCEDA, que es lo que hacia el hundimiento por profundidad antes
   // de quitarlo — pero por bandas y no por degradado.
-  { hasta: 14, mezcla: 0.62, brillo: 0.84 },
-  { hasta: 26, mezcla: 0.78, brillo: 0.74 },
-  { hasta: Infinity, mezcla: 0.9, brillo: 0.62 },
+  { hasta: 14, mezcla: 0.62, brillo: 0.88 },
+  { hasta: 26, mezcla: 0.78, brillo: 0.8 },
+  { hasta: Infinity, mezcla: 0.9, brillo: 0.72 },
 ];
 
 /**
@@ -181,12 +181,22 @@ export class Terrain {
     // la capa del mundo y con eso el terreno dejaba de poder probarse sin
     // navegador, que es media red de seguridad de este fichero.
     this.grano = grano;
-    this.material = new THREE.MeshStandardMaterial({
+    // ── LA CARA FRONTAL NO SE ILUMINA ────────────────────────────────────
+    //
+    // Su normal apunta a la camara, y la key entra desde arriba-izquierda a 48
+    // grados: el producto escalar es casi cero, asi que la cara frontal solo
+    // recibia relleno y hemisferica. Con paletas claras —el desierto— colaba;
+    // con las de una ciudad, mitad de la pantalla se iba a un barro casi negro
+    // (medido: el cuerpo #877C6C de Berlin salia por pantalla a #362A0E).
+    //
+    // Sin luz, el color que se ve ES el de la paleta por su banda, que es
+    // exactamente lo que especifica la plancha: franjas de color plano. Y de
+    // paso el suelo deja de depender del angulo de una luz que no lo toca.
+    this.material = new THREE.MeshBasicMaterial({ vertexColors: true });
+    // La superficie de arriba SI se ilumina: es la que coge la key y la que
+    // da la forma de la cresta. Es la unica cara del terreno con relieve.
+    this.materialSuperficie = new THREE.MeshStandardMaterial({
       vertexColors: true,
-      // Sin grano. Multiplicaba el color de vertice con una textura de seis
-      // unidades de lado y, sobre una banda plana, se veian vetas verticales
-      // que hacian que la tierra pareciera plastico. La plancha no lleva
-      // ninguna y el suelo se lee mejor sin ella.
       map: null,
       roughness: 0.94,
       metalness: 0.0,
@@ -201,7 +211,7 @@ export class Terrain {
     this.frontMesh = new THREE.Mesh(this.frontGeo, this.material);
     this.frontMesh.receiveShadow = true;
 
-    this.topMesh = new THREE.Mesh(this.topGeo, this.material);
+    this.topMesh = new THREE.Mesh(this.topGeo, this.materialSuperficie);
     this.topMesh.receiveShadow = true;
 
     this.group.add(this.frontMesh, this.topMesh);

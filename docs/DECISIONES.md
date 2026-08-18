@@ -96,6 +96,19 @@ es ese número y ninguno más.
 
 ---
 
+## 2 ter. Llevar las ciudades al juego
+
+| Se creía | Es | Por qué importa |
+|---|---|---|
+| El suelo tenía «franjas de color plano con el borde duro» | Eran un **degradado** | Las 18 filas de la cara frontal llevan color por vértice, y el color por vértice interpola. Las filas van ahora clavadas en los bordes de banda y **dobladas** |
+| Cuatro bandas bastan | Seis | La plancha encuadra 9 u de tierra y el juego enseña 45 al abrir plano |
+| La cara frontal se ilumina como todo lo demás | **No se ilumina** | Su normal apunta a la cámara y la key entra desde arriba-izquierda a 48°: el producto escalar es casi cero. Con paletas claras colaba; con las de una ciudad, media pantalla se iba a un barro casi negro — medido, el cuerpo `#877C6C` de Berlín salía por pantalla a `#362A0E`. Sin luz, lo que se ve **es** la paleta por su banda, que es lo que especifica la plancha |
+| El grano daba materia | Daba plástico | Multiplicaba el color de vértice con una textura de 6 u de lado; sobre banda plana se veían vetas verticales |
+| El fondo eran crestas de colina | Tres capas de **manzanas** | Una ciudad arrasada no tiene colinas detrás: tiene más ciudad. El color sale de la `fabrica` del teatro —ladrillo, piedra, arenisca— y no del suelo, y es lo que hace que Varsovia y Caen no se parezcan aunque el cascote de delante sea igual |
+| Hacían falta ruinas sueltas detrás del horizonte | Sobran | Las tres capas **ya son** la ruina; superpuestas se veían como una mancha oscura compitiendo con el perfil |
+
+---
+
 ## 3. Mecánica
 
 | Decía | Dice | Por qué |

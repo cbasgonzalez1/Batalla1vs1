@@ -311,6 +311,14 @@ manda —es la que dibuja la línea del suelo— y lo demás es masa.
 | – 6.5 | 0.44 | 0.93 |
 | resto | 0.64 | 0.90 |
 
+**La cara frontal no se ilumina.** Su normal apunta a la cámara y la key entra
+desde arriba-izquierda a 48°, así que el producto escalar es casi cero: sólo
+recibía relleno y hemisférica, y con las paletas de una ciudad media pantalla se
+iba a un barro casi negro. Sin luz, el color que se ve **es** el de la paleta por
+su banda, que es exactamente lo que dice esta sección. La superficie de arriba sí
+se ilumina: es la única cara del terreno con relieve y la que da la forma de la
+cresta.
+
 Encima, una línea de contorno de `0.1` en el perfil: es lo que separa el suelo
 del cielo y de las crestas de fondo, y sin ella el terreno se funde con el
 horizonte.
