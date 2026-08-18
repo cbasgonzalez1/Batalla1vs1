@@ -257,7 +257,7 @@ arenisca— y qué piezas quedaron en pie. Cada teatro declara sus familias
 | **Coventry** `?biome=coventry` | R. Unido | 1940 | `#B9AC93` | `#94886F` | `#615948` | arenisca | Catedral |
 | **Stalingrado** `?biome=stalingrado` | URSS | 1942 | `#B9B0A6` | `#8A8078` | `#5D554F` | hormigón | Fábrica |
 | **Járkov** `?biome=jarkov` | URSS | 1943 | `#DFE4E4` | `#A8ACA9` | `#6D6F6B` | estuco | Estación |
-| **Montecassino** `?biome=cassino` | Italia | 1944 | `#E7E0CB` | `#C0B69C` | `#83795F` | creta | Abadía |
+| **Montecassino** `?biome=cassino` | Italia | 1944 | `#E7E0CB` | `#C0B69C` | `#83795F` | creta | Abadía (bloque + campanario) |
 | **Caen** `?biome=caen` | Francia | 1944 | `#DED5BD` | `#B8AD92` | `#7C7360` | piedra | Iglesia |
 | **Saint-Lô** `?biome=saintlo` | Francia | 1944 | `#D4CDB9` | `#ABA28C` | `#736B58` | piedra | Manzana |
 | **Varsovia, el Levantamiento** `?biome=varsovia44` | Polonia | 1944 | `#B5A58C` | `#8D7F68` | `#5C5342` | ladrillo | Manzana |
@@ -275,6 +275,12 @@ ardiendo, porque ahí el fuego *es* el sitio.
 **La época la manda el teatro**, no el jugador: en Ypres se combate con rombos
 tipo Mark IV, en Varsovia del 39 con carros ligeros y coches blindados, y del 42
 en adelante con casco de torreta y blindaje inclinado.
+
+**La arcada es un muro con los arcos abiertos en él, no una fila de pilares.** Un
+pilar aislado y un poste de telégrafo son la misma silueta en perfil; un arco se
+lee por el hueco, no por lo que hay a los lados. Y va siempre **delante** del
+cuerpo y más baja, dibujada la última: un muro detrás de un bloque más alto
+sencillamente no se ve.
 
 **Los nueve hitos salen del mismo constructor de edificios** —cambia el tejado
 (dos aguas, mansarda, plano, roto), el material, el número de plantas y dónde

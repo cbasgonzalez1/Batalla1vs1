@@ -203,7 +203,7 @@ export const TEATROS = {
     cresta: '#e7e0cb', cuerpo: '#c0b69c', socavon: '#83795f',
     fabrica: 'creta', hito: 'abadia',
     props: ['escombro', 'muro', 'viga', 'alambrada', 'cajas'],
-    nota: 'Piedra caliza machacada hasta el polvo. Todo el teatro es una ladera de cascote blanco.',
+    nota: 'Piedra caliza machacada hasta el polvo. La abadia es un bloque largo con el campanario en una esquina y la terraza arcada al pie: masa horizontal, no un templo con columnas.',
   },
   caen: {
     nombre: 'Caen', pais: 'Francia', epoca: 1944, proyectil: 'trazadora',

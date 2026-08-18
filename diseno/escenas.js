@@ -279,17 +279,35 @@ function chimenea(cx, suelo, t, rng) {
 const MAT = (t) => mezcla(FABRICA[t.fabrica], t.cuerpo, 0.18);
 const MAT2 = (t) => oscuro(MAT(t));
 
-/** Arcada rota: la fila de arcos de una nave o de un puente. */
+/**
+ * Arcada: un MURO con los arcos abiertos en el, no una fila de pilares.
+ *
+ * La primera version dibujaba cada pilar como una pieza suelta que subia del
+ * suelo y les ponia un dintel encima. Delante de un bloque salian seis torres
+ * superpuestas que no se entendian como nada: en perfil, un pilar aislado y un
+ * poste de telegrafo son la misma silueta. Un arco se lee por el HUECO, no por
+ * lo que hay a los lados, asi que ahora es un muro con los huecos recortados.
+ */
 function arcada(cx, suelo, n, w, alto, c) {
-  const f = [];
-  for (let i = 0; i < n; i++) {
-    const x = cx - (n * w) / 2 + w * i;
-    f.push(apoyado(suelo, x, x + w * 0.36, [[x, suelo(x) + alto], [x + w * 0.36, suelo(x) + alto]], 0.3));
-  }
   const a = cx - (n * w) / 2, b = cx + (n * w) / 2;
-  f.push(caminoRedondeado([[a, altoDe(suelo, a, b) + alto], [b, altoDe(suelo, a, b) + alto],
-    [b, altoDe(suelo, a, b) + alto + 0.42], [a, altoDe(suelo, a, b) + alto + 0.42]], 0.08));
-  return objeto(f, c, 0.11);
+  const y = altoDe(suelo, a, b);
+  const f = [
+    apoyado(suelo, a, b, [[a, y + alto], [b, y + alto]], 0.3),
+    caminoRedondeado([[a - 0.22, y + alto], [b + 0.22, y + alto],
+      [b + 0.22, y + alto + 0.3], [a - 0.22, y + alto + 0.3]], 0.07),
+  ];
+  // los huecos: medio punto arriba y jambas rectas. Uno cegado, que es lo que
+  // separa una ruina de una obra recien hecha.
+  let dentro = '';
+  for (let i = 0; i < n; i++) {
+    if (i === Math.floor(n / 2) + 1) continue;
+    const hx = a + w * (i + 0.5), hw = w * 0.52, hh = alto * 0.66;
+    dentro += camino(caminoRedondeado([
+      [hx - hw / 2, y + 0.05], [hx + hw / 2, y + 0.05],
+      [hx + hw / 2, y + hh], [hx, y + hh + hw * 0.44], [hx - hw / 2, y + hh],
+    ], hw * 0.3), { fill: contorno(c) });
+  }
+  return objeto(f, c, 0.11, dentro);
 }
 
 /**
@@ -304,26 +322,33 @@ function hito(t, cx, suelo, rng, k = 1) {
   switch (t.hito) {
     case 'fabrica': return chimenea(cx, suelo, t, rng);
 
-    case 'catedral':   // torre alta + nave con arcada + escombro al pie
-      return ed({ cx: cx - 2.6 * k, w: 3.0 * k, h: 9.4 * k, tejado: 'roto', plantas: 4, columnas: 1 })
-        + ed({ cx: cx + 2.4 * k, w: 6.2 * k, h: 4.6 * k, tejado: 'roto', plantas: 2, columnas: 4 })
-        + arcada(cx + 2.4 * k, suelo, 4, 1.4 * k, 3.0 * k, c2)
-        + escombroPie(cx + 6.2 * k, suelo, 1.6, c);
+    case 'catedral':   // torre alta + nave con la arcada del claustro al pie
+      return ed({ cx: cx + 2.4 * k, w: 6.2 * k, h: 4.6 * k, tejado: 'roto', plantas: 2, columnas: 4 })
+        + ed({ cx: cx - 2.6 * k, w: 3.0 * k, h: 9.4 * k, tejado: 'roto', plantas: 4, columnas: 1 })
+        + arcada(cx + 2.6 * k, suelo, 5, 1.4 * k, 1.9 * k, c2)
+        + escombroPie(cx + 6.4 * k, suelo, 1.6, c);
 
     case 'lonja':      // cuerpo largo con torre central, tipo Lonja de los Panos
       return ed({ cx: cx + 1.4 * k, w: 7.4 * k, h: 3.6 * k, tejado: 'roto', plantas: 2, columnas: 5 })
         + ed({ cx: cx - 2.2 * k, w: 2.4 * k, h: 7.4 * k, tejado: 'roto', plantas: 3, columnas: 1 })
         + escombroPie(cx + 5.6 * k, suelo, 1.5, c);
 
-    case 'abadia':     // bloque largo con portico de columnas
-      return ed({ cx, w: 8.2 * k, h: 4.4 * k, tejado: 'roto', plantas: 2, columnas: 6 })
-        + arcada(cx, suelo, 6, 1.3 * k, 2.6 * k, c2)
-        + escombroPie(cx - 5.4 * k, suelo, 1.6, c);
+    case 'abadia':
+      // Montecassino es un BLOQUE largo en la cresta, no un templo con columnas.
+      // Lo que lo identifica es la masa horizontal rematada por un campanario en
+      // una esquina y la terraza arcada al pie, no un portico delante.
+      // La terraza va DELANTE y mas baja, y por eso se pinta la ultima: un muro
+      // detras de un bloque mas alto no se ve, y era lo que pasaba con la
+      // primera version de la arcada.
+      return ed({ cx: cx + 1.0 * k, w: 8.2 * k, h: 5.0 * k, tejado: 'roto', plantas: 3, columnas: 6 })
+        + ed({ cx: cx - 4.2 * k, w: 2.4 * k, h: 7.4 * k, tejado: 'roto', plantas: 3, columnas: 1 })
+        + arcada(cx + 1.2 * k, suelo, 6, 1.55 * k, 1.7 * k, c2)
+        + escombroPie(cx + 5.8 * k, suelo, 1.7, c);
 
-    case 'estacion':   // cuerpo bajo + marquesina rota
-      return ed({ cx: cx - 1.6 * k, w: 5.6 * k, h: 3.4 * k, tejado: 'plano', plantas: 2, columnas: 4 })
-        + arcada(cx + 3.0 * k, suelo, 4, 1.5 * k, 3.4 * k, c2)
-        + escombroPie(cx + 6.0 * k, suelo, 1.4, c);
+    case 'estacion':   // cuerpo bajo + la nave de andenes con los arcos abiertos
+      return arcada(cx + 3.2 * k, suelo, 4, 1.6 * k, 3.2 * k, c2)
+        + ed({ cx: cx - 1.6 * k, w: 5.6 * k, h: 3.8 * k, tejado: 'plano', plantas: 2, columnas: 4 })
+        + escombroPie(cx + 6.2 * k, suelo, 1.4, c);
 
     case 'fuerte':     // hormigon bajo y ancho, paredes en talud
       return ed({ cx, w: 7.6 * k, h: 2.4 * k, tejado: 'plano', plantas: 1, columnas: 4 })
