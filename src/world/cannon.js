@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { construirBlindado } from '../art/blindados.js';
 import { ensamblar, PIVOTE } from '../art/vehiculo/ensamblar.js';
-import { media } from '../art/vehiculo/fichas/media.js';
+import { fichaDe } from '../art/vehiculo/catalogo.js';
 import { easeOutExpo, easeOutBack } from '../core/easing.js';
 
 /** El rombo todavia declara su propia boca; desaparece al remodelarlo. */
@@ -30,7 +30,7 @@ const BOCA_1916 = { x: 1.875, y: 0 };
 const RETROCESO_MS = 90;
 const VUELTA_MS = 260;
 
-export function buildCannon({ chassis, facing, bando, granGuerra = false }) {
+export function buildCannon({ chassis, facing, bando, granGuerra = false, ficha = 'media' }) {
   const group = new THREE.Group();
   group.name = facing > 0 ? 'cannonA' : 'cannonB';
   if (facing < 0) group.rotation.y = Math.PI;
@@ -39,7 +39,7 @@ export function buildCannon({ chassis, facing, bando, granGuerra = false }) {
   // viejo hasta que le toque (orden de `docs/CATALOGO-VEHICULOS.md` §3).
   const { casco, arma, tubo, retroceso, boca } = granGuerra
     ? { ...construirBlindado({ chassis, bando: bando ?? 'a', granGuerra }), boca: BOCA_1916 }
-    : ensamblar(media, chassis.color ?? chassis);
+    : ensamblar(fichaDe(ficha), chassis.color ?? chassis);
   group.add(casco);
 
   arma.position.set(PIVOTE.x, PIVOTE.y, 0);

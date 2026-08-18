@@ -72,6 +72,10 @@ const CONFIG = {
   // El teatro decide paleta Y epoca: en el Somme y en Flandes se combate con
   // rombos de la Gran Guerra, en los demas con blindados de torreta.
   biome: params.get('biome') || 'alamein',
+  // Que ficha del catalogo se monta. Solo para revisar arte: en partida lo
+  // elegira el jugador, y de momento los tres que hay son intercambiables
+  // porque comparten pivote (docs/CATALOGO-VEHICULOS.md §0).
+  blindado: params.get('blindado') || 'media',
 
   camera: {
     elevationDeg: 15,
@@ -522,7 +526,7 @@ function buildWorld(seedText) {
   for (const spec of state.plantel) {
     // La epoca la manda el teatro, no el jugador: los dos bandos combaten con
     // el material de la guerra en la que estan.
-    const c = buildCannon({ ...spec, granGuerra });
+    const c = buildCannon({ ...spec, granGuerra, ficha: CONFIG.blindado });
     c.group.position.set(spec.x, world.terrain.heightAt(spec.x), CONFIG.cannonZ);
 
     // Cupula de escudo, oculta salvo cuando se gasta una carga. Lleva el color

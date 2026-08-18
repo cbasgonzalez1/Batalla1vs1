@@ -106,6 +106,7 @@ abiertas. Es a propósito, no hay nada que valga la pena persistir.
 | `?seed=` | cualquier texto | Semilla del terreno y del viento |
 | `?assist=` | `0` … `1` | Recorte del arco. `1` arco entero, `0` solo 3 puntos |
 | `?biome=` | `somme`, `flandes`, `alamein`, `rzhev`, `stalingrado`, `ardenas` | Teatro; cambia paleta, época del blindado y color del proyectil |
+| `?blindado=` | `media`, `cazacarros`, `pesado` | Qué ficha del catálogo se monta. Solo para revisar arte |
 | `?trampas=` | `0` … `1` | Minas, deflectores y muros en el campo |
 | `?online` | — | Abre la pantalla de sala |
 | `?sala=` | código de 4 letras | Entra directo a esa sala |

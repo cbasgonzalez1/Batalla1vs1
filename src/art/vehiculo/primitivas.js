@@ -163,8 +163,8 @@ export function extruir(shape, ancho = VIA, bisel = BISEL) {
     bevelEnabled: true,
     bevelThickness: bisel,
     bevelSize: bisel,
-    bevelSegments: 2,
-    curveSegments: 6,
+    bevelSegments: 1,
+    curveSegments: 5,
   });
   geo.translate(0, 0, -(ancho - bisel * 2) / 2);
   return geo;
@@ -203,12 +203,66 @@ export function faldon(L, y0, costura, ancho = VIA + 0.04) {
 }
 
 /** Torreta. `redonda` es una capsula de perfil; `cuadrada`, una caja biselada. */
-export function torreta({ tipo, cx, base, r, alto }, ancho = VIA * 0.78) {
+export function torreta({ tipo, cx, base, r, alto }, ancho = VIA * 0.68) {
   const pts = tipo === 'conica'
     ? [[cx - r, base], [cx + r, base], [cx + r * 0.66, base + alto], [cx - r * 0.66, base + alto]]
     : [[cx - r, base], [cx + r, base], [cx + r * 0.94, base + alto], [cx - r * 0.94, base + alto]];
   const redondeo = tipo === 'redonda' ? alto * 0.22 : 0.11;
   return extruir(contornoRedondeado(pts, redondeo), ancho);
+}
+
+/**
+ * Anillo de torreta: la junta torreta/casco. Es una de las siete costuras que
+ * permite §12.4, y la unica manera de que la torreta no se funda con la meseta:
+ * arriba y abajo del anillo la luz cae igual, asi que sin una linea dura las dos
+ * masas se leen como una sola.
+ *
+ * Sobresale en Z respecto a la torreta para que su canto se vea de perfil.
+ */
+export function anillo(cx, base, r, ancho = VIA * 0.74) {
+  const geo = roundedBoxGeometry(r * 2.06, 0.12, ancho, 0.04, 2);
+  geo.translate(cx, base + 0.05, 0);
+  return geo;
+}
+
+/** Cupula del comandante: cilindro corto de pie, no una caja. */
+export function cupula(x, y, r, alto) {
+  const geo = new THREE.CylinderGeometry(r, r * 1.06, alto, 14);
+  geo.translate(x, y + alto / 2, 0);
+  return geo;
+}
+
+/**
+ * Nivel C, sin coste de malla propio: se funden en el bloque del casco.
+ *
+ * Un remache de 0,12 u no existe a ningun zoom. Lo que existe es LA FILA: un
+ * trazo discontinuo que de lejos se lee como linea y de cerca como remaches
+ * (docs/ARTE-VEHICULOS.md §1). Van salidos en Z para no pelearse con el flanco.
+ */
+export function filaRemaches(x0, x1, y, n, ancho = VIA) {
+  const piezas = [];
+  for (let i = 0; i < n; i++) {
+    for (const z of [1, -1]) {
+      const g = new THREE.CylinderGeometry(0.035, 0.035, 0.02, 6);
+      g.rotateX(Math.PI / 2);
+      g.translate(x0 + ((x1 - x0) * i) / (n - 1), y, z * (ancho / 2 + 0.005));
+      piezas.push(g);
+    }
+  }
+  return fusionar(piezas);
+}
+
+/** Mancha de camuflaje: un disco chato pegado al flanco. Nivel C. */
+export function mancha(x, y, rx, ry, ancho = VIA) {
+  const piezas = [];
+  for (const z of [1, -1]) {
+    const g = new THREE.CylinderGeometry(1, 1, 0.02, 16);
+    g.rotateX(Math.PI / 2);
+    g.scale(rx, ry, 1);
+    g.translate(x, y, z * (ancho / 2 + 0.004));
+    piezas.push(g);
+  }
+  return fusionar(piezas);
 }
 
 /**

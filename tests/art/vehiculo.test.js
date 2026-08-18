@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { tono, claro, camuflaje, oscuro, contorno, BANDOS } from '../../src/art/vehiculo/paleta.js';
 import { materialRelleno, gradienteToon, materialContorno, actualizarContorno } from '../../src/art/vehiculo/toon.js';
 import { ensamblar, ESCALA, PIVOTE, Y_PIVOTE } from '../../src/art/vehiculo/ensamblar.js';
+import { CATALOGO } from '../../src/art/vehiculo/catalogo.js';
 import { media } from '../../src/art/vehiculo/fichas/media.js';
 
 const hex = (n) => `#${n.toString(16).padStart(6, '0').toUpperCase()}`;
@@ -76,6 +77,40 @@ describe('sombreado de bandas', () => {
   });
 });
 
+describe('el catalogo entero cumple el presupuesto', () => {
+  const mallas = (g) => {
+    let n = 0;
+    g.traverse((o) => o.isMesh && n++);
+    return n;
+  };
+
+  it.each(Object.entries(CATALOGO))('%s cabe en nueve llamadas de dibujo', (_, ficha) => {
+    // Nueve y no ocho: el tubo va en su propio bloque porque retrocede solo
+    // (`ARTE.md` §14) y no puede fundirse con la torreta.
+    const v = ensamblar(ficha, 0x7d8b4e);
+    expect(mallas(v.casco) + mallas(v.arma)).toBeLessThanOrEqual(9);
+  });
+
+  it.each(Object.entries(CATALOGO))('%s gasta UNA malla instanciada de ruedas', (_, ficha) => {
+    // Los rodillos de retorno van en la misma que la rodadura, escalados por su
+    // matriz: darles la suya costaba una llamada entera por nada.
+    const v = ensamblar(ficha, 0x7d8b4e);
+    const cuentas = [];
+    v.casco.traverse((o) => o.isInstancedMesh && cuentas.push(o.count));
+    expect(cuentas.length).toBe(2);
+    expect(cuentas[0]).toBe((ficha.rodaje.ruedas + ficha.rodaje.rodillos) * 2);
+  });
+
+  it.each(Object.entries(CATALOGO))('%s cuelga del mismo pivote', (_, ficha) => {
+    // Es el invariante: la Y del eje de elevacion no depende de la ficha.
+    expect(ensamblar(ficha, 0x7d8b4e).pivote.y).toBe(PIVOTE.y);
+  });
+
+  it.each(Object.entries(CATALOGO))('%s calcula la boca del largo de su tubo', (_, ficha) => {
+    expect(ensamblar(ficha, 0x7d8b4e).boca.x).toBeCloseTo(ficha.tubo.largo * ESCALA, 10);
+  });
+});
+
 describe('la MEDIA, montada', () => {
   const v = ensamblar(media, BANDOS.a.base);
 
@@ -95,7 +130,6 @@ describe('la MEDIA, montada', () => {
     const instanciados = [];
     v.casco.traverse((o) => o.isInstancedMesh && instanciados.push(o.count));
     expect(instanciados.length).toBe(2);
-    expect(instanciados[0]).toBe(media.rodaje.ruedas * 2);
     expect(instanciados[1]).toBe(media.rodaje.eslabones * 2);
   });
 

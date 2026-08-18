@@ -4,9 +4,10 @@ import {
   PERFILES, VIA, casco as cascoGeo, bulto, torreta as torretaGeo, mantelete,
   tubo as tuboGeo, rueda as ruedaGeo, cinta, eslabon, caminoCinta,
   sombraContacto, pintar, faldon as faldonGeo, fusionar,
+  anillo, cupula as cupulaGeo, filaRemaches, mancha,
 } from './primitivas.js';
 import { materialRelleno, materialContorno } from './toon.js';
-import { MATERIA, oscuro } from './paleta.js';
+import { MATERIA, claro, oscuro, camuflaje, contorno } from './paleta.js';
 
 /**
  * Lo unico que compone. Coge una ficha del catalogo y devuelve el rig.
@@ -127,19 +128,31 @@ export function ensamblar(ficha, base) {
     pintarPiezas(partes.buje, MATERIA.buje),
     pintarPiezas(partes.pernos, MATERIA.llanta),
   ]);
-  const ruedas = new THREE.InstancedMesh(geoRueda, materialRelleno(), f.rodaje.ruedas * 2);
+  const rodillos = f.rodaje.rodillos;
+  // Los rodillos van en la MISMA malla instanciada que la rodadura, escalados
+  // por su matriz. Un rodillo de retorno es una rueda pequena: darle su propia
+  // InstancedMesh costaba una llamada de dibujo entera por nada.
+  const ruedas = new THREE.InstancedMesh(
+    geoRueda, materialRelleno(), (f.rodaje.ruedas + rodillos) * 2,
+  );
   ruedas.castShadow = true;
   const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion();
   let k = 0;
   for (let i = 0; i < f.rodaje.ruedas; i++) {
     const extremo = i === 0 || i === f.rodaje.ruedas - 1;
-    const s = extremo ? rm / r : 1;
+    const e = extremo ? rm / r : 1;
     for (const z of [1, -1]) {
-      m.compose(
-        new THREE.Vector3(xi + paso * i, yRueda, z * Z_RUEDA),
-        new THREE.Quaternion(),
-        new THREE.Vector3(s, s, 1),
-      );
+      m.compose(new THREE.Vector3(xi + paso * i, yRueda, z * Z_RUEDA), q, new THREE.Vector3(e, e, 1));
+      ruedas.setMatrixAt(k++, m);
+    }
+  }
+  for (let i = 0; i < rodillos; i++) {
+    const t = (i + 1) / (rodillos + 1);
+    const x = f.rodaje.x0 + (f.rodaje.x1 - f.rodaje.x0) * t;
+    const e = 0.36;
+    for (const z of [1, -1]) {
+      m.compose(new THREE.Vector3(x, R * 2 - r * e - 0.06, z * Z_RUEDA), q, new THREE.Vector3(e, e, 0.8));
       ruedas.setMatrixAt(k++, m);
     }
   }
@@ -177,6 +190,21 @@ export function ensamblar(ficha, base) {
   for (const e of f.extras ?? []) {
     if (e.tipo === 'caja') piezas.push(pintarPiezas(bulto(e.x, e.y, e.w, e.h, VIA * 0.5), base));
   }
+  // Nivel C. No cuenta en el presupuesto de piezas ni de llamadas: se funde en
+  // el mismo bloque. Pero cuenta en la revision — un vehiculo sin nivel C se ve
+  // tan vacio como uno sin nivel B (docs/ARTE-VEHICULOS.md §1).
+  // La mancha se separa de lo que la RODEA, no del color base: el flanco guarda
+  // `claro(base)`, asi que restandole a `base` la mancha sale al triple de fuerte
+  // y se lee como una pegatina en vez de como camuflaje.
+  const yc = f.y0 + f.alto * 0.72;
+  for (const [mx, mr] of [[-0.3, 0.085], [0.02, 0.07], [0.28, 0.09]]) {
+    piezas.push(pintarPiezas(
+      mancha(mx * f.L, yc, f.L * mr, f.L * mr * 0.5), camuflaje(claro(base)), false,
+    ));
+  }
+  // La fila va pegada a la costura, por encima del faldon y por DEBAJO de las
+  // manchas: cruzandolas se lee como una linea rota, no como remaches.
+  piezas.push(pintarPiezas(filaRemaches(-f.L * 0.4, f.L * 0.4, costura + 0.09, 14), contorno(base), false));
   for (const z of [1, -1]) {
     const banda = cinta(f.rodaje.x0, f.rodaje.x1, R, { comba });
     banda.translate(0, 0, z * Z_CINTA);
@@ -195,21 +223,28 @@ export function ensamblar(ficha, base) {
   if (f.torreta) {
     conjunto.push(torretaGeo(f.torreta));
     if (f.cupula) {
-      conjunto.push(bulto(
-        f.torreta.cx + f.cupula.x, f.torreta.base + f.torreta.alto - 0.05,
-        f.cupula.w, f.cupula.h, VIA * 0.34,
+      conjunto.push(cupulaGeo(
+        f.torreta.cx + f.cupula.x, f.torreta.base + f.torreta.alto - 0.04,
+        f.cupula.w / 2, f.cupula.h,
       ));
     }
   }
   if (f.tubo.mantelete) conjunto.push(mantelete(px, py, f.tubo.mantelete));
+  const fijo0 = fusionar(conjunto);
   // El ARMA no se escala como grupo: dentro de ella cuelga el ancla `boca`, que
   // esta en unidades de juego y la lee la balistica. Escalando el grupo, la boca
   // se escalaria otra vez y el proyectil saldria de un sitio que no es. Se
   // escala la geometria y ya.
-  const fijo = fusionar(conjunto);
+  // El anillo va en su propio tono y por eso se pinta aparte antes de fundir.
+  const fijo = f.torreta
+    ? fusionarPintadas([
+      pintar(fijo0, base),
+      pintarPiezas(anillo(f.torreta.cx, f.torreta.base, f.torreta.r), oscuro(base), false),
+    ])
+    : pintar(fijo0, base);
   fijo.translate(-px, -py, 0);
   fijo.scale(ESCALA, ESCALA, ESCALA);
-  bloque(arma, pintar(fijo, base), 3);
+  bloque(arma, fijo, 3);
 
   // El tubo va aparte para que el retroceso lo deslice solo.
   const tubo = new THREE.Group();
