@@ -186,6 +186,108 @@ ruina (`ESCENARIOS.md` §3.3) son la misma forma. Tres diferencias no negociable
 
 ---
 
+## 4 bis. Los nueve, uno a uno
+
+Cada entrada trae **qué hace**, **cómo funciona** y **el riesgo**: varios de los
+nueve pueden desequilibrar la partida, y eso se escribe antes de implementarlos,
+no después de probarlos.
+
+### En el aire — el proyectil los atraviesa
+
+**Carga hueca** · daño
+
+> x1,8 de daño en el impacto
+
+El proyectil la atraviesa y se lleva la carga pegada. Es el modificador mas simple y el que ensena el sistema: pasas por ella y pegas mas.
+
+*El riesgo.* Cuelga en la parte alta del arco, donde tira el que va perdiendo. Si sale siempre en el mismo sitio, deja de ser una decision.
+
+**Bomba de racimo** · daño
+
+> El disparo se parte en tres
+
+Los tres siguen trayectorias con dispersion SEMBRADA, no aleatoria: los seis moviles tienen que ver los mismos tres impactos.
+
+*El riesgo.* Tres proyectiles reparten daño en area y castigan al que no se ha movido. Contra un blanco atrincherado puede ser peor que el disparo entero.
+
+**Espoleta de proximidad** · daño
+
+> Revienta en el aire sobre el blanco
+
+Deja de necesitar tocar el suelo: estalla al pasar sobre el rival. Ignora el parapeto de sacos y el labio de la trinchera.
+
+*El riesgo.* Es la respuesta al atrincherado, y por eso hay que vigilarla: si aparece cada dos turnos, cavar deja de servir para nada.
+
+**Bote de fosforo** · defensa
+
+> Cortina de humo en tu mitad
+
+El unico del aire que no hace daño. El rival dispara a ciegas el turno siguiente: se le oculta el arco de puntería, no el blindado.
+
+*El riesgo.* Ocultar informacion al rival es lo mas facil de hacer injusto. Un turno, y que se vea claramente de quien es el humo.
+
+**Globo de barrera** · daño
+
+> Si lo tocas, pierdes el tiro
+
+No es un premio: es el castigo del arco alto. Obliga a elegir entre la trayectoria comoda y la que esquiva.
+
+*El riesgo.* Perder el turno entero es duro. Tiene que verse desde el plano de otear y no aparecer nunca detras del hito.
+
+
+### En el suelo — el proyectil cae sobre ellos
+
+**Mina de fosforo** · daño
+
+> Crater y daño al doble
+
+Cae tu disparo encima o cerca y detona con el. Es la trampa que convierte un tiro corto en un buen tiro.
+
+*El riesgo.* Se ve, y eso es a proposito: esquivarla es la decision, encontrarla no es el juego.
+
+**Deposito de combustible** · daño
+
+> Fuego en el terreno, dos turnos
+
+El fuego dana a quien acabe el turno dentro. Es el unico modificador que sigue actuando cuando ya te has movido.
+
+*El riesgo.* Un area negada dos turnos en un campo de 38 u es mucho campo. O dura menos, o el area es pequena.
+
+**Placa de blindaje** · defensa
+
+> Escudo: absorbe el proximo impacto
+
+No se dispara: se RECOGE avanzando hasta ella. Es lo que engancha el sistema con la mecanica de avanzar, que hoy solo sirve para colocarse.
+
+*El riesgo.* Un escudo que absorbe entero un impacto puede alargar la partida sin aportar. Empezar por absorber la mitad y medir.
+
+**Nido de municion** · daño
+
+> Un disparo extra este turno
+
+Tambien se recoge avanzando. Dos disparos seguidos es la jugada mas fuerte del juego, y por eso solo hay uno por partida.
+
+*El riesgo.* Encadenado con la carga hueca son dos tiros al doble. Hay que probar si eso es emocionante o si decide la partida sola.
+
+---
+
+## 4 ter. Lo que hace falta decidir antes de implementarlos
+
+- **Cuántos por partida.** Hoy `?trampas=1` pone seis. Con nueve tipos distintos,
+  seis pueden ser demasiados: si cada turno hay un modificador a mano, dejan de
+  ser una decisión y pasan a ser el juego.
+- **Si reaparecen.** Un modificador gastado, ¿vuelve a salir? Si no vuelve, el que
+  llega primero gana; si vuelve siempre, no hay urgencia.
+- **Si se encadenan.** Nido de munición + carga hueca son dos tiros al doble. Hay
+  que probar si eso es emocionante o si decide la partida sola.
+- **El escudo.** Absorber un impacto entero puede alargar la partida sin aportar.
+  Empezar por absorber la mitad y medir.
+- **Quién los ve.** Todos salen de la semilla, así que los dos jugadores ven los
+  mismos. Lo que hay que decidir es si el HUD dice lo que hace cada uno o hay que
+  aprendérselo jugando.
+
+---
+
 ## 5. Colocación
 
 Manda `README.md`: seis con `?trampas=1`, la mitad deflectores, salidas de la

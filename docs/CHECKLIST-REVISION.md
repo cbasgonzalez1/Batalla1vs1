@@ -143,6 +143,33 @@ Preguntas de la revisión, y hay que contestarlas por escrito:
 
 ---
 
+## 3 bis. Lo que hay que mirar en una escena de ciudad
+
+Salido de tres rondas de correcciones; cada punto existe porque fallo.
+
+- [ ] **¿Alguna pieza tiene base plana?** El borde inferior de todo lo que se
+      apoya se construye con el perfil del terreno. Con base recta la pieza toca
+      el suelo en un punto y flota en el resto, y el decorado se pinta DESPUES del
+      terreno, asi que el hueco no lo tapa nada.
+- [ ] **¿Se solapa algo?** Todo pasa por el registro de tramos ocupados, y se
+      reservan primero los emplazamientos, sus parapetos y el hito.
+- [ ] **¿Compite el fondo con el suelo?** Las crestas de fondo arrancan muy por
+      encima de la cota del campo. Si se entrelazan, se leen como la hierba de
+      delante y todo lo plantado parece flotar. Comprobar con
+      `globalThis.__DEPURA_SUELO`, que superpone el perfil real en magenta.
+- [ ] **¿Se entiende cada pieza?** Un poligono de tres vertices puede ser una
+      roca, una rampa o una sombra. Escombro = piedras sueltas amontonadas;
+      parapeto = muro apilado con el remate a nivel; arcada = muro con los arcos
+      recortados, no pilares sueltos.
+- [ ] **¿Es rigida la fachada?** Ventanas y puerta se replantean desde una sola
+      cota. Lo que varia con el terreno es cuanto la tapa el suelo.
+- [ ] **¿Esta el hito en terreno llano y descentrado?** A caballo de una vaguada
+      su base baja y sube y se lee como un cimiento en V.
+- [ ] **¿Se giran los blindados con la pendiente?** Horizontales sobre cuesta
+      apoyan una oruga y dejan la otra en el aire.
+
+---
+
 ## 4. Por escena
 
 Sobre la checklist de `ARTE.md` §7, que sigue vigente, se añade:

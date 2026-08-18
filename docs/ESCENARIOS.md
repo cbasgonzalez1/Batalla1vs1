@@ -316,23 +316,73 @@ dos llamadas y hay que ganárselas.
 
 ---
 
-## 4. Hitos por teatro
+## 3 bis. Los nueve hitos
 
-`ARTE.md` §13 ya asigna uno a cada teatro. Se mantienen, y ahora se construyen
-con las familias de arriba:
+Todos salen del **mismo constructor de edificios** —cambia el tejado (dos aguas,
+mansarda, plano, roto), el material, el número de plantas y dónde está roto,
+nunca la forma de construirlo— más dos casos especiales. Por eso las dieciséis
+ciudades parecen del mismo mundo sin parecerse entre sí.
 
-| Teatro | Hito | Familias que lo componen |
-|---|---|---|
-| El Somme | Torre de iglesia rota | Ruinas (muro alto + astillado) + escombro |
-| Flandes | Tocón gigante | Bosque astillado a escala 3,5× |
-| El Alamein | Casa de adobe | Ruinas con muro de adobe + viga caída |
-| Frente del Este | Isba | Ruinas de madera + nieve acumulada |
-| Stalingrado | Chimenea de fábrica | Ruinas (pilar) + vía y vagón al pie |
-| Las Ardenas | Casa nevada | Ruinas + nieve + bosque astillado alrededor |
+| Hito | Composición | Ancho reservado | Teatros |
+|---|---|---|---|
+| **Manzana** | Bloque de viviendas destripado (4 plantas, remate roto) + ala baja + escombro | 11,0 u | Varsovia 39 y 44, Rotterdam, Saint-Lô, Budapest, Berlín |
+| **Catedral** | Nave rota + torre de 9,4 u + arcada del claustro delante | 13,0 u | Coventry, Aquisgrán, Dresde |
+| **Lonja** | Cuerpo largo de dos plantas con torre central de 7,4 u | 12,0 u | Ypres |
+| **Abadía** | Bloque largo (3 filas de celdas) + campanario de esquina + terraza arcada | 10,5 u | Montecassino |
+| **Estación** | Cuerpo bajo de tejado plano + nave de andenes con los arcos abiertos | 12,0 u | Járkov |
+| **Fuerte** | Hormigón bajo y ancho, tejado plano, con un cuerpo de mando encima | 9,5 u | Verdún |
+| **Puente** | Dos pilas y el tablero partido en dos tramos que no se tocan | 10,5 u | Arnhem |
+| **Iglesia** | Torre sola de 8,0 u con el remate astillado | 5,6 u | Caen |
+| **Fábrica** | Nave de dientes de sierra + chimenea de 7,2 u | 11,5 u | Stalingrado |
 
-El hito ocupa entre el 25 % y el 40 % del ancho y rompe la línea del horizonte
-(`ARTE.md` §3). Con el detalle nuevo eso significa que el hito es **la pieza más
-trabajada de la escena**: 14–16 piezas, tope alto del presupuesto.
+**La arcada es un muro con los arcos abiertos en él, no una fila de pilares.** Un
+pilar aislado y un poste de telégrafo son la misma silueta en perfil; un arco se
+lee por el **hueco**, no por lo que hay a los lados. Y se dibuja **la última**, por
+delante del cuerpo y más baja: detrás de un bloque más alto un muro sencillamente
+no se ve. Uno de los arcos va cegado — es lo que separa una ruina de una obra
+recién hecha.
+
+El hito ocupa entre el 25 % y el 40 % del ancho (`ARTE.md` §3), va **descentrado**
+—centrado parte el campo en dos huecos estrechos donde no cabe nada grande— y se
+planta donde el terreno es **llano**, midiendo el desnivel bajo su huella en
+varias posiciones candidatas.
+
+---
+
+## 3 ter. Las tres composiciones de calle
+
+Lo que cambia entre ellas es **cómo está cortado el suelo**, nada más: mismos
+cinco planos, mismo teatro y misma semilla.
+
+| Composición | Trayectoria | Cobertura | Avanzar |
+|---|---|---|---|
+| **Avenida** | Todo el arco visible | Ninguna: estás al descubierto | Muy útil — hay montón que ganar |
+| **Zanja en la calzada** | Hay que pasar por encima del labio propio | Alta: estás metido en el suelo | Caro — salir cuesta arriba |
+| **Montón central** | Por encima del montón o rodeando | Media: el montón tapa el tiro raso | Decisivo — quien lo corona domina |
+
+- **Avenida.** La calle despejada entre dos manzanas. Es la que mejor enseña la
+  trayectoria y la que se entiende sola en el primer turno. En contra: sin nada
+  entre los dos, la partida se decide en dos turnos de ajuste; es la que más
+  necesita los modificadores de `TRAMPAS.md`.
+- **Zanja en la calzada.** Las dos piezas están **dentro** del terreno: un corte
+  real en el mapa de alturas con las paredes entibadas y el labio levantado con el
+  cascote excavado. El tiro plano se estrella contra tu propio parapeto. **El foso
+  tiene que ser más ancho que la pieza que va dentro**: con 5 u de foso y un casco
+  de 6,4 el blindado se apoya en los dos labios y la trinchera desaparece.
+- **Montón central.** Escombro amontonado en el centro con la ruina grande encima.
+  El decorado no colisiona —eso son las trampas— pero el montón **sí es terreno**,
+  y por eso avanzar hacia él es la jugada. En contra: media trayectoria acaba
+  contra cascote y el jugador puede leerlo como que el juego le engaña; hay que
+  enseñar su altura en el arco de apuntado.
+
+---
+
+## 4. Hitos por teatro — derogada, ver §3 bis
+
+Esta sección repartía los hitos entre los seis teatros de campo abierto (Somme,
+Flandes, Alamein, Frente del Este, Stalingrado, Ardenas). Esos teatros ya no
+existen: los dieciséis son ciudades destruidas y el reparto está en §3 bis y en
+`ARTE.md` §11.
 
 ---
 

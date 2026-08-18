@@ -376,7 +376,7 @@ export const FICHAS = [
   {
     id: 'media', nombre: 'MEDIA', anio: 1942, clase: 'Carro medio',
     vida: 100, dano: 46, avance: '1,0x', piezas: 13,
-    teatros: 'Alamein · Este · Stalingrado · Ardenas',
+    teatros: 'Stalingrado · Jarkov · Caen · Saint-Lo',
     nota: 'La vara de medir: es el vehiculo de la imagen de referencia. Panza redondeada con meseta, y la oruga apoyada en la rodadura sin rodillos de retorno, que es su marca.',
     L: 5.6, alto: 0.95, y0: 0.7, perfil: 'panza',
     rodaje: oru(0.32, -2.86, 2.86, 6, 0, 30),
@@ -388,7 +388,7 @@ export const FICHAS = [
   {
     id: 'pesado', nombre: 'PESADO', anio: 1943, clase: 'Carro pesado',
     vida: 140, dano: 52, avance: '0,55x', piezas: 17,
-    teatros: 'Frente del Este · Ardenas',
+    teatros: 'Aquisgran · Dresde · Berlin',
     nota: 'Torreta cuadrada retrasada y freno de boca de dos camaras. Siete ruedas solapadas: el solape se exagera hasta que se vean dos filas, o se lee como una sola.',
     L: 6.2, alto: 1.32, y0: 0.76, perfil: 'caja',
     rodaje: oru(0.35, -3.16, 3.16, 7, 0, 30),
@@ -400,7 +400,7 @@ export const FICHAS = [
   {
     id: 'cazacarros', nombre: 'CAZACARROS', anio: 1943, clase: 'Cazacarros',
     vida: 90, dano: 56, avance: '0,8x', piezas: 12,
-    teatros: 'Stalingrado · Ardenas · Frente del Este',
+    teatros: 'Stalingrado · Jarkov · Aquisgran',
     nota: 'La silueta mas baja y el tubo mas largo del catalogo. Si el tubo no incomoda al mirarlo, es corto: todo su caracter esta en esa proporcion.',
     L: 5.4, alto: 1.55, y0: 0.88, perfil: 'cuna',
     rodaje: oru(0.31, -2.76, 2.76, 6, 3, 28),
@@ -412,7 +412,7 @@ export const FICHAS = [
   {
     id: 'asalto', nombre: 'ASALTO PESADO', anio: 1944, clase: 'Canon de asalto',
     vida: 170, dano: 64, avance: '0,4x', piezas: 17,
-    teatros: 'Stalingrado · Ardenas',
+    teatros: 'Berlin · Aquisgran · Dresde',
     nota: 'El mas grande y el que mas pega. Su caracter es la masa: se exagera el ancho del mantelete y el grosor del tubo, nunca la altura, que ya la tiene.',
     L: 6.8, alto: 1.6, y0: 0.86, perfil: 'casamata',
     rodaje: oru(0.4, -3.46, 3.46, 7, 0, 30),
@@ -450,7 +450,7 @@ export const FICHAS = [
   {
     id: 'lanzallamas', nombre: 'LANZALLAMAS', anio: 1943, clase: 'Carro lanzallamas',
     vida: 95, dano: 34, avance: '1,0x', piezas: 15,
-    teatros: 'Stalingrado · Ardenas',
+    teatros: 'Berlin · Aquisgran · Dresde',
     nota: 'Chasis de la MEDIA sin tocar: la familia se nota mas si comparten rodaje. Dos depositos con aros detras y la manguera que los une a la boquilla acampanada.',
     L: 5.6, alto: 0.95, y0: 0.7, perfil: 'panza',
     rodaje: oru(0.32, -2.86, 2.86, 6, 0, 30),
@@ -513,7 +513,7 @@ export const FICHAS = [
   {
     id: 'ruedas', nombre: 'RUEDAS', anio: 1941, clase: 'Coche blindado',
     vida: 70, dano: 30, avance: '1,6x', piezas: 15,
-    teatros: 'Alamein · Somme · Ardenas',
+    teatros: 'Varsovia 39 · Rotterdam · Arnhem',
     nota: 'Se mueve, no pega. La rueda de repuesto del flanco es la unica pieza asimetrica grande del catalogo, y es lo que hace que el vehiculo se lea vivo.',
     L: 4.6, alto: 1.15, y0: 0.72, perfil: 'coche',
     rodaje: { tipo: 'ruedas', r: 0.62, x0: -2.42, x1: 2.42, ruedas: 4 },
@@ -538,7 +538,7 @@ export const FICHAS = [
   {
     id: 'rombo', nombre: 'ROMBO', anio: 1916, clase: 'Carro de la Gran Guerra',
     vida: 120, dano: 38, avance: '0,6x', piezas: 14,
-    teatros: 'Somme · Flandes',
+    teatros: 'Ypres · Verdun',
     nota: 'La oruga envuelve el casco entero: esa es toda la silueta y no hace falta nada mas. Sin torreta; el tubo sale del patrocinio lateral, nunca del frente.',
     L: 6.4, alto: 2.26, y0: 0.64, perfil: 'rombo',
     rodaje: { tipo: 'envolvente' },
@@ -550,7 +550,7 @@ export const FICHAS = [
   {
     id: 'a7v', nombre: 'A7V', anio: 1918, clase: 'Carro de la Gran Guerra',
     vida: 130, dano: 40, avance: '0,5x', piezas: 15,
-    teatros: 'Somme · Flandes',
+    teatros: 'Ypres · Verdun',
     nota: 'El mas alto y el mas torpe. El casco vuela por delante y por detras y tapa la oruga casi entera: si se ve el tren de rodaje completo, esta mal modelado.',
     L: 6.0, alto: 2.11, y0: 0.66, perfil: 'caja',
     opts: { incl: 0.05 },
@@ -563,7 +563,7 @@ export const FICHAS = [
   {
     id: 'trincheras', nombre: 'TRINCHERAS', anio: 1916, clase: 'Carro de zanja',
     vida: 150, dano: 34, avance: '0,45x', piezas: 14,
-    teatros: 'Somme · Flandes',
+    teatros: 'Ypres · Verdun',
     nota: 'El mas largo. Cruza trincheras y muros bajos sin penalizacion: esa es su razon de existir. El faldon cerrado con recortes tapa seis piezas con una sola.',
     L: 7.0, alto: 2.02, y0: 0.64, perfil: 'rombo',
     opts: { estirado: 0.12 },

@@ -32,9 +32,11 @@ crea un lock paralelo y desincroniza las dependencias.
   por vehículo en `fichas/`. `world/cannon.js` **no modela**: pide un `Object3D`
   a `ensamblar.js` y lo coloca. El decorado, igual, en `src/art/decorado/`.
 - `diseno/` no entra en el `build`: son las planchas de diseño en SVG con las que
-  se aprueba un vehículo o una escena **antes** de modelarla en Three. Comparten
-  paleta y proporciones con el juego a propósito — si una plancha y el juego se
-  ven distintos, el roto está en el juego.
+  se aprueba un vehículo, una ciudad o una trampa **antes** de modelarla en Three
+  (`pnpm planchas`, `pnpm propuestas`). Comparten paleta y proporciones con el
+  juego a propósito — si una plancha y el juego se ven distintos, el roto está en
+  el juego. Los HTML generados son un render: todo lo que aprueban está escrito en
+  los documentos, y borrarlos no pierde ninguna decisión.
 
 ## Restricciones duras
 
@@ -131,13 +133,20 @@ partir del primer turno en que alguien se movió.
 - La configuración numérica vive en el objeto `CONFIG` de `src/main.js`, no
   dispersa en constantes por fichero.
 - Los valores de arte salen de los documentos de arte, y **solo** de ahí. Son
-  cuatro y no se solapan:
+  seis y no se solapan:
   - `ARTE.md` — reglas generales, paleta, teatros, suelo, fondo, movimiento y
     presupuesto de cuadro. Manda en todo lo que no tenga documento propio.
   - `docs/ARTE-VEHICULOS.md` — vehículos. **Sustituye a `ARTE.md` §5 y §8.**
-  - `docs/ESCENARIOS.md` — decorado y las ocho familias de campo de batalla.
-  - `docs/TRAMPAS.md` — minas, deflectores y muros, y cómo se distinguen del
-    decorado.
+  - `docs/ESCENARIOS.md` — las reglas de colocación, las catorce familias de
+    decorado urbano, los nueve hitos y las tres composiciones de calle.
+  - `docs/TRAMPAS.md` — las tres trampas que ya existen, los nueve modificadores
+    de tiro propuestos y cómo se distinguen del decorado.
+  - `docs/CATALOGO-VEHICULOS.md` — las quince fichas, con sus números.
+  - `docs/DECISIONES.md` — **qué se derogó y por qué.** Antes de reintroducir una
+    regla que veas en un commit antiguo, búscala ahí: la mitad de los defectos de
+    arte de este juego venían de reglas escritas, no de errores de ejecución.
+  - `docs/CHECKLIST-REVISION.md` — cómo se valida antes de decir que está
+    terminado.
 
   Si vas a inventarte un color, una medida o una duración, para y pregunta. Si
   cambias uno, cámbialo **también** en su documento: un número de arte que solo
