@@ -22,8 +22,6 @@ import { lerp, smoothstep } from '../core/mathx.js';
  *    pendiente), que a 15 grados de camara da el volumen -> cresta.
  */
 
-const ROWS = 18;           // filas verticales de la cara frontal
-const ROW_BIAS = 2.1;      // concentra filas cerca de la superficie
 const AO_WINDOW = 26;      // columnas a cada lado para la oclusion de horizonte
 const CONTRAST = 5.5;      // expansion de contraste del fBm, ver _generate()
 
@@ -38,39 +36,57 @@ const CONTRAST = 5.5;      // expansion de contraste del fBm, ver _generate()
 // marcado, como el suelo de un juego de plataformas. Es mas barato de leer y
 // mucho mas alegre, y ademas da escala — se ve cuanto ha excavado un crater
 // porque se ve cuantas capas ha atravesado.
-const COSTRA = 0.55;       // grosor de la costra clara justo bajo la cresta
-//
-// El brillo alterna a proposito de una franja a la siguiente. Con un degradado
-// monotono el subsuelo volvia a ser una mancha plana por muchos estratos que
-// tuviera; alternando, cada linea entre franjas se VE, y eso es lo que
-// convierte los treinta metros de tierra de debajo en roca en capas en vez de
-// en un fondo marron.
+const COSTRA = 0.42;       // grosor de la costra clara justo bajo la cresta
+
+/**
+ * El suelo, por estratos. CUATRO, no once.
+ *
+ * La version anterior tenia once franjas «con el borde duro» — y el borde duro
+ * no existia: las dieciocho filas de la cara frontal llevan color POR VERTICE, y
+ * el color por vertice INTERPOLA. Lo que se veia era un degradado naranja de
+ * media pantalla, que es justo lo que las franjas venian a arreglar.
+ *
+ * Ahora las filas van clavadas en los bordes de banda y DOBLADAS: dos filas a la
+ * misma profundidad con colores distintos dan un corte limpio. Y son cuatro
+ * porque once bandas onduladas siguiendo el relieve convierten la mitad inferior
+ * del cuadro en un mapa topografico que compite con todo lo que se planta
+ * encima (ARTE.md §12).
+ */
 const ESTRATOS = [
-  // Las franjas van apretadas en las primeras 18 unidades porque ESO es lo que
-  // se ve jugando: con el encuadre de apuntado, del borde de la cresta al
-  // fondo de la pantalla hay unos 17 metros de tierra. Lo de mas abajo solo
-  // asoma al abrir plano, y por eso va con franjas mas gruesas.
-  { hasta: COSTRA, mezcla: 0.0, brillo: 1.16 },  // costra: cresta aclarada
-  { hasta: 1.7, mezcla: 0.1, brillo: 1.04 },
-  { hasta: 3.2, mezcla: 0.28, brillo: 0.93 },
-  { hasta: 5.4, mezcla: 0.2, brillo: 1.09 },     // veta clara
-  { hasta: 8.4, mezcla: 0.52, brillo: 0.9 },
-  { hasta: 12.5, mezcla: 0.36, brillo: 1.06 },
-  { hasta: 18.0, mezcla: 0.7, brillo: 0.88 },
-  // De 18 en adelante el brillo SUBE en vez de bajar. Con las franjas hondas
-  // apagandose, el tercio inferior del cuadro se iba a un marron muerto sin
-  // forma; asi la roca de abajo se queda en un medio tono con las capas a la
-  // vista. No es realista —a tres metros no hay mas luz— pero es lo que hace
-  // que la pantalla no tenga un agujero negro debajo de la accion.
-  { hasta: 26.0, mezcla: 0.46, brillo: 1.12 },
-  { hasta: 40.0, mezcla: 0.8, brillo: 1.0 },
-  { hasta: 58.0, mezcla: 0.5, brillo: 1.16 },
-  { hasta: Infinity, mezcla: 0.74, brillo: 1.06 },
+  { hasta: COSTRA, mezcla: 0.0, brillo: 1.0 },   // costra: la cresta del teatro
+  { hasta: 2.6, mezcla: 0.18, brillo: 0.98 },
+  { hasta: 6.5, mezcla: 0.44, brillo: 0.93 },
+  // Las tres de abajo no estan en la plancha, y hacen falta: la plancha encuadra
+  // nueve unidades de tierra y el juego ensena cuarenta y cinco al abrir plano.
+  // Con las cuatro de la plancha, el tercio inferior del cuadro se quedaba en un
+  // naranja plano del tamaño de media pantalla. Bajan en valor de golpe para que
+  // el fondo RETROCEDA, que es lo que hacia el hundimiento por profundidad antes
+  // de quitarlo — pero por bandas y no por degradado.
+  { hasta: 14, mezcla: 0.62, brillo: 0.84 },
+  { hasta: 26, mezcla: 0.78, brillo: 0.74 },
+  { hasta: Infinity, mezcla: 0.9, brillo: 0.62 },
 ];
+
+/**
+ * Profundidad de cada fila de la cara frontal, y a que banda pertenece.
+ *
+ * Los bordes van repetidos: la fila 1 y la 2 estan las dos a 0,42 pero una es
+ * costra y la otra es la banda de debajo, y por eso entre ellas no hay
+ * interpolacion que valga. Las tres ultimas solo estiran la banda honda hasta
+ * la base; como comparten color, ahi interpolar da igual.
+ */
+const FILAS = [
+  [0, 0], [COSTRA, 0],
+  [COSTRA, 1], [2.6, 1],
+  [2.6, 2], [6.5, 2],
+  [6.5, 3], [14, 3],
+  [14, 4], [26, 4],
+  [26, 5], [Infinity, 5],
+];
+const ROWS = FILAS.length;
+
 const AO_STRENGTH = 0.34;  // era 0.62: ensuciaba de gris toda la ladera
 const AO_FADE_DEPTH = 3.2; // la AO se disuelve a esta profundidad en la cara
-const SINK = 0.14;         // era 0.42, y se comia la mitad inferior del cuadro
-const SINK_DEPTH = 26;     // profundidad a la que el oscurecimiento satura
 
 // Angulo de reposo de la arena: por encima de esta pendiente, el monton se
 // derrumba. 34 grados es lo tipico de arena seca.
@@ -167,7 +183,11 @@ export class Terrain {
     this.grano = grano;
     this.material = new THREE.MeshStandardMaterial({
       vertexColors: true,
-      map: grano ?? null,
+      // Sin grano. Multiplicaba el color de vertice con una textura de seis
+      // unidades de lado y, sobre una banda plana, se veian vetas verticales
+      // que hacian que la tierra pareciera plastico. La plancha no lleva
+      // ninguna y el suelo se lee mejor sin ella.
+      map: null,
       roughness: 0.94,
       metalness: 0.0,
     });
@@ -598,8 +618,10 @@ export class Terrain {
 
       // --- cara frontal
       for (let j = 0; j < ROWS; j++) {
-        const t = j / (ROWS - 1);
-        const depth = span * Math.pow(t, ROW_BIAS); // 0 en superficie, span en la base
+        const [prof, banda] = FILAS[j];
+        // La ultima fila y cualquiera mas honda que la columna se pegan a la
+        // base: las filas sobrantes salen degeneradas y no se ven.
+        const depth = Math.min(prof, span);
         const k = (i * ROWS + j) * 3;
         fPos[k + 0] = x;
         fPos[k + 1] = h - depth;
@@ -607,26 +629,16 @@ export class Terrain {
         fUv[(i * ROWS + j) * 2 + 0] = x / GRANO_ESCALA;
         fUv[(i * ROWS + j) * 2 + 1] = (h - depth) / GRANO_ESCALA;
 
-        // Estrato: franja plana, no degradado. El borde entre dos franjas es
-        // duro a proposito — es lo que hace que el suelo se lea como suelo y
-        // no como una sombra grande.
-        let capa = ESTRATOS[ESTRATOS.length - 1];
-        for (const e of ESTRATOS) {
-          if (depth <= e.hasta) {
-            capa = e;
-            break;
-          }
-        }
-        // La costra sale de la cresta aclarada; el resto, del cuerpo al hondo.
+        const capa = ESTRATOS[banda];
+        // La costra sale de la cresta; el resto, del cuerpo al hondo.
         if (capa.mezcla === 0) tmp.copy(this.crest);
         else tmp.copy(this.body).lerp(this.deep, capa.mezcla);
 
-        // la AO solo muerde cerca de la superficie; el fondo ya es oscuro
+        // La AO solo muerde cerca de la superficie. El hundimiento por
+        // profundidad se ha quitado: era un degradado, y con cuatro bandas el
+        // color de la mas honda ya hace que el fondo retroceda.
         const aoMix = lerp(1, ao, 1 - smoothstep(0, AO_FADE_DEPTH, depth));
-        // ...y el fondo se hunde un poco en valor para que retroceda, sin
-        // llegar a apagarse: apagarlo era lo que ponia el juego sombrio.
-        const sink = 1 - SINK * smoothstep(COSTRA, SINK_DEPTH, depth);
-        const shade = aoMix * sink * capa.brillo;
+        const shade = aoMix * capa.brillo;
         fCol[k + 0] = Math.min(1, tmp.r * shade);
         fCol[k + 1] = Math.min(1, tmp.g * shade);
         fCol[k + 2] = Math.min(1, tmp.b * shade);

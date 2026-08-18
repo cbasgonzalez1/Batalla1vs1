@@ -1,0 +1,20 @@
+import { chromium } from 'playwright';
+const S = '/tmp/claude-1000/-home-admin-sistemas/33b4b89d-b6f9-4667-8254-fe0e5bc2a0b7/scratchpad';
+const nav = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=gl-egl'] });
+const pg = await nav.newPage({ viewport: { width: 900, height: 1400 }, deviceScaleFactor: 1.5 });
+const errs = [];
+pg.on('pageerror', e => errs.push(String(e)));
+pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
+const url = process.argv[2] || 'http://localhost:5173/?seed=media&biome=alamein&trampas=0';
+await pg.goto(url, { waitUntil: 'networkidle' });
+await pg.waitForFunction(() => window.GAME?.world?.terrain, null, { timeout: 12000 });
+await pg.waitForTimeout(600);
+await pg.evaluate(() => {
+  const G = window.GAME;
+  G.state.goal = { x: 0, y: G.world.terrain.heightAt(0) + 10, w: 100 };
+  G.cam.snap(G.state.goal.x, G.state.goal.y, G.state.goal.w);
+});
+await pg.waitForTimeout(400);
+await pg.screenshot({ path: `${S}/${process.argv[3] || 'campo'}.png` });
+console.log('errores:', errs.length ? errs.join('\n  ') : 'ninguno');
+await nav.close();
