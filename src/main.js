@@ -14,7 +14,8 @@ import { makeDotTexture, makeSkyTexture, makeGrainTexture } from './art/geometry
 import { crearEfectos } from './art/efectos.js';
 import { crearFondo } from './art/fondo.js';
 import { crearCalidad, NIVELES } from './art/calidad.js';
-import { actualizarContorno } from './art/vehiculo/toon.js';
+import { actualizarContorno, materialRelleno, materialContorno } from './art/vehiculo/toon.js';
+import { pintar, fusionar } from './art/vehiculo/primitivas.js';
 import { crearAtrezo } from './art/atrezo.js';
 import { Terrain } from './world/terrain.js';
 import { buildCannon } from './world/cannon.js';
@@ -289,6 +290,50 @@ function construirTrampa(trampa) {
         ? { ...MATERIALS.metal, color: 0x9aa4ad, roughness: 0.28 }
         : { ...MATERIALS.hormigon },
   );
+
+  if (trampa.tipo === 'carga') {
+    // Carga hueca colgada de un paracaidas. Las tres marcas de
+    // docs/TRAMPAS.md §0: acento naranja, contorno de 4 px y CUELGA de algo —
+    // nada flota sin explicacion. El cono con la punta abajo dice «perfora».
+    const A = 0xd94f2b;
+    const cuerpo = fusionar([
+      (() => {
+        const g = new THREE.CylinderGeometry(trampa.radio * 0.3, trampa.radio * 0.3, trampa.radio * 0.7, 12);
+        g.translate(0, trampa.radio * 0.15, 0);
+        return g;
+      })(),
+      (() => {
+        // Punta TRUNCADA, no un cono. El shell de contorno se desplaza por la
+        // normal, y en el vertice de un cono todas las normales apuntan hacia
+        // fuera a la vez: sale una estrella de puas donde deberia haber punta.
+        const g = new THREE.CylinderGeometry(trampa.radio * 0.3, trampa.radio * 0.07, trampa.radio * 0.62, 12);
+        g.translate(0, -trampa.radio * 0.5, 0);
+        return g;
+      })(),
+    ]);
+    grupo.add(new THREE.Mesh(pintar(cuerpo, A), materialContorno(4)));
+    grupo.add(new THREE.Mesh(cuerpo, materialRelleno()));
+
+    const casquete = new THREE.SphereGeometry(
+      trampa.radio * 0.72, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2,
+    );
+    casquete.translate(0, trampa.radio * 0.62, 0);
+    grupo.add(new THREE.Mesh(pintar(casquete, 0x6a7a82), materialContorno(4)));
+    grupo.add(new THREE.Mesh(casquete, materialRelleno()));
+
+    // Las cuerdas: sin ellas el casquete y la carga se leen como dos piezas
+    // sueltas una encima de la otra.
+    const cuerdas = [];
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2;
+      const c = new THREE.CylinderGeometry(0.03, 0.03, trampa.radio * 0.62, 4);
+      c.translate(Math.cos(a) * trampa.radio * 0.5, trampa.radio * 0.5, Math.sin(a) * trampa.radio * 0.5);
+      cuerdas.push(c);
+    }
+    grupo.add(new THREE.Mesh(pintar(fusionar(cuerdas), 0x2a2f33), materialRelleno()));
+    for (const hijo of grupo.children) hijo.castShadow = true;
+    return { datos: trampa, grupo, material };
+  }
 
   if (trampa.tipo === 'mina' && !trampa.apoyada) {
     // Mina de contacto: esfera con cuernos. Es la unica cosa del campo que se
@@ -700,6 +745,10 @@ function preverTrampas() {
     const golpe = chocarCon(copias, px, py, s.x, s.y);
     if (!golpe) return null;
     const efecto = resolverChoque(golpe.trampa, s);
+    // Un modificador NO termina el vuelo previsto: el arco lo atraviesa y sigue.
+    // Devolviendo `fin` aqui, el arco se cortaba en la carga hueca y parecia
+    // que paraba el tiro.
+    if (efecto === 'multiplica') return null;
     if (efecto === 'rebota') return { rebote: true };
     return { fin: { x: golpe.x, y: golpe.y } };
   };
@@ -940,7 +989,13 @@ function golpearTrampa(s, px, py) {
   const efecto = resolverChoque(golpe.trampa, s);
   const malla = world.trampas.find((m) => m.datos === golpe.trampa);
 
-  if (efecto === 'detona') {
+  if (efecto === 'multiplica') {
+    // No para el vuelo: se apaga la pieza y el proyectil sigue con la carga
+    // pegada. El fogonazo corto es el unico aviso, y es un pulso, no un bucle.
+    sonidos.sonar('escudo');
+    if (malla) malla.grupo.visible = false;
+    efectos.disparo?.(golpe.x, golpe.y, 0);
+  } else if (efecto === 'detona') {
     sonidos.sonar('impacto');
     if (malla) malla.grupo.visible = false;
   } else if (efecto === 'rebota') {
@@ -990,7 +1045,11 @@ function onImpact(hit) {
   let mayorDaño = 0;
   for (let i = 0; i < state.plantel.length; i++) {
     const t = targetPoint(world.cannons[i]);
-    const raw = damageAt(hit.x, hit.y, t.x, t.y);
+    // El multiplicador que el proyectil se ha ido llevando por el camino: una
+    // carga hueca atravesada, una mina detonada. Viaja en el estado del
+    // proyectil, que ya se replica entre moviles, asi que no hay nada que
+    // mandar por el cable (docs/TRAMPAS.md §0).
+    const raw = damageAt(hit.x, hit.y, t.x, t.y) * (hit.multiplicador ?? 1);
     if (raw > 0) applyDamage(state.players[i], raw);
     if (raw > mayorDaño) mayorDaño = raw;
     state.players[i].shielded = false;
@@ -1446,7 +1505,7 @@ function fixedUpdate() {
 
     // Trampas: pueden detonar el tiro donde estan, devolverlo o tragarselo.
     const choque = golpearTrampa(s, px, py);
-    if (choque === 'detona') return onImpact({ x: s.x, y: s.y });
+    if (choque === 'detona') return onImpact({ x: s.x, y: s.y, multiplicador: s.multiplicador });
     if (choque === 'absorbe') {
       projectile.visible = false;
       state.shot = null;
@@ -1455,7 +1514,7 @@ function fixedUpdate() {
     }
 
     const impact = sweepTerrain(px, py, s.x, s.y, world.terrain);
-    if (impact) return onImpact(impact);
+    if (impact) return onImpact({ ...impact, multiplicador: s.multiplicador });
 
     const t = world.terrain;
     if (s.x < t.x0 - 8 || s.x > t.x0 + t.width + 8 || s.y < CONFIG.world.baseY) {

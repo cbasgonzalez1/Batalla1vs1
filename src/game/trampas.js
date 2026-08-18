@@ -18,11 +18,35 @@ import { clamp } from '../core/mathx.js';
  * Modulo puro: ni Three, ni DOM, ni azar sin semilla.
  */
 
-export const TIPOS = ['mina', 'deflector', 'muro'];
+export const TIPOS = ['mina', 'deflector', 'muro', 'carga'];
+
+/**
+ * Los MODIFICADORES no paran el disparo: lo cambian y lo dejan seguir.
+ *
+ * Es lo que separa una trampa de un modificador. Una mina, un muro o un
+ * deflector terminan tu tiro; una carga hueca se te pega y sigues volando con
+ * ella. Por eso el turno tiene una decision que antes no tenia: pasar por el
+ * modificador cuesta abrir el arco, y abrirlo cuesta precision
+ * (docs/TRAMPAS.md §0).
+ */
+export const MODIFICADORES = new Set(['carga']);
 
 export const TRAMPA = {
   // Radio de colision de cada tipo, en unidades de mundo.
-  radio: { mina: 1.5, deflector: 2.2, muro: 1.9 },
+  radio: { mina: 1.5, deflector: 2.2, muro: 1.9, carga: 1.3 },
+  /**
+   * Carga hueca: multiplica el dano del impacto. 1,8 y no 2 a proposito — con
+   * el doble, encadenarla con una mina daba 4x y un solo tiro decidia la
+   * partida. Con 1,8 encadenado sale 3,6, que sigue siendo brutal pero deja
+   * vivo al que iba entero.
+   */
+  multiplicadorCarga: 1.8,
+  /**
+   * La mina duplica dano y crater. Es lo que convierte un tiro corto en un buen
+   * tiro, y por eso se ve: esquivarla es la decision, encontrarla no es el
+   * juego (docs/TRAMPAS.md §2).
+   */
+  multiplicadorMina: 2,
   // Cuanto conserva el proyectil al rebotar, MEDIDO. Con 0,82 el tiro devuelto
   // se pasaba de largo por encima del propio cañon y salia del mapa: volvia,
   // pero no castigaba a nadie. Con 0,60 cae a 2,7 unidades de media del que
@@ -83,10 +107,13 @@ export function generarTrampas({ rng, complejidad = 0.5, anchoMundo = 140, separ
 
     // A mas complejidad, mas deflectores: son los que cambian la partida.
     const dado = rng();
-    let tipo = dado < 0.25 + complejidad * 0.25 ? 'deflector' : dado < 0.72 ? 'mina' : 'muro';
+    let tipo = dado < 0.22 ? 'carga'
+      : dado < 0.44 + complejidad * 0.2 ? 'deflector'
+        : dado < 0.78 ? 'mina' : 'muro';
     // Un deflector tumbado en el suelo devolveria el tiro contra el propio
-    // suelo. Ahi abajo tiene mas sentido una mina o un muro.
-    if (apoyada && tipo === 'deflector') tipo = dado < 0.5 ? 'mina' : 'muro';
+    // suelo, y una carga hueca en el suelo no es un modificador: es un bidon.
+    // Los dos viven colgados.
+    if (apoyada && (tipo === 'deflector' || tipo === 'carga')) tipo = dado < 0.5 ? 'mina' : 'muro';
 
     const radio = TRAMPA.radio[tipo];
     const y = apoyada
@@ -137,8 +164,18 @@ export function chocarCon(trampas, x0, y0, x1, y1, subpasos = 4) {
  * @returns {'detona'|'rebota'|'absorbe'}
  */
 export function resolverChoque(trampa, s, ajustes = TRAMPA) {
+  if (trampa.tipo === 'carga') {
+    // NO toca la velocidad y NO termina el vuelo: el proyectil la atraviesa y
+    // se lleva la carga pegada. El multiplicador viaja en el estado del
+    // proyectil, que es lo que ya se replica entre moviles.
+    trampa.viva = false;
+    s.multiplicador = (s.multiplicador ?? 1) * ajustes.multiplicadorCarga;
+    return 'multiplica';
+  }
+
   if (trampa.tipo === 'mina') {
     trampa.viva = false;
+    s.multiplicador = (s.multiplicador ?? 1) * ajustes.multiplicadorMina;
     return 'detona';
   }
 

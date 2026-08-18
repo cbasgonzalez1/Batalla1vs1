@@ -261,3 +261,45 @@ describe('nivelDe', () => {
     expect(nivelDe(1)).toBe('minado');
   });
 });
+
+describe('modificadores: la carga hueca', () => {
+  const carga = () => ({ id: 'c', tipo: 'carga', x: 0, y: 10, radio: 1.3, viva: true, apoyada: false });
+
+  it('no toca la velocidad: el proyectil la atraviesa', () => {
+    const s = { x: 0, y: 10, vx: 24, vy: -3 };
+    resolverChoque(carga(), s);
+    expect(s.vx).toBe(24);
+    expect(s.vy).toBe(-3);
+  });
+
+  it('deja el multiplicador pegado al proyectil', () => {
+    const s = { x: 0, y: 10, vx: 24, vy: -3 };
+    expect(resolverChoque(carga(), s)).toBe('multiplica');
+    expect(s.multiplicador).toBeCloseTo(TRAMPA.multiplicadorCarga, 10);
+  });
+
+  it('se gasta: no multiplica dos veces', () => {
+    const t = carga();
+    const s = { x: 0, y: 10, vx: 24, vy: -3 };
+    resolverChoque(t, s);
+    expect(t.viva).toBe(false);
+  });
+
+  it('encadenada con una mina multiplica las dos', () => {
+    const s = { x: 0, y: 10, vx: 24, vy: -3 };
+    resolverChoque(carga(), s);
+    resolverChoque({ tipo: 'mina', viva: true }, s);
+    expect(s.multiplicador).toBeCloseTo(TRAMPA.multiplicadorCarga * TRAMPA.multiplicadorMina, 10);
+  });
+
+  it('nunca se genera apoyada en el suelo: es un modificador, no un bidon', () => {
+    for (let semilla = 1; semilla < 40; semilla++) {
+      const trampas = generarTrampas({
+        rng: mulberry32(semilla), complejidad: 1, alturaEn: () => 0,
+      });
+      for (const t of trampas) {
+        if (t.tipo === 'carga') expect(t.apoyada).toBe(false);
+      }
+    }
+  });
+});
