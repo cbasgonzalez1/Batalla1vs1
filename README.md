@@ -188,6 +188,16 @@ quinto de vida perdida y humea del motor por debajo del 45 %. No cuesta ni una
 llamada de dibujo más: las cicatrices van **dentro** de la geometría del casco,
 pintadas del color del casco, y se descubren repintando sus vértices.
 
+### Hacia dónde va
+
+`docs/PLATAFORMA.md` recoge lo que hace falta para cobrar por camuflajes,
+aguantar muchas partidas a la vez, guardar el progreso y publicar en Android e
+iOS — qué se deroga de `AGENTS.md`, qué no se toca nunca (el servidor no simula,
+la simulación no lee la base de datos, jugar no pide cuenta) y en qué orden.
+
+Lo primero de esa lista no es la escala ni la tienda: es **volver a entrar a tu
+partida** cuando el móvil se bloquea. Hoy, si se cae el socket, te quedas fuera.
+
 ### Sotavento
 
 Un cañonazo **no destruye terreno: lo traslada**. El cráter levanta la masa que

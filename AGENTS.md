@@ -50,8 +50,15 @@ crea un lock paralelo y desincroniza las dependencias.
 - Exponer siempre `window.render_game_to_text()` (ángulo, potencia, viento,
   posición y velocidad del proyectil, altura del terreno muestreada, turno
   activo) y `window.advanceTime(ms)` para avanzar frames de forma determinista.
-- Sin cuentas, sin login, sin base de datos. Se entra a una sala con un código
-  y ya está.
+- Se entra a una sala con un código y ya está: **jugar nunca pide una cuenta**.
+  Esta parte no se toca.
+- «Sin cuentas, sin login, sin base de datos» está **derogado en parte** por
+  `docs/PLATAFORMA.md` §1: habrá cuenta *opcional* y base de datos, y servirán
+  para tres cosas y ninguna más — identidad, compras y progreso. La simulación
+  no lee nada de ahí (`PLATAFORMA.md` §0.2) y el servidor sigue sin simular.
+- Todo lo que se venda es **decorativo**. No es amabilidad de diseño: un dato de
+  pago que entrara en el bucle de paso fijo sería pago-por-ganar *y* desincronía
+  a la vez.
 
 ## El servidor no simula
 
@@ -85,7 +92,11 @@ pnpm verificar:3v3     # seis navegadores, tres por bando
 En producción el servidor sirve **también** el juego desde `dist/`, así que hay
 un solo origen: el WebSocket no necesita CORS y detrás de HTTPS pasa a `wss`
 solo. El cliente lo detecta mirando el puerto — el 5173 es Vite en desarrollo y
-solo ahí busca el servidor aparte. Un contenedor, un dominio, sin base de datos.
+solo ahí busca el servidor aparte. Un contenedor y un dominio.
+
+La base de datos que llega con `docs/PLATAFORMA.md` es **un servicio más al
+lado**, no una pieza de este camino: guarda cuenta, compras y progreso, y no
+opina sobre ninguna partida en curso. El servidor sigue sin simular.
 
 Cuidado al escribir estas verificaciones: los guiones tienen que **esperar a que
 el disparo llegue a todos** antes de avanzar el tiempo. Si no, el que aún no lo
@@ -147,6 +158,10 @@ partir del primer turno en que alguien se movió.
     arte de este juego venían de reglas escritas, no de errores de ejecución.
   - `docs/CHECKLIST-REVISION.md` — cómo se valida antes de decir que está
     terminado.
+
+  `docs/PLATAFORMA.md` **no es uno de ellos**: no manda sobre arte. Manda sobre
+  cuentas, compras, base de datos, reconexión y publicación en Android e iOS, y
+  es el único sitio donde se deroga una restricción dura de este fichero.
 
   Si vas a inventarte un color, una medida o una duración, para y pregunta. Si
   cambias uno, cámbialo **también** en su documento: un número de arte que solo
