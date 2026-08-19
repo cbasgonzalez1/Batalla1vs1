@@ -46,6 +46,10 @@ import { idiomaDelNavegador, crearTraductor, aplicarTraduccion } from './ui/i18n
 import { exponerGanchos } from './ui/inspeccion.js';
 import { crearCliente } from './net/cliente.js';
 import { crearLobby } from './ui/lobby.js';
+import { crearCuenta } from './net/cuenta.js';
+import { crearAcceso } from './ui/acceso.js';
+import { crearTienda } from './ui/tienda.js';
+import { colorDe } from './art/vehiculo/camuflajes.js';
 import { crearSincronia } from './net/sincronia.js';
 import { crearFranja } from './ui/franja.js';
 import { crearSonidos } from '../src/audio/sonidos.js';
@@ -619,9 +623,24 @@ function crearPlantel(partida) {
     nombre: p.nombre,
     bando: p.bando,
     facing: p.bando === 'a' ? +1 : -1,
-    chassis: p.bando === 'a' ? MATERIALS.chassisA : MATERIALS.chassisB,
+    // El casco lleva el camuflaje elegido en la tienda, y si no hay cuenta el
+    // color de siempre. Es UN color: de el se calculan contorno, bandas y
+    // tizne, asi que no hay nada mas que enchufar (`camuflajes.js`).
+    //
+    // De momento solo el propio: en red, el camuflaje del rival tendria que
+    // viajar en el mensaje `empezar` (`docs/PLATAFORMA.md` §2.3) y eso todavia
+    // no esta. Hasta entonces cada uno se ve el suyo, que es lo que mira.
+    chassis: { ...(p.bando === 'a' ? MATERIALS.chassisA : MATERIALS.chassisB),
+      color: camuflajeDe(p.bando) },
     x: posiciones.get(p.id),
   }));
+}
+
+/** El color de casco de un bando: el camuflaje elegido, o el de serie. */
+function camuflajeDe(bando) {
+  const elegido = cuenta?.estado.jugador?.camuflajes?.[bando];
+  const base = bando === 'a' ? MATERIALS.chassisA.color : MATERIALS.chassisB.color;
+  return elegido ? colorDe(elegido, bando) : base;
 }
 
 function startMatch(seedText, alineacion = ALINEACION_LOCAL) {
@@ -637,6 +656,11 @@ function startMatch(seedText, alineacion = ALINEACION_LOCAL) {
   state.avance = 0;
   state.avanceBloqueado = false;
   state.marcas = state.plantel.map(() => ({ corta: null, larga: null }));
+  // La cuenta de la vitrina. Vive en el estado de la partida y no en la base de
+  // datos: se manda entera al terminar, en una sola peticion.
+  state.aciertos = state.plantel.map(() => 0);
+  state.daño = state.plantel.map(() => 0);
+  state.mejorImpacto = state.plantel.map(() => 0);
   state.historia = [];
   state.phase = 'aiming';
   state.active = 0;
@@ -1040,6 +1064,16 @@ function onImpact(hit) {
     const raw = damageAt(hit.x, hit.y, t.x, t.y) * (hit.multiplicador ?? 1);
     if (raw > 0) applyDamage(state.players[i], raw);
     if (raw > mayorDaño) mayorDaño = raw;
+
+    // La cuenta del que dispara, para la vitrina. Un roce a uno mismo NO cuenta
+    // como acierto: se apunta solo el daño hecho a otro bando, que es lo que
+    // alguien entiende por «puntería» al mirar su ficha.
+    const tirador = state.active;
+    if (raw > 0 && state.plantel[i].bando !== state.plantel[tirador]?.bando) {
+      state.aciertos[tirador] = (state.aciertos[tirador] ?? 0) + 1;
+      state.daño[tirador] = (state.daño[tirador] ?? 0) + raw;
+      state.mejorImpacto[tirador] = Math.max(state.mejorImpacto[tirador] ?? 0, raw);
+    }
     state.players[i].shielded = false;
     world.shields[i].visible = false;
   }
@@ -1197,6 +1231,48 @@ function declareVictory(winner, loser) {
     disparos: state.shots[winner],
     vida: Math.ceil(state.players[winner].hp),
   }));
+
+  guardarCombate(winner);
+}
+
+/**
+ * Manda el combate terminado a la base de datos.
+ *
+ * NO se espera: si la red falla se pierde una estadistica y el jugador ni se
+ * entera. Lo que no puede pasar es que la pantalla de victoria se quede
+ * esperando a un servidor.
+ *
+ * Va la REPETICION entera, que son unas decenas de bytes: con la semilla y la
+ * lista de tiros se reconstruye el combate golpe a golpe, asi que guardar «toda
+ * la partida» no cuesta mas que guardar el marcador (`docs/PLATAFORMA.md` §4.3).
+ */
+function guardarCombate(ganador) {
+  if (!cuenta?.dentro || state.historia.length === 0) return;
+
+  const bandoGanador = state.plantel[ganador]?.bando ?? null;
+  cuenta.guardarPartida({
+    semilla: CONFIG.seed,
+    teatro: biome.id,
+    suelo: world.terrain?.composicion,
+    repeticion: codificar({ semilla: CONFIG.seed, turnos: state.historia }),
+    turnos: state.historia.length,
+    ganador: bandoGanador,
+    codigoSala: red?.estado?.sala ?? null,
+    participantes: state.plantel.map((p, i) => ({
+      // `yo` es lo unico que el servidor mira para saber a quien sumarle el
+      // progreso, y lo cruza con LA SESION: mandar un id aqui no serviria de
+      // nada, que es exactamente lo que se quiere.
+      yo: !sincronia.estado.activa || p.id === red?.estado?.yo,
+      bando: p.bando,
+      nombre: p.nombre,
+      camuflajeId: cuenta.estado.jugador?.camuflajes?.[p.bando] ?? null,
+      vidaFinal: Math.max(0, Math.round(state.players[i].hp)),
+      disparos: state.shots[i],
+      aciertos: state.aciertos?.[i] ?? 0,
+      dano: Math.round(state.daño?.[i] ?? 0),
+      mejorImpacto: Math.round(state.mejorImpacto?.[i] ?? 0),
+    })),
+  }).catch(() => {});
 }
 
 // ──────────────────────────────────────────────── reaccion en vuelo (plus)
@@ -1767,6 +1843,70 @@ function updateLiveHud() {
   }
 }
 
+// ─────────────────────────────────────────────────────── cuenta y tienda
+
+/**
+ * La cuenta del jugador.
+ *
+ * En desarrollo el juego vive en el 5173 y el servidor en el 8787; en
+ * produccion los dos estan en el mismo origen, que es todo el motivo por el que
+ * el servidor sirve tambien el `dist/`.
+ */
+const baseApi = location.port === '5173' ? `${location.protocol}//${location.hostname}:8787` : '';
+const cuenta = crearCuenta({ base: baseApi });
+
+const acceso = crearAcceso({
+  cuenta,
+  t,
+  alEntrar() {
+    // El camuflaje elegido solo se ve al montar el vehiculo, asi que se rehace
+    // la partida. Es instantaneo y es la misma semilla: no se pierde nada.
+    startMatch(CONFIG.seed);
+  },
+});
+
+const tienda = crearTienda({
+  cuenta,
+  t,
+  alCambiar(_camuflajes, { salio = false } = {}) {
+    startMatch(CONFIG.seed);
+    if (salio) acceso?.mostrar();
+  },
+});
+
+const botonTienda = document.getElementById('v-tienda');
+botonTienda?.addEventListener('click', () => tienda?.abrir());
+
+/**
+ * Pregunta al servidor si tiene cuentas, y solo entonces pide entrar.
+ *
+ * Un servidor sin `DATABASE_URL` —el de `pnpm dev` y el de las verificaciones de
+ * navegador— contesta que no, y el juego arranca como siempre. Es lo que permite
+ * que el bucle de pruebas no dependa de levantar un Postgres.
+ *
+ * Todo esto va DESPUES de arrancar la partida a proposito: la pantalla de
+ * acceso se pinta encima de un juego que ya esta corriendo, asi que si el
+ * servidor tarda o no contesta, lo que hay debajo es el juego y no un vacio.
+ */
+async function arrancarCuenta() {
+  let hayCuentas = false;
+  try {
+    const r = await fetch(`${baseApi}/salud`);
+    hayCuentas = Boolean((await r.json()).cuentas);
+  } catch {
+    return;   // sin servidor no hay cuentas, y el juego local sigue
+  }
+  if (!hayCuentas) return;
+
+  botonTienda?.removeAttribute('hidden');
+  const recuperada = await cuenta.recuperar();
+  if (recuperada.ok) {
+    startMatch(CONFIG.seed);
+    return;
+  }
+  acceso?.mostrar();
+}
+
 // ────────────────────────────────────────────────────────────────── arranque
 
 resize();
@@ -1780,6 +1920,7 @@ if (repeticion) {
   startMatch(CONFIG.seed);
 }
 requestAnimationFrame(frame);
+arrancarCuenta();
 
 // Ganchos para validar sin tocar codigo: window.GAME en la consola.
 // Contrato del bucle de test: render_game_to_text() para leer la partida sin
@@ -1975,6 +2116,9 @@ window.GAME = {
   scene,
   efectos,
   biome,
+  cuenta,
+  tienda,
+  acceso,
   /** El decorado del campo. Trae `xHito` y `xSena` para poder encuadrarlos. */
   get decorado() { return decorado; },
   calidad,

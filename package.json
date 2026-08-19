@@ -16,6 +16,7 @@
     "server": "node server/index.js",
     "verificar:sala": "node scripts/verificar-sala.mjs",
     "verificar:bd": "node scripts/verificar-bd.mjs",
+    "verificar:cuenta": "node scripts/verificar-cuenta.mjs",
     "verificar:lobby": "node scripts/verificar-lobby.mjs",
     "verificar:red": "node scripts/verificar-partida-red.mjs",
     "verificar:3v3": "node scripts/verificar-3v3.mjs",

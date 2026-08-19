@@ -93,6 +93,7 @@ antes de empezar.
 ```bash
 pnpm server            # puerto 8787
 pnpm verificar:bd      # esquema, cuentas, tienda y progreso, contra un Postgres real
+pnpm verificar:cuenta  # las pantallas de acceso y tienda, en un navegador de verdad
 pnpm verificar:sala    # seis clientes reales; SABOTEAR=1 rompe uno a proposito
 pnpm verificar:red     # dos navegadores jugando de verdad
 pnpm verificar:3v3     # seis navegadores, tres por bando
@@ -114,6 +115,13 @@ combate golpe a golpe. Tres turnos con avance y reacción son 37 bytes.
 La lógica de cuentas está en `server/cuentas.js` y se prueba sin abrir un puerto,
 igual que `salas.js` se prueba sin abrir un socket; el SQL está en `server/db/` y
 lo prueba `pnpm verificar:bd` contra Postgres de verdad.
+
+En el navegador, `src/net/cuenta.js` habla con esa API y **nunca lanza**: todo
+devuelve `{ ok }` o `{ ok: false, error }`, porque un servidor caído o un token
+caducado tienen que dejar una pantalla con un mensaje y no el juego en negro. Las
+pantallas son `src/ui/acceso.js` y `src/ui/tienda.js`, y la de acceso **solo se
+monta si `GET /salud` dice que hay cuentas** — por eso `pnpm dev` y las
+verificaciones de navegador siguen corriendo sin Postgres.
 
 Cuidado al escribir estas verificaciones: los guiones tienen que **esperar a que
 el disparo llegue a todos** antes de avanzar el tiempo. Si no, el que aún no lo

@@ -7,8 +7,9 @@ Este documento **deroga en parte una restricción dura de `AGENTS.md`** (§1), y
 eso existe: en este proyecto una regla no se relaja en silencio. Lo que no aparece
 aquí sigue vigente tal cual está escrito.
 
-**§4 ya está construido**: esquema, cuentas, tienda, progreso y las pruebas que
-lo sostienen. Lo demás sigue siendo plan, y cada sección dice en qué estado está.
+**§2 y §4 ya están construidos**: esquema, cuentas, tienda, progreso, las
+pantallas que los usan y las pruebas que los sostienen. §3 y §5 siguen siendo
+plan, y cada sección dice en qué estado está.
 
 ---
 
@@ -109,7 +110,26 @@ claro— **es otra decisión**: hay que probar que los dos bandos se siguen
 distinguiendo con los dos puestos en el mismo campo, y pasar
 `docs/CHECKLIST-REVISION.md` §3.
 
-### 2.3 Cómo viaja
+### 2.3 Las pantallas — **hechas**
+
+- **Acceso** (`src/ui/acceso.js`): crear cuenta o entrar, con el mismo lenguaje
+  visual que la sala. Aparece **sólo si el servidor tiene cuentas** — se pregunta
+  a `GET /salud` antes de montarla— y **encima de un juego que ya está
+  corriendo**: si el servidor tarda o no contesta, lo que hay detrás es una
+  partida y no un vacío.
+- **Tienda y vitrina** (`src/ui/tienda.js`): los ocho camuflajes por bandos, con
+  la muestra pintada con **las mismas funciones de paleta que el vehículo**
+  —`claro`, `oscuro`, `contorno`— para que lo que se ve en la tienda sea lo que
+  se verá en el campo. Una tienda que enseña otra cosa vende devoluciones. Se
+  abre desde la pantalla de victoria, que es cuando el jugador está parado.
+- Lo que no se tiene dice **«Próximamente»** y está desactivado, porque el pago
+  todavía no existe. La pantalla no finge que se puede comprar.
+
+Elegir un camuflaje **rehace la partida** con la misma semilla: es instantáneo,
+no se pierde nada y es la única forma de que el color se vea, porque el casco se
+pinta al montar el vehículo.
+
+### 2.4 Cómo viaja
 
 Un camuflaje es **estado de sala, no de simulación**. Va en el mensaje `empezar`
 junto a la alineación, para que los seis móviles pinten el mismo tanque; no entra
@@ -265,6 +285,12 @@ solo traduce a HTTP.
 | `POST` | `/api/partida` | guardar un combate terminado |
 | `GET` | `/api/historial` | tus últimas partidas, con su enlace de repetición |
 
+El cliente es `src/net/cuenta.js`, y **nunca lanza**: todo devuelve `{ ok }` o
+`{ ok: false, error }`. Un servidor caído, un móvil sin cobertura o un token
+caducado tienen que dejar una pantalla con un mensaje, no una excepción sin
+recoger que deje el juego en negro. Un 401 borra el token guardado en el sitio,
+porque un token caducado que se queda convierte cada arranque en un error.
+
 El token va en `Authorization: Bearer`, **no en una cookie**: el juego se empaqueta
 con WebView para Android e iOS y ahí las cookies de tercera parte son un campo de
 minas.
@@ -335,12 +361,11 @@ un usuario pague dos veces por lo mismo.
 ## 6. En qué orden
 
 1. ~~Base de datos, cuentas, tienda y progreso~~ — **hecho** (§4).
-2. **La pantalla de login y la de tienda en el cliente.** La API está entera y
-   probada; lo que no existe todavía es una sola pantalla que la use. Es lo
-   siguiente, y no es pequeño: registro, entrar, elegir camuflaje y ver la
-   vitrina, en el mismo estilo del HUD y con sus textos en `src/ui/i18n.js`.
-3. **Que el juego mande la partida al terminar** (`POST /api/partida`) y pinte el
-   camuflaje elegido. Sin esto la base de datos está construida y vacía.
+2. ~~Pantallas de acceso y tienda, y guardar la partida al terminar~~ —
+   **hecho** (§2.3).
+3. **El camuflaje del rival, en red.** Hoy cada uno ve el suyo: el camuflaje no
+   viaja en el mensaje `empezar` (§2.4), así que en una partida online el tanque
+   de enfrente sale con el color de serie. Es lo siguiente y es pequeño.
 4. **Reconexión a la sala** (§3.2). Sin esto no hay lanzamiento en móvil que
    aguante, y no necesita nada de la base de datos.
 5. **Billing de tienda** (§5.2), cuando los camuflajes gusten lo bastante.

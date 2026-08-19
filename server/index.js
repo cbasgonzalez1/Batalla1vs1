@@ -217,7 +217,15 @@ const http = createServer(async (peticion, respuesta) => {
   }
 
   if (peticion.url === '/salud') {
-    respuesta.writeHead(200, { 'content-type': 'application/json' });
+    // Con CORS: en desarrollo el juego vive en el 5173 y esto en el 8787, y es
+    // lo PRIMERO que pregunta el navegador —si hay cuentas o no—. Sin la
+    // cabecera, en desarrollo el juego decide siempre que no las hay y la
+    // pantalla de acceso no aparece nunca. En produccion es el mismo origen y
+    // no hace falta, pero tampoco estorba.
+    respuesta.writeHead(200, {
+      'content-type': 'application/json',
+      'access-control-allow-origin': '*',
+    });
     respuesta.end(JSON.stringify({
       ok: true,
       salas: salas.numeroDeSalas,

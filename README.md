@@ -216,9 +216,23 @@ entero. Por eso cada bando tiene una banda de tono y valor de la que no se sale
 —el bando se lee sólo por el color del casco— y el servidor **se niega a sembrar
 la tienda** si algún color se sale de ella.
 
-Lo que todavía no existe: **las pantallas**. La API está entera y probada, pero
-ni el login ni la tienda tienen interfaz, y el juego aún no manda la partida al
-terminar. Está en `docs/PLATAFORMA.md` §6.
+Las pantallas están hechas: **acceso** (crear cuenta o entrar) y **tienda con
+vitrina**, que se abre desde la pantalla de victoria. La muestra de cada
+camuflaje se pinta con las mismas funciones de paleta que el vehículo, para que
+lo que se ve en la tienda sea lo que se verá en el campo. Al terminar un combate,
+la partida se manda sola.
+
+La pantalla de acceso **solo aparece si el servidor tiene cuentas**, y se monta
+encima de un juego que ya está corriendo: si el servidor tarda o no contesta, lo
+que hay detrás es una partida y no un vacío.
+
+```bash
+pnpm verificar:cuenta   # las dos pantallas, en un navegador de verdad
+```
+
+Lo que falta: en red, **el camuflaje del rival**. Hoy cada uno ve el suyo porque
+el camuflaje no viaja todavía en el mensaje de arranque de la sala
+(`docs/PLATAFORMA.md` §6).
 
 ### Hacia dónde va
 

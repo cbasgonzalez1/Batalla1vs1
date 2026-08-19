@@ -35,6 +35,18 @@
     overscroll-behavior:none;
     user-select:none; -webkit-user-select:none;
   }
+
+  /* --u = 1 px del diseno a 1080 de ancho, EN PIXELES. Tiene que llevar unidad:
+     calc(var(--u)*28) sobre un numero pelado da un numero sin unidad y el
+     navegador descarta la declaracion entera.
+
+     Vive en :root y no en #stage, que es donde estaba. Las pantallas completas
+     —sala, acceso y tienda— son HERMANAS de #stage, no hijas, asi que ahi dentro
+     `var(--u)` no existia: todas sus medidas eran declaraciones invalidas que el
+     navegador tiraba en silencio. La sala llevaba asi desde que se escribio y
+     colaba porque el centrado por flex disimulaba; la tienda, con una rejilla y
+     ocho tarjetas, ya no colaba. */
+  :root{ --u: 0.42px; }
   #stage{
     position:relative;
     height:100dvh;
@@ -45,10 +57,6 @@
     overflow:hidden;
     touch-action:none;
     cursor:crosshair;
-    /* --u = 1 px del diseno a 1080 de ancho, EN PIXELES. Tiene que llevar
-       unidad: calc(var(--u)*28) sobre un numero pelado da un numero sin
-       unidad y el navegador descarta la declaracion entera. */
-    --u: 0.42px;
   }
   @media (max-aspect-ratio: 1080/1920){
     #stage{ width:100vw; height:auto; }
@@ -262,6 +270,107 @@
   #sala button:active{ transform:scale(.97); }
   #sala button.principal{ border-color:var(--trazadora); color:var(--trazadora); }
   #sala button.listo{ background:var(--trazadora); border-color:var(--trazadora); color:var(--ground); }
+
+  /* ── acceso y tienda ────────────────────────────────────────────────
+     Comparten el lenguaje de la sala —mismo fondo, mismos botones— porque son
+     la misma clase de pantalla: ocupan todo, no hay nada que mirar detras y se
+     leen de un vistazo. Lo que cambia es lo que hay dentro. */
+  #acceso, #tienda{
+    position:absolute; inset:0; z-index:41;
+    background:var(--ground);
+    display:none; flex-direction:column; align-items:center;
+    padding:calc(var(--u)*24); text-align:center;
+  }
+  #acceso.on, #tienda.on{ display:flex; }
+  #acceso{ justify-content:center; gap:calc(var(--u)*16); }
+
+  #acceso h1, #tienda h1{
+    font-size:calc(var(--u)*30); font-weight:700; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--mono);
+  }
+  #acceso .fila{ display:flex; gap:calc(var(--u)*10); justify-content:center; }
+  #acceso input{
+    width:calc(var(--u)*300); padding:calc(var(--u)*12) calc(var(--u)*14);
+    background:var(--plate); border:1px solid var(--line); border-radius:calc(var(--u)*8);
+    color:var(--ink); font-family:var(--f-mono); font-size:calc(var(--u)*22);
+    letter-spacing:.06em; text-align:center;
+  }
+  #acceso input:focus{ outline:none; border-color:var(--fosforo); }
+  #acceso input::placeholder{ color:var(--mono); }
+  #acceso button, #tienda button{
+    padding:calc(var(--u)*12) calc(var(--u)*20);
+    background:var(--plate-hi); border:1px solid var(--line); border-radius:calc(var(--u)*8);
+    color:var(--ink); font-family:var(--f-mono); font-size:calc(var(--u)*22);
+    letter-spacing:.1em; text-transform:uppercase; cursor:pointer;
+    transition:transform .12s cubic-bezier(.22,1,.36,1), border-color .12s;
+  }
+  #acceso button:hover, #tienda button:hover{ border-color:var(--mono); }
+  #acceso button:active, #tienda button:active{ transform:scale(.97); }
+  #acceso button:disabled, #tienda button:disabled{ opacity:.45; cursor:default; transform:none; }
+  /* Con `#ac-enviar` a secas no se aplicaba ninguna de las dos: `#acceso button`
+     suma id + tipo (101) y le gana a un id pelado (100), asi que el borde y el
+     color volvian al gris de todos los botones. Es la colision de especificidad
+     de siempre; se resuelve nombrando el padre, no metiendo !important. */
+  #acceso #ac-enviar{ border-color:var(--trazadora); color:var(--trazadora); }
+  #acceso #ac-cambiar{
+    background:none; border-color:transparent; color:var(--mono);
+    font-size:calc(var(--u)*19);
+  }
+  #ac-aviso, #t-aviso{
+    min-height:calc(var(--u)*24); font-size:calc(var(--u)*19); color:var(--mono);
+    letter-spacing:.04em;
+  }
+  #ac-aviso.mal{ color:var(--danger); }
+
+  /* La tienda SI hace scroll: con ocho camuflajes y la vitrina no cabe en una
+     pantalla de movil, y recortarla obligaria a esconder la mitad del catalogo
+     — que es justo lo que se quiere enseñar. */
+  #tienda{ overflow-y:auto; gap:calc(var(--u)*14); }
+  #t-cabecera{
+    display:flex; align-items:center; justify-content:space-between; gap:calc(var(--u)*12);
+    width:100%; max-width:calc(var(--u)*560);
+  }
+  #t-quien{ color:var(--ink); font-size:calc(var(--u)*22); letter-spacing:.08em; }
+  #t-vitrina{
+    display:grid; grid-template-columns:repeat(4, 1fr); gap:1px;
+    background:var(--line); border:1px solid var(--line);
+    width:100%; max-width:calc(var(--u)*560);
+  }
+  #t-vitrina div{ background:var(--plate); padding:calc(var(--u)*10) calc(var(--u)*6); }
+  #t-vitrina b{
+    display:block; font-size:calc(var(--u)*30); color:var(--ink);
+    font-variant-numeric:tabular-nums;
+  }
+  #t-vitrina span{
+    display:block; margin-top:calc(var(--u)*3); font-size:calc(var(--u)*15);
+    color:var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  }
+
+  .t-bando{ width:100%; max-width:calc(var(--u)*560); text-align:left; }
+  .t-bando h2{
+    font-size:calc(var(--u)*19); letter-spacing:.16em; text-transform:uppercase;
+    color:var(--mono); margin-bottom:calc(var(--u)*8);
+  }
+  .t-bando ul{ list-style:none; display:flex; flex-direction:column; gap:calc(var(--u)*8); }
+
+  .camu{
+    display:flex; align-items:center; gap:calc(var(--u)*12);
+    background:var(--plate); border:1px solid var(--line); border-radius:calc(var(--u)*8);
+    padding:calc(var(--u)*10) calc(var(--u)*12);
+  }
+  .camu.puesto{ border-color:var(--trazadora); }
+  .camu .datos{ flex:1 1 auto; min-width:0; }
+  .camu .datos b{ display:block; color:var(--ink); font-size:calc(var(--u)*21); letter-spacing:.04em; }
+  .camu .datos span{ display:block; color:var(--mono); font-size:calc(var(--u)*17); letter-spacing:.06em; }
+  .camu button{ font-size:calc(var(--u)*18); padding:calc(var(--u)*8) calc(var(--u)*12); }
+  .camu button.flojo{ border-color:transparent; color:var(--mono); }
+
+  /* La muestra lleva los tres tonos y el contorno del propio camuflaje: es lo
+     que se vera en el campo, no una aproximacion bonita. */
+  .camu .muestra{
+    flex:0 0 auto; width:calc(var(--u)*46); height:calc(var(--u)*30);
+    border:2px solid; border-radius:calc(var(--u)*5);
+  }
   #sala button:disabled{ opacity:.4; cursor:default; }
 
   /* Los dos bandos, uno frente a otro: se ve de un vistazo si falta gente en
@@ -512,12 +621,56 @@
         <div class="stats" id="v-stats">—</div>
         <button id="again" type="button" data-i18n="revancha">Revancha</button>
         <button id="compartir" type="button" data-i18n="compartir">Copiar enlace</button>
+        <!-- Solo aparece si el servidor tiene cuentas: sin base de datos no hay
+             camuflajes que elegir, y un boton que no lleva a ningun sitio es
+             peor que no tenerlo. -->
+        <button id="v-tienda" type="button" data-i18n="tienda" hidden>Camuflajes</button>
       </div>
 
       <div id="lectura"><b id="l-fallo"></b><span id="l-arena"></span></div>
 
       <div id="hint" data-i18n="pista">Arrastra hacia atrás y suelta</div>
     </div>
+  </div>
+
+  <div id="acceso">
+    <h1 id="ac-titulo" data-i18n="entrarTitulo">Entrar</h1>
+
+    <div class="fila" id="ac-fila-nombre" hidden>
+      <input id="ac-nombre" maxlength="24" placeholder="Tu nombre" autocomplete="nickname" spellcheck="false">
+    </div>
+    <div class="fila">
+      <input id="ac-correo" type="email" maxlength="254" placeholder="Correo" autocomplete="email" spellcheck="false">
+    </div>
+    <div class="fila">
+      <input id="ac-clave" type="password" maxlength="200" placeholder="Contraseña" autocomplete="current-password">
+    </div>
+
+    <div id="ac-aviso"></div>
+
+    <div class="fila">
+      <button id="ac-enviar" type="button" data-i18n="entrar">Entrar</button>
+    </div>
+    <button id="ac-cambiar" type="button" data-i18n="noTengoCuenta">No tengo cuenta</button>
+  </div>
+
+  <div id="tienda">
+    <div id="t-cabecera">
+      <span id="t-quien"></span>
+      <div class="fila">
+        <button id="t-salir" type="button" data-i18n="cerrarSesion">Cerrar sesión</button>
+        <button id="t-cerrar" type="button" data-i18n="volver">Volver</button>
+      </div>
+    </div>
+
+    <h1 data-i18n="tuVitrina">Tu vitrina</h1>
+    <div id="t-vitrina"></div>
+
+    <h1 data-i18n="tiendaTitulo">Camuflajes</h1>
+    <div id="t-aviso"></div>
+
+    <div class="t-bando"><h2 data-i18n="bandoA">Bando A</h2><ul id="t-lista-a"></ul></div>
+    <div class="t-bando"><h2 data-i18n="bandoB">Bando B</h2><ul id="t-lista-b"></ul></div>
   </div>
 
   <div id="sala">
