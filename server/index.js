@@ -7,6 +7,11 @@ import { WebSocketServer } from 'ws';
 
 import { crearSalas, atender } from './salas.js';
 import { DICE, mensaje, normalizarCodigo } from '../src/net/protocolo.js';
+import { crearPozo, migrar, consultarCon, transaccionCon } from './db/conexion.js';
+import { crearRepositorio } from './db/repositorio.js';
+import { crearApi } from './cuentas.js';
+import { tokenDe } from './auth.js';
+import { CAMUFLAJES, DE_SERIE, enBanda } from '../src/art/vehiculo/camuflajes.js';
 
 /**
  * El servidor. Reparte mensajes y no simula nada.
@@ -21,6 +26,9 @@ import { DICE, mensaje, normalizarCodigo } from '../src/net/protocolo.js';
  */
 
 const PUERTO = Number(process.env.PUERTO ?? 8787);
+
+/** Lo que el cuerpo de una peticion puede pesar. Un registro son 200 bytes. */
+const CUERPO_MAXIMO = 64 * 1024;
 
 // El juego se sirve desde aqui mismo cuando existe dist/. Un solo origen
 // significa un solo dominio que configurar, WebSocket sin CORS y wss
@@ -72,6 +80,96 @@ const salas = crearSalas({
   semillaDe: (sala) => `${sala.codigo}-${Date.now().toString(36)}`,
 });
 
+/**
+ * La base de datos, si la hay.
+ *
+ * Sin `DATABASE_URL` esto se queda en null y el servidor arranca igual: salas,
+ * partidas y todo lo que ya funcionaba. Lo unico que se apaga son las cuentas,
+ * la tienda y el progreso — y eso es deliberado, porque `pnpm dev` y las seis
+ * verificaciones de navegador tienen que poder correr sin levantar un Postgres.
+ */
+const pozo = crearPozo();
+let api = null;
+
+async function arrancarBaseDeDatos() {
+  if (!pozo) {
+    console.log('  (sin DATABASE_URL: salas si, cuentas no)');
+    return;
+  }
+  // Un camuflaje fuera de la banda de su bando no llega NUNCA a la tienda: el
+  // bando se lee por el color del casco y por nada mas (ARTE-VEHICULOS §6).
+  const fuera = CAMUFLAJES.filter((c) => !enBanda(c.base, c.bando));
+  if (fuera.length) {
+    throw new Error(`camuflajes fuera de banda: ${fuera.map((c) => c.id).join(', ')}`);
+  }
+
+  await migrar(pozo);
+  const repo = crearRepositorio({
+    consultar: consultarCon(pozo),
+    transaccion: transaccionCon(pozo),
+  });
+  await repo.sembrarCatalogo(CAMUFLAJES);
+  await repo.barrerSesiones();
+  api = crearApi({ repo, deSerie: DE_SERIE });
+  console.log(`  base de datos lista, ${CAMUFLAJES.length} camuflajes en catalogo`);
+}
+
+/** Lee el cuerpo de una peticion, con tope. */
+function leerCuerpo(peticion) {
+  return new Promise((resolver, rechazar) => {
+    let bruto = '';
+    peticion.on('data', (trozo) => {
+      bruto += trozo;
+      if (bruto.length > CUERPO_MAXIMO) {
+        rechazar(new Error('cuerpo demasiado grande'));
+        peticion.destroy();
+      }
+    });
+    peticion.on('end', () => {
+      if (!bruto) return resolver({});
+      try {
+        resolver(JSON.parse(bruto));
+      } catch {
+        rechazar(new Error('eso no es JSON'));
+      }
+    });
+    peticion.on('error', rechazar);
+  });
+}
+
+async function atenderApi(peticion, respuesta, ruta) {
+  const responder = (estado, cuerpo) => {
+    respuesta.writeHead(estado, {
+      'content-type': 'application/json; charset=utf-8',
+      'access-control-allow-origin': '*',
+    });
+    respuesta.end(JSON.stringify(cuerpo));
+  };
+
+  if (!api) return responder(503, { error: 'este servidor no tiene cuentas configuradas' });
+
+  let cuerpo = {};
+  try {
+    if (peticion.method !== 'GET') cuerpo = await leerCuerpo(peticion);
+  } catch (error) {
+    return responder(400, { error: error.message });
+  }
+
+  try {
+    const salida = await api.atender(peticion.method, ruta, {
+      cuerpo,
+      token: tokenDe(peticion.headers),
+      dispositivo: String(peticion.headers['user-agent'] ?? '').slice(0, 120),
+    });
+    return responder(salida.estado, salida.cuerpo);
+  } catch (error) {
+    // Un fallo de la base de datos no puede tumbar el servidor de salas: hay
+    // partidas en curso que no dependen de ella para nada.
+    console.error('fallo en la API de cuentas:', error);
+    return responder(500, { error: 'el servidor no pudo con eso' });
+  }
+}
+
 /** @type {Map<string, {socket: import('ws').WebSocket, sesion: object}>} */
 const conexiones = new Map();
 
@@ -105,16 +203,27 @@ const http = createServer(async (peticion, respuesta) => {
   if (peticion.method === 'OPTIONS') {
     respuesta.writeHead(204, {
       'access-control-allow-origin': '*',
-      'access-control-allow-methods': 'POST, GET, OPTIONS',
-      'access-control-allow-headers': 'content-type',
+      'access-control-allow-methods': 'POST, GET, PUT, DELETE, OPTIONS',
+      'access-control-allow-headers': 'content-type, authorization',
     });
     respuesta.end();
     return;
   }
 
+  const ruta = (peticion.url ?? '/').split('?')[0];
+  if (ruta.startsWith('/api/')) {
+    await atenderApi(peticion, respuesta, ruta);
+    return;
+  }
+
   if (peticion.url === '/salud') {
     respuesta.writeHead(200, { 'content-type': 'application/json' });
-    respuesta.end(JSON.stringify({ ok: true, salas: salas.numeroDeSalas, conexiones: conexiones.size }));
+    respuesta.end(JSON.stringify({
+      ok: true,
+      salas: salas.numeroDeSalas,
+      conexiones: conexiones.size,
+      cuentas: Boolean(api),
+    }));
     return;
   }
 
@@ -167,6 +276,14 @@ wss.on('connection', (socket) => {
 });
 
 http.listen(PUERTO, '0.0.0.0', async () => {
+  try {
+    await arrancarBaseDeDatos();
+  } catch (error) {
+    // Se avisa y se sigue. Un fallo de la base de datos deja el juego sin
+    // cuentas, no sin juego: las salas no la necesitan para nada.
+    console.error('la base de datos no arranco:', error.message);
+  }
+
   let hayJuego = false;
   try {
     hayJuego = (await stat(join(RAIZ, 'index.html'))).isFile();
@@ -177,6 +294,7 @@ http.listen(PUERTO, '0.0.0.0', async () => {
   console.log(`sala de batalla escuchando en http://localhost:${PUERTO}`);
   console.log(`  POST /sala   crea una sala y devuelve su codigo`);
   console.log(`  GET  /salud  estado del servidor`);
+  if (api) console.log('  /api/...     registro, sesion, tienda, partidas, historial');
   console.log(
     hayJuego
       ? '  GET  /          el juego, servido desde dist/'

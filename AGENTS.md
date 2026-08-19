@@ -52,10 +52,18 @@ crea un lock paralelo y desincroniza las dependencias.
   activo) y `window.advanceTime(ms)` para avanzar frames de forma determinista.
 - Se entra a una sala con un código y ya está: **jugar nunca pide una cuenta**.
   Esta parte no se toca.
-- «Sin cuentas, sin login, sin base de datos» está **derogado en parte** por
-  `docs/PLATAFORMA.md` §1: habrá cuenta *opcional* y base de datos, y servirán
-  para tres cosas y ninguna más — identidad, compras y progreso. La simulación
-  no lee nada de ahí (`PLATAFORMA.md` §0.2) y el servidor sigue sin simular.
+- «Sin cuentas, sin login, sin base de datos» está **derogado** por
+  `docs/PLATAFORMA.md` §1: el juego entra **con login** y hay base de datos, y
+  sirve para tres cosas y ninguna más — identidad, compras y progreso. La
+  simulación no lee nada de ahí (`PLATAFORMA.md` §0.2) y el servidor sigue sin
+  simular.
+- **La contraseña y el token de sesión no se guardan.** En la tabla vive
+  `sal$derivada` de scrypt y el sha256 del token. Quien se lleve una copia de la
+  base de datos no entra en ninguna cuenta ni abre ninguna sesión.
+- **Sin `DATABASE_URL` el servidor arranca igual.** Salas y partidas funcionan;
+  solo se apagan cuentas, tienda y progreso. Es lo que permite que `pnpm dev` y
+  las verificaciones de navegador corran sin levantar un Postgres — y de paso,
+  que un fallo de la base deje el juego sin cuentas y no sin juego.
 - Todo lo que se venda es **decorativo**. No es amabilidad de diseño: un dato de
   pago que entrara en el bucle de paso fijo sería pago-por-ganar *y* desincronía
   a la vez.
@@ -84,6 +92,7 @@ antes de empezar.
 
 ```bash
 pnpm server            # puerto 8787
+pnpm verificar:bd      # esquema, cuentas, tienda y progreso, contra un Postgres real
 pnpm verificar:sala    # seis clientes reales; SABOTEAR=1 rompe uno a proposito
 pnpm verificar:red     # dos navegadores jugando de verdad
 pnpm verificar:3v3     # seis navegadores, tres por bando
@@ -94,9 +103,17 @@ un solo origen: el WebSocket no necesita CORS y detrás de HTTPS pasa a `wss`
 solo. El cliente lo detecta mirando el puerto — el 5173 es Vite en desarrollo y
 solo ahí busca el servidor aparte. Un contenedor y un dominio.
 
-La base de datos que llega con `docs/PLATAFORMA.md` es **un servicio más al
-lado**, no una pieza de este camino: guarda cuenta, compras y progreso, y no
-opina sobre ninguna partida en curso. El servidor sigue sin simular.
+La base de datos es **un servicio más al lado**, no una pieza de este camino:
+guarda cuenta, compras y progreso, y no opina sobre ninguna partida en curso. El
+servidor sigue sin simular. `docker compose up -d bd` levanta solo el Postgres
+para desarrollar contra él.
+
+Y guarda las partidas **enteras** sin guardar estado, por lo mismo que existe el
+enlace de repetición: con la semilla y la lista de tiros se reconstruye el
+combate golpe a golpe. Tres turnos con avance y reacción son 37 bytes.
+La lógica de cuentas está en `server/cuentas.js` y se prueba sin abrir un puerto,
+igual que `salas.js` se prueba sin abrir un socket; el SQL está en `server/db/` y
+lo prueba `pnpm verificar:bd` contra Postgres de verdad.
 
 Cuidado al escribir estas verificaciones: los guiones tienen que **esperar a que
 el disparo llegue a todos** antes de avanzar el tiempo. Si no, el que aún no lo

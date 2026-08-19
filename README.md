@@ -188,6 +188,38 @@ quinto de vida perdida y humea del motor por debajo del 45 %. No cuesta ni una
 llamada de dibujo más: las cicatrices van **dentro** de la geometría del casco,
 pintadas del color del casco, y se descubren repintando sus vértices.
 
+### Cuentas, tienda y progreso
+
+Hay base de datos (Postgres) y se entra **con login**. Guarda lo que tiene que
+sobrevivir a cerrar el juego —quién eres, qué camuflajes tienes, cómo fue cada
+combate— y **nunca** el estado de una partida en curso: eso vive en los móviles,
+y si la base opinara sobre un combate el servidor pasaría a ser una segunda
+verdad.
+
+Y aun así guarda las partidas **enteras**, porque la simulación es determinista:
+`partida.repeticion` es el mismo `semilla~turno.turno.turno` del enlace que ya se
+comparte, así que cualquier dispositivo reconstruye el combate golpe a golpe.
+Medido: tres turnos con avance y reacción, **37 bytes**.
+
+```bash
+docker compose up -d bd        # solo Postgres
+DATABASE_URL=postgres://artilleria:artilleria@127.0.0.1:55432/artilleria pnpm server
+pnpm verificar:bd              # esquema, cuentas, tienda y progreso, contra Postgres de verdad
+```
+
+**Sin `DATABASE_URL` el servidor arranca igual**: salas y partidas funcionan y
+solo se apagan cuentas, tienda y progreso. Ni la contraseña ni el token de sesión
+se guardan — en la tabla viven `sal$derivada` de scrypt y el sha256 del token.
+
+Un camuflaje es **un número**: el color base, del que se calcula el vehículo
+entero. Por eso cada bando tiene una banda de tono y valor de la que no se sale
+—el bando se lee sólo por el color del casco— y el servidor **se niega a sembrar
+la tienda** si algún color se sale de ella.
+
+Lo que todavía no existe: **las pantallas**. La API está entera y probada, pero
+ni el login ni la tienda tienen interfaz, y el juego aún no manda la partida al
+terminar. Está en `docs/PLATAFORMA.md` §6.
+
 ### Hacia dónde va
 
 `docs/PLATAFORMA.md` recoge lo que hace falta para cobrar por camuflajes,

@@ -15,6 +15,7 @@
     "verificar:sotavento": "node scripts/verificar-sotavento.mjs",
     "server": "node server/index.js",
     "verificar:sala": "node scripts/verificar-sala.mjs",
+    "verificar:bd": "node scripts/verificar-bd.mjs",
     "verificar:lobby": "node scripts/verificar-lobby.mjs",
     "verificar:red": "node scripts/verificar-partida-red.mjs",
     "verificar:3v3": "node scripts/verificar-3v3.mjs",
@@ -31,6 +32,7 @@
     "propuestas": "node diseno/propuestas.mjs"
   },
   "dependencies": {
+    "pg": "^8.23.0",
     "three": "^0.180.0",
     "ws": "^8.21.3"
   },

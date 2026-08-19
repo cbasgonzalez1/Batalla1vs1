@@ -7,8 +7,8 @@ Este documento **deroga en parte una restricción dura de `AGENTS.md`** (§1), y
 eso existe: en este proyecto una regla no se relaja en silencio. Lo que no aparece
 aquí sigue vigente tal cual está escrito.
 
-Nada de esto está implementado todavía. Lo que sí está medido es el punto de
-partida: qué aguanta el código de hoy y qué se rompe primero.
+**§4 ya está construido**: esquema, cuentas, tienda, progreso y las pruebas que
+lo sostienen. Lo demás sigue siendo plan, y cada sección dice en qué estado está.
 
 ---
 
@@ -30,10 +30,20 @@ cuenta llega tarde, llega distinto o no llega. Todo lo que se vende es
 **decorativo**, y eso no es una decisión de diseño amable: es lo que impide a la
 vez el pago-por-ganar y la desincronía.
 
-**0.3 · Se juega sin cuenta.** El código de sala se mantiene como camino rápido:
-abrir un enlace, dictar cuatro letras y disparar. La cuenta aparece **solo** donde
-es obligatoria —comprar y guardar—, nunca antes de la primera partida. Es lo que
-hace bueno a este juego y lo primero que se pierde metiendo un registro delante.
+**0.3 · El juego pide cuenta, y el servidor no la necesita para repartir salas.**
+
+La primera versión de esta sección decía «se juega sin cuenta» y recomendaba no
+poner un registro delante de la primera partida. **Decisión del proyecto: se
+entra con login.** Queda escrito el motivo por el que se propuso lo contrario —el
+código de sala es lo que hace que abrir un enlace y disparar sea inmediato— para
+que dentro de seis meses nadie tenga que reconstruirlo.
+
+Lo que sí es técnico y no se toca: **el servidor de salas no depende de la base
+de datos**. Sin `DATABASE_URL` arranca igual y las partidas funcionan; lo único
+que se apaga son cuentas, tienda y progreso. No es una puerta de atrás al login:
+es que `pnpm dev` y las seis verificaciones de navegador tienen que poder correr
+sin levantar un Postgres, o dejan de correrse. Y de paso, un fallo de la base de
+datos deja el juego sin cuentas, no sin juego.
 
 ---
 
@@ -46,12 +56,9 @@ hace bueno a este juego y lo primero que se pierde metiendo un registro delante.
 
 | Decía | Dice | Por qué |
 |---|---|---|
-| Sin cuentas, sin login | **Cuenta opcional**, nunca para jugar | Una compra tiene que sobrevivir a cambiar de móvil, y eso no se puede hacer sin identidad |
+| Sin cuentas, sin login | **Con login** | Decisión del proyecto. Una compra y un progreso tienen que sobrevivir a cambiar de móvil, y eso no se puede hacer sin identidad |
 | Sin base de datos | **Base de datos** para cuenta, compras y progreso — y para nada más | Un camuflaje pagado que se pierde al borrar la caché es un reembolso |
-| Se entra a una sala con un código y ya está | **Igual**, y esta parte no se toca | §0.3 |
-
-Lo que la línea protegía sigue protegido: **jugar no cuesta un registro**. Lo que
-cambia es que ahora hay un sitio donde guardar lo que has comprado.
+| Se entra a una sala con un código | **Igual**: el código de sala sigue siendo cómo se juntan dos jugadores | Es la mecánica de invitación, no el modelo de identidad |
 
 ---
 
@@ -59,7 +66,9 @@ cambia es que ahora hay un sitio donde guardar lo que has comprado.
 
 ### 2.1 Lo que ya está resuelto
 
-El motor de vehículos ya está preparado y no hay que tocarlo:
+**Hecho.** El catálogo vive en `src/art/vehiculo/camuflajes.js` y son ocho: dos de
+serie —los ejemplares aprobados, que se regalan al crear la cuenta— y seis en la
+tienda. El motor de vehículos ya estaba preparado y no hubo que tocarlo:
 
 - **Un camuflaje es UN color.** Todo el vehículo —contorno, bandas de sombra,
   manchas— se calcula de `BANDOS[x].base` con `tono()`
@@ -82,14 +91,18 @@ Los dos ejemplares aprobados, medidos:
 
 | Bando | Base | H | S | L |
 |---|---|---|---|---|
-| A | `#7E8B4A` oliva | 72° | 31 % | 42 % |
+| A | `#7D8B4E` oliva | 74° | 28 % | 43 % |
 | B | `#5C7D92` acero | 203° | 23 % | 47 % |
 
-**Propuesta de banda** —pendiente de aprobar mirando la fila de comparación, no
-leyendo esta tabla—: un camuflaje del bando A vive en **H 45–105°** y el del B en
-**H 175–235°**, los dos con **S ≤ 45 %** y **L 34–54 %**. Fuera de ahí no se
-vende, por mucho que se pague. Los dos rangos están separados por 70° de tono a
-cada lado, que es lo que sostiene la lectura a 0,55× de zoom.
+**La banda, ya en código** (`BANDAS` en `camuflajes.js`): el bando A vive en
+**H 45–105°** y el B en **H 175–235°**, los dos con **S 12–45 %** y **L 34–54 %**.
+Fuera de ahí no se vende, por mucho que se pague. Los dos rangos están separados
+por 70° de tono, que es lo que sostiene la lectura a 0,55× de zoom.
+
+No es una recomendación escrita en un documento: lo comprueba
+`tests/art/camuflajes.test.js` sobre el catálogo entero, y **el servidor se niega
+a sembrar la tienda** si algún color se sale. Sigue pendiente aprobar los seis de
+pago mirando la fila de comparación con los dos bandos en el mismo campo.
 
 Un camuflaje que quiera salirse de la banda —un invierno blanco, un desierto muy
 claro— **es otra decisión**: hay que probar que los dos bandos se siguen
@@ -157,54 +170,126 @@ Sin ella, cualquier despliegue es una purga.
 
 ---
 
-## 4. Base de datos
+## 4. Base de datos — **construida**
+
+Postgres. Ocho tablas, `server/db/esquema.sql`, que se aplica entero en cada
+arranque y es idempotente. Sin herramienta de migraciones todavía: cuando haga
+falta, ese fichero es la 001 y las siguientes se añaden numeradas al lado.
+
+```
+jugador ── sesion            quién eres y desde qué dispositivo
+        ── desbloqueo ── camuflaje     qué tienes
+        ── compra                       cómo lo conseguiste
+        ── progreso                     la vitrina (es una CACHÉ)
+partida ── participacion                cada combate y quién lo jugó
+```
 
 ### 4.1 Qué guarda
 
-- **Cuenta**: identidad y poco más.
-- **Compras**: qué se compró, cuándo, con qué recibo, y qué desbloquea.
-- **Progreso**: partidas jugadas, ganadas, tiros, mejor impacto. Datos de vitrina.
-- **Preferencias**: el camuflaje elegido para cada bando, el idioma si algún día
-  hay selector.
+- **Cuenta**: correo, nombre, y los dos camuflajes elegidos.
+- **Sesión**: una por dispositivo, con caducidad de 30 días.
+- **Compras y desbloqueos**: qué se compró, cuándo, con qué recibo.
+- **Partidas**: el combate **entero**, y el progreso agregado de cada jugador.
+
+**Dos cosas no se guardan nunca, ni cifradas ni de ninguna forma:**
+
+- **La contraseña.** En `jugador.clave` vive `sal$derivada` de scrypt, con sal
+  distinta por jugador. Quien se lleve una copia de la tabla no entra en ninguna
+  cuenta.
+- **El token de sesión.** En `sesion.huella` vive su sha256. El token viaja al
+  móvil una vez y no vuelve a existir en el servidor. Aquí sha256 a pelo **sí**
+  vale y scrypt no: un token son 32 bytes de azar, no una palabra que alguien
+  pueda adivinar.
 
 ### 4.2 Qué NO guarda, nunca
 
 **El estado de una partida en vivo.** Ni el terreno, ni las vidas, ni el turno.
 En el momento en que la base de datos tiene una opinión sobre cómo va un combate,
 el servidor pasa a ser una segunda verdad y §0.1 se cae. El estado vive en los
-móviles; lo único que puede persistir de una partida es su **resumen**, y solo
-cuando ha terminado.
+móviles; a la tabla `partida` solo se escribe cuando el combate ha **terminado**.
 
-### 4.3 Con qué
+### 4.3 «Guardar todo del juego» sale gratis, y es por el determinismo
 
-**Postgres.** Es relacional, es aburrido y aguanta de sobra esto. El despliegue
-ya es un contenedor con el servidor sirviendo también el juego desde `dist/`
-(ver `Dockerfile`): esto añade **un** servicio más, no una arquitectura nueva.
+Una partida entera cabe en una cadena de texto. `partida.repeticion` guarda
+`semilla~turno.turno.turno` —el mismo formato del enlace que ya se comparte
+(`src/game/replay.js`)— y con eso cualquier dispositivo reconstruye el combate
+golpe a golpe: no hay que guardar dónde cayó cada proyectil, ni el terreno turno
+a turno, ni las vidas. **Medido: tres turnos con avance y reacción ocupan 37
+bytes.** Una partida de dieciséis anda por el centenar.
 
-Cuatro tablas bastan para empezar: `jugador`, `compra`, `desbloqueo` y
-`partida` (el resumen). Si hace falta una quinta antes de vender el primer
-camuflaje, es que algo se ha ido de madre.
+Eso es lo que hace que guardar todo sea barato aquí y carísimo en un juego que no
+fuera determinista. Y no es teoría: `pnpm verificar:bd` guarda una partida,
+la vuelve a leer de Postgres, la decodifica y comprueba que salen los mismos
+turnos, con su avance y su reacción.
 
-### 4.4 El problema honesto: quién certifica el progreso
+### 4.4 El progreso es una caché
 
-Un cliente no es de fiar diciendo «he ganado veinte partidas». Y el servidor no
-simula, así que **no puede saberlo mirando**. Esto hay que decidirlo antes de
-prometer nada, no después:
+Todo lo de `progreso` se puede recalcular sumando `participacion`, y hay una
+consulta que lo hace (`recomponerProgreso`). Se guarda aparte porque la vitrina
+se lee en cada pantalla de inicio y sumar el historial entero cada vez es tirar
+la base de datos por una cifra que casi nunca cambia.
 
-- **Lo que ya existe:** cada turno los móviles mandan una huella del estado y el
-  servidor avisa si dos no coinciden (`PIDE.checksum`, `DICE.desincronia`). Eso
-  detecta divergencia, no mentira: en un 1v1 hay dos huellas y un empate no dice
-  quién miente.
+Que sea una caché es la razón por la que **puede vivir sin auditar**. Hoy el
+progreso se guarda tal cual lo cuenta el cliente, porque es de vitrina y no
+decide nada. Sigue en pie el problema honesto:
+
+- **Un cliente no es de fiar** diciendo «he ganado veinte partidas». Y el
+  servidor no simula, así que no puede saberlo mirando.
+- **Lo que ya existe** detecta divergencia, no mentira: cada turno los móviles
+  mandan una huella del estado y el servidor avisa si dos no coinciden
+  (`PIDE.checksum`). En un 1v1 hay dos huellas y un empate no dice quién miente.
 - **La salida sancionada, y la única:** el servidor puede **auditar una partida
-  terminada** volviéndola a simular a partir de la semilla y los inputs, fuera
-  del camino de la partida en vivo y sin prisa. No es simular el combate: es
-  repetir uno que ya acabó. El `Dockerfile` de producción ya copia `src/game`,
-  `src/core` y `src/net` a la imagen, así que el servidor **ya tiene el motor
-  para hacerlo** — falta escribirlo, no montarlo.
-- **La recomendación:** mientras el progreso sea de vitrina, no auditar nada y
-  guardar lo que diga el cliente. **En el momento en que haya una clasificación
-  competitiva, auditar es obligatorio**, y hay que presupuestarlo: una
-  clasificación sin verificar dura lo que tarde el primero en abrir la consola.
+  terminada** volviéndola a simular desde la semilla y los inputs, fuera del
+  camino de la partida en vivo. No es simular el combate: es repetir uno que ya
+  acabó. La imagen de producción **ya copia `src/game`, `src/core` y `src/net`**,
+  así que el motor está ahí; falta escribirlo.
+- **En el momento en que haya clasificación competitiva, auditar es
+  obligatorio.** Entonces se cambian los criterios y se recompone el progreso
+  desde `participacion`, sin migrar nada. Esa es toda la ventaja de que sea una
+  caché.
+
+### 4.5 La API
+
+Todo bajo `/api/`. La lógica está en `server/cuentas.js` y se prueba sin abrir un
+puerto —igual que `salas.js` se prueba sin abrir un socket—; `server/index.js`
+solo traduce a HTTP.
+
+| | | |
+|---|---|---|
+| `POST` | `/api/registro` | correo, contraseña y nombre → token y los dos camuflajes de serie |
+| `POST` | `/api/sesion` | entrar → token |
+| `DELETE` | `/api/sesion` | salir |
+| `GET` | `/api/yo` | cuenta, desbloqueos y progreso de una tacada |
+| `GET` | `/api/tienda` | el catálogo; **se puede mirar sin cuenta** |
+| `PUT` | `/api/camuflaje` | elegir el de un bando, si lo tienes |
+| `POST` | `/api/partida` | guardar un combate terminado |
+| `GET` | `/api/historial` | tus últimas partidas, con su enlace de repetición |
+
+El token va en `Authorization: Bearer`, **no en una cookie**: el juego se empaqueta
+con WebView para Android e iOS y ahí las cookies de tercera parte son un campo de
+minas.
+
+Cuatro decisiones que están en el código y conviene no deshacer:
+
+- **El mismo mensaje** para «ese correo no existe» y «esa contraseña es mala».
+  Distinguirlos regala una lista de correos registrados a quien pruebe uno a uno.
+- **Ocho intentos** fallidos por correo y diez minutos de castigo.
+- **El jugador de una partida sale de la sesión**, nunca de un id que venga en el
+  cuerpo. Si no, cualquiera suma partidas ganadas a la cuenta de otro.
+- **Una partida sin cuenta se guarda igual**, con `jugador_id` a `NULL`. Lo que no
+  tiene es a quién sumarle el progreso.
+
+### 4.6 Cómo se levanta
+
+```bash
+docker compose up -d bd        # solo Postgres, para desarrollar contra el
+DATABASE_URL=postgres://artilleria:artilleria@127.0.0.1:55432/artilleria pnpm server
+pnpm verificar:bd              # con DATABASE_URL puesto: esquema, cuentas, tienda, progreso
+docker compose up -d           # todo, como en produccion
+```
+
+`docker-compose.yml` levanta los dos servicios. La base **no está en el camino de
+una partida**: si se cae, las salas siguen funcionando.
 
 ---
 
@@ -249,13 +334,17 @@ un usuario pague dos veces por lo mismo.
 
 ## 6. En qué orden
 
-1. **Reconexión a la sala** (§3.2). Sin esto no hay lanzamiento en móvil que
-   aguante. No necesita base de datos ni cuentas.
-2. **Persistencia local** del nombre y del camuflaje elegido. Hoy no se guarda
-   **nada** en el cliente — ni el apodo.
-3. **Cuenta opcional y base de datos** (§4). Jugar sigue sin pedirla.
-4. **Billing de tienda y desbloqueos** (§5.2).
-5. **Escala horizontal** (§3.3), cuando los números lo pidan y no antes.
+1. ~~Base de datos, cuentas, tienda y progreso~~ — **hecho** (§4).
+2. **La pantalla de login y la de tienda en el cliente.** La API está entera y
+   probada; lo que no existe todavía es una sola pantalla que la use. Es lo
+   siguiente, y no es pequeño: registro, entrar, elegir camuflaje y ver la
+   vitrina, en el mismo estilo del HUD y con sus textos en `src/ui/i18n.js`.
+3. **Que el juego mande la partida al terminar** (`POST /api/partida`) y pinte el
+   camuflaje elegido. Sin esto la base de datos está construida y vacía.
+4. **Reconexión a la sala** (§3.2). Sin esto no hay lanzamiento en móvil que
+   aguante, y no necesita nada de la base de datos.
+5. **Billing de tienda** (§5.2), cuando los camuflajes gusten lo bastante.
+6. **Escala horizontal** (§3.3), cuando los números lo pidan y no antes.
 
 ---
 
@@ -263,9 +352,15 @@ un usuario pague dos veces por lo mismo.
 
 Esto no lo decide quien escriba el código:
 
-- La banda de tono y valor de §2.2, aprobada mirando la fila de comparación.
+- Los seis camuflajes de pago, aprobados mirando la fila de comparación con los
+  dos bandos en el mismo campo. La banda ya está en código y la vigilan los tests;
+  lo que falta es el visto bueno a estos seis colores concretos.
+- Los precios: hoy son 1,99 € y 2,99 € puestos a ojo para poder enseñar la
+  tienda.
 - Si la web es demo sin compras o tienda aparte (§5.2).
 - Si el progreso se queda en vitrina o llega a haber clasificación competitiva
   — porque eso obliga a la auditoría de §4.4.
 - Si el enlace de repetición lleva los camuflajes (§2.3).
 - Cuánto aguanta una sala a un jugador desconectado (§3.2 propone 60 s).
+- Si el progreso guardado hoy —sin auditar— se conserva el día que haya
+  clasificación, o se recompone desde cero (§4.4).

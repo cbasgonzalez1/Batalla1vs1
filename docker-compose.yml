@@ -1,0 +1,50 @@
+# El juego y su base de datos.
+#
+# Dos servicios y nada mas: el contenedor que ya existia —servidor de salas que
+# sirve tambien el juego desde dist/— y un Postgres al lado. La base de datos NO
+# esta en el camino de una partida: si se cae, las salas siguen funcionando y lo
+# unico que se apaga son las cuentas, la tienda y el progreso.
+#
+#   docker compose up -d          todo
+#   docker compose up -d bd       solo Postgres, para desarrollar contra el
+#
+# Para desarrollar con `pnpm dev` en el anfitrion basta con levantar `bd` y
+# exportar DATABASE_URL con el puerto de fuera.
+
+services:
+  bd:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-artilleria}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-artilleria}
+      POSTGRES_DB: ${POSTGRES_DB:-artilleria}
+    volumes:
+      - datos:/var/lib/postgresql/data
+    # 55432 fuera y 5432 dentro: el puerto raro es para no chocar con un
+    # Postgres del sistema, que es exactamente lo que pasa en un portatil.
+    ports:
+      - '${PUERTO_BD:-55432}:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-artilleria} -d ${POSTGRES_DB:-artilleria}']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+
+  juego:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      bd:
+        condition: service_healthy
+    environment:
+      PUERTO: 8787
+      # Dentro de la red de compose se llega por el nombre del servicio, asi que
+      # el puerto de fuera no pinta nada aqui.
+      DATABASE_URL: postgres://${POSTGRES_USER:-artilleria}:${POSTGRES_PASSWORD:-artilleria}@bd:5432/${POSTGRES_DB:-artilleria}
+    ports:
+      - '${PUERTO:-8787}:8787'
+
+volumes:
+  datos:

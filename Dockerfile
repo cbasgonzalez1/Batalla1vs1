@@ -27,6 +27,13 @@ COPY server ./server
 COPY src/net ./src/net
 COPY src/game ./src/game
 COPY src/core ./src/core
+COPY src/art/vehiculo/camuflajes.js src/art/vehiculo/paleta.js ./src/art/vehiculo/
+# El catalogo de camuflajes es de ARTE y vive con el arte, pero el servidor lo
+# necesita para sembrar la tienda y para negarse a arrancar si un color se sale
+# de la banda de su bando. Se copian los dos ficheros exactos que hacen falta y
+# no `src/art` entero: el resto de ese directorio importa Three y no pinta nada
+# aqui. `tests/art/camuflajes.test.js` vigila que estos dos sigan sin importar
+# nada mas, que es lo que hace segura esta linea.
 
 # Node corre como root por defecto en esta imagen; el usuario 'node' ya existe.
 USER node

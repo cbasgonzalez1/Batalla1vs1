@@ -238,7 +238,7 @@ otro y añadir un tercero es una línea.
 
 ```js
 export const BANDOS = {
-  A: { base: '#7E8B4A', nombre: 'oliva' },
+  A: { base: '#7D8B4E', nombre: 'oliva' },
   B: { base: '#5C7D92', nombre: 'acero' },
 };
 ```
@@ -248,6 +248,12 @@ con el mismo valor tonal y la misma saturación en el azul). La versión anterio
 esta sección decía `#8FA33C` y `#7E9BB8`: eran más claros y más saturados que el
 ejemplar, y con ellos el contorno calculado se iba a verde hierba. **Manda §12.**
 
+Y esta sección llegó a escribir `#7E8B4A` —dos dígitos transpuestos— mientras §12,
+§7, `AGENTS.md` y `paleta.js` decían `#7D8B4E`. Nadie lo notó porque los dos
+colores se parecen; lo cazó el test de bandas de §6 bis al medir el HSL del que
+está **en el código**, que es el bueno. Si vuelve a aparecer un oliva que no sea
+`#7D8B4E`, está mal.
+
 Piezas que **no** se tiñen del bando, porque son materia y no pintura: oruga y
 neumático (`caucho`), tubo interior de la boca (`contorno(metal)`), depósitos de
 lona (`lona`), herramienta de madera (`madera`). Que estas piezas mantengan su
@@ -255,6 +261,31 @@ color es lo que evita que el vehículo se lea como una figura de un solo color.
 
 Prohibido distinguir bandos con banda de reconocimiento, estrella, cruz o
 bandera. El color basta y es legible a 0,55×.
+
+## 6 bis. Camuflajes: la banda de la que no se sale
+
+Un camuflaje es **un número**: el color base. Todo lo demás —contorno, bandas de
+sombra, manchas, el tizne del deterioro de §13— se calcula de él, así que añadir
+uno es añadir una fila en `src/art/vehiculo/camuflajes.js`. Sin texturas, sin
+mallas nuevas y sin una llamada de dibujo más.
+
+Y justo por §6 hay un límite que **no se compra**: si el bando se lee sólo por el
+color del casco, un camuflaje que acerque el A al B rompe la partida. Cada bando
+tiene una banda en HSL y fuera de ahí no se vende:
+
+| Bando | Ejemplar | H | S | L | Banda |
+|---|---|---|---|---|---|
+| A | `#7D8B4E` | 74° | 28 % | 43 % | H 45–105°, S 12–45 %, L 34–54 % |
+| B | `#5C7D92` | 203° | 23 % | 47 % | H 175–235°, S 12–45 %, L 34–54 % |
+
+Setenta grados de tono separan las dos bandas por el lado que se tocan: es lo que
+sostiene la lectura a 0,55× de zoom. Lo vigila `tests/art/camuflajes.test.js`, y
+el servidor **se niega a arrancar** el catálogo si alguno se sale.
+
+Un camuflaje que quiera salirse —un invierno blanco, un desierto muy claro— es
+**otra decisión**: hay que probar que los dos bandos se siguen distinguiendo con
+los dos puestos en el mismo campo y pasar `docs/CHECKLIST-REVISION.md` §3. No se
+resuelve subiéndole el precio.
 
 ---
 
