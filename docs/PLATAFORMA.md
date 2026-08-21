@@ -129,19 +129,30 @@ Elegir un camuflaje **rehace la partida** con la misma semilla: es instantáneo,
 no se pierde nada y es la única forma de que el color se vea, porque el casco se
 pinta al montar el vehículo.
 
-### 2.4 Cómo viaja
+### 2.4 Cómo viaja — **hecho**
 
-Un camuflaje es **estado de sala, no de simulación**. Va en el mensaje `empezar`
-junto a la alineación, para que los seis móviles pinten el mismo tanque; no entra
-en el paso fijo ni en la huella de estado. Si un móvil recibe un camuflaje que no
-conoce —cliente viejo—, pinta el base de su bando y sigue jugando: un cosmético
-nunca puede impedir una partida.
+Un camuflaje es **estado de sala, no de simulación**. El cliente manda **los dos
+suyos** al entrar (`PIDE.unir`), el servidor se queda con el del bando que juega
+y lo reparte en el estado de la sala y en la alineación de `empezar`. De ahí baja
+al participante y de ahí al color del casco.
 
-**Pendiente de decidir:** el enlace de repetición (`src/game/replay.js`) guarda
-semilla y tiros, no camuflajes, así que una repetición sale con los colores por
-defecto. O se añaden dos identificadores al enlace, o se acepta. Recomiendo
-aceptarlo: el enlace cabe en un WhatsApp justamente porque no lleva nada que no
-haga falta para reconstruir la partida.
+Los dos y no sólo el del bando propio: así **cambiar de lado dentro de la sala no
+necesita otro mensaje** — el servidor elige el que toca.
+
+No entra en el paso fijo ni en la huella de estado, y **el servidor no comprueba
+que el camuflaje exista**: sólo la forma (`^[a-z0-9-]{1,40}$`). El catálogo vive
+en el arte y puede crecer sin que el servidor se entere; un identificador que un
+móvil no reconozca se pinta con el color de su bando y la partida sigue. Un
+cosmético no puede impedir jugar.
+
+Lo comprueba `pnpm verificar:red`: dos navegadores con camuflajes distintos, y
+**los dos tienen que pintar los dos tanques igual**. Si cada uno viera sólo el
+suyo, lo comprado no se vería donde importa, que es en el campo.
+
+**Sigue pendiente de decidir:** el enlace de repetición (`src/game/replay.js`)
+guarda semilla y tiros, no camuflajes, así que una repetición sale con los
+colores por defecto. Recomiendo aceptarlo: el enlace cabe en un WhatsApp
+justamente porque no lleva nada que no haga falta para reconstruir la partida.
 
 ---
 
@@ -363,13 +374,25 @@ un usuario pague dos veces por lo mismo.
 1. ~~Base de datos, cuentas, tienda y progreso~~ — **hecho** (§4).
 2. ~~Pantallas de acceso y tienda, y guardar la partida al terminar~~ —
    **hecho** (§2.3).
-3. **El camuflaje del rival, en red.** Hoy cada uno ve el suyo: el camuflaje no
-   viaja en el mensaje `empezar` (§2.4), así que en una partida online el tanque
-   de enfrente sale con el color de serie. Es lo siguiente y es pequeño.
-4. **Reconexión a la sala** (§3.2). Sin esto no hay lanzamiento en móvil que
-   aguante, y no necesita nada de la base de datos.
+3. ~~El camuflaje del rival, en red~~ — **hecho** (§2.4).
+4. **Reconexión a la sala** (§3.2). Es lo siguiente y lo más importante: sin
+   esto no hay lanzamiento en móvil que aguante. No necesita nada de la base de
+   datos.
 5. **Billing de tienda** (§5.2), cuando los camuflajes gusten lo bastante.
 6. **Escala horizontal** (§3.3), cuando los números lo pidan y no antes.
+
+### Una nota sobre probar el juego con cuentas
+
+Con el servidor de cuentas levantado, la pantalla de acceso se pinta encima de
+todo y las verificaciones de sala no pueden pulsar un botón. Se resuelve en
+`scripts/sesion-de-prueba.mjs`, y **no con un `?invitado` que se salte el
+login**: eso sería una puerta trasera de verdad y estaría en producción. El
+ayudante pide un token a la misma API que usa el juego —desde Node, antes de
+abrir el navegador— y lo siembra en `localStorage`, así que la página arranca ya
+dentro. Que es además el camino de alguien que vuelve, el más común de todos.
+
+Sin servidor de cuentas no hace nada, y las verificaciones siguen corriendo sin
+Postgres.
 
 ---
 

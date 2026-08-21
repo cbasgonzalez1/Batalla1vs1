@@ -27,6 +27,10 @@ export function crearSalas({ rng, semillaDe }) {
       nombre: j.nombre,
       bando: j.bando,
       listo: j.listo,
+      // El del bando que juega AHORA. Cambiar de lado cambia el camuflaje sin
+      // mandar nada mas: el cliente manda los dos suyos al entrar y aqui se
+      // elige el que toca.
+      camuflaje: j.camuflajes?.[j.bando] ?? null,
     })),
   });
 
@@ -69,7 +73,7 @@ export function crearSalas({ rng, semillaDe }) {
     /**
      * Mete a alguien en la sala. Devuelve el jugador creado o el motivo del no.
      */
-    unir(codigo, { id, nombre }) {
+    unir(codigo, { id, nombre, camuflajes }) {
       const sala = salas.get(codigo);
       if (!sala) return { ok: false, motivo: 'esa sala no existe' };
       if (sala.empezada) return { ok: false, motivo: 'la partida ya ha empezado' };
@@ -78,7 +82,19 @@ export function crearSalas({ rng, semillaDe }) {
       const bando = bandoLibre(sala);
       if (!bando) return { ok: false, motivo: 'no queda hueco en ningun bando' };
 
-      const jugador = { id, nombre: nombre.trim().slice(0, 16), bando, listo: false };
+      const jugador = {
+        id,
+        nombre: nombre.trim().slice(0, 16),
+        bando,
+        listo: false,
+        // Los DOS: se guardan los dos y se usa el del bando actual, para que
+        // cambiar de lado no necesite otro mensaje. Es decoracion pura y no
+        // entra en la simulacion (`docs/PLATAFORMA.md` §0.2).
+        camuflajes: {
+          a: camuflajes?.a ?? null,
+          b: camuflajes?.b ?? null,
+        },
+      };
       sala.jugadores.set(id, jugador);
       if (!sala.anfitrion) sala.anfitrion = id;
 
@@ -140,6 +156,7 @@ export function crearSalas({ rng, semillaDe }) {
         id: j.id,
         nombre: j.nombre,
         bando: j.bando,
+        camuflaje: j.camuflajes?.[j.bando] ?? null,
       }));
 
       return { ok: true, sala, semilla: sala.semilla, alineacion };
@@ -189,7 +206,11 @@ export function atender(salas, sesion, bruto) {
 
   switch (bruto.tipo) {
     case PIDE.unir: {
-      const r = salas.unir(bruto.sala, { id: sesion.id, nombre: bruto.nombre });
+      const r = salas.unir(bruto.sala, {
+        id: sesion.id,
+        nombre: bruto.nombre,
+        camuflajes: bruto.camuflajes,
+      });
       if (!r.ok) return responder(mensaje(DICE.error, { motivo: r.motivo }));
 
       sesion.sala = bruto.sala;

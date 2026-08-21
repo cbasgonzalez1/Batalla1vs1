@@ -38,7 +38,7 @@ export function resumirSala({ jugadores = [], yo = null }, t) {
   };
 }
 
-export function crearLobby({ cliente, t, alEmpezar, documento = document }) {
+export function crearLobby({ cliente, t, alEmpezar, camuflajes = () => null, documento = document }) {
   const $ = (id) => documento.getElementById(id);
 
   const el = {
@@ -122,7 +122,9 @@ export function crearLobby({ cliente, t, alEmpezar, documento = document }) {
     // corto y distinto, porque en la lista tiene que poder reconocerse.
     const tecleado = el.nombre?.value.trim();
     nombre = tecleado || nombre || `${t('tuNombre')} ${1 + (jugadoresEnSala() % 9)}`;
-    cliente.unir(limpio, nombre);
+    // Los camuflajes se leen AQUI y no al montar la sala: entre abrir el juego y
+    // entrar en una sala se puede pasar por la tienda.
+    cliente.unir(limpio, nombre, camuflajes());
     el.entrada.hidden = true;
     el.dentro.hidden = false;
   }

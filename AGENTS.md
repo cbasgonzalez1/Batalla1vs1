@@ -116,6 +116,13 @@ La lógica de cuentas está en `server/cuentas.js` y se prueba sin abrir un puer
 igual que `salas.js` se prueba sin abrir un socket; el SQL está en `server/db/` y
 lo prueba `pnpm verificar:bd` contra Postgres de verdad.
 
+Con el servidor de cuentas levantado, la pantalla de acceso tapa la sala y
+`verificar:red`, `verificar:3v3` y `verificar:lobby` no pueden pulsar nada. Lo
+resuelve `scripts/sesion-de-prueba.mjs`, y **no un `?invitado` que se salte el
+login** —eso sería una puerta trasera y estaría en producción—: pide un token a
+la misma API que usa el juego, desde Node y antes de abrir el navegador, y lo
+siembra en `localStorage`. Sin servidor de cuentas no hace nada.
+
 En el navegador, `src/net/cuenta.js` habla con esa API y **nunca lanza**: todo
 devuelve `{ ok }` o `{ ok: false, error }`, porque un servidor caído o un token
 caducado tienen que dejar una pantalla con un mensaje y no el juego en negro. Las

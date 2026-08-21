@@ -623,15 +623,14 @@ function crearPlantel(partida) {
     nombre: p.nombre,
     bando: p.bando,
     facing: p.bando === 'a' ? +1 : -1,
-    // El casco lleva el camuflaje elegido en la tienda, y si no hay cuenta el
-    // color de siempre. Es UN color: de el se calculan contorno, bandas y
-    // tizne, asi que no hay nada mas que enchufar (`camuflajes.js`).
+    // El casco lleva el camuflaje elegido en la tienda. Es UN color: de el se
+    // calculan contorno, bandas y tizne, asi que no hay nada mas que enchufar.
     //
-    // De momento solo el propio: en red, el camuflaje del rival tendria que
-    // viajar en el mensaje `empezar` (`docs/PLATAFORMA.md` §2.3) y eso todavia
-    // no esta. Hasta entonces cada uno se ve el suyo, que es lo que mira.
+    // En red manda el que trae CADA participante, que llega con la alineacion:
+    // asi se ve el tanque del rival como el rival lo eligio. En local no hay
+    // alineacion que traiga nada y se usa el de la propia cuenta.
     chassis: { ...(p.bando === 'a' ? MATERIALS.chassisA : MATERIALS.chassisB),
-      color: camuflajeDe(p.bando) },
+      color: p.camuflaje ? colorDe(p.camuflaje, p.bando) : camuflajeDe(p.bando) },
     x: posiciones.get(p.id),
   }));
 }
@@ -1920,7 +1919,15 @@ if (repeticion) {
   startMatch(CONFIG.seed);
 }
 requestAnimationFrame(frame);
-arrancarCuenta();
+
+/**
+ * La promesa del arranque de cuentas, expuesta en `GAME.cuentaLista`.
+ *
+ * Sin esto, cualquier guion que quiera saber si va a salir la pantalla de acceso
+ * tiene que esperar «un rato a ver si aparece», y eso es una carrera: en una
+ * maquina cargada el panel llega despues de la espera y tapa el primer clic.
+ */
+const cuentaLista = arrancarCuenta();
 
 // Ganchos para validar sin tocar codigo: window.GAME en la consola.
 // Contrato del bucle de test: render_game_to_text() para leer la partida sin
@@ -2087,6 +2094,7 @@ sincronia.alDisparo(({ anguloDeg, potencia, avance }) => {
 const lobby = crearLobby({
   cliente: red,
   t,
+  camuflajes: () => cuenta.estado.jugador?.camuflajes ?? null,
   alEmpezar(m) {
     startMatch(m.semilla, m.alineacion);
     // La partida que monta startMatch es la misma alineacion, asi que la
@@ -2119,6 +2127,8 @@ window.GAME = {
   cuenta,
   tienda,
   acceso,
+  /** Se resuelve cuando el juego ya sabe si este servidor tiene cuentas. */
+  cuentaLista,
   /** El decorado del campo. Trae `xHito` y `xSena` para poder encuadrarlos. */
   get decorado() { return decorado; },
   calidad,

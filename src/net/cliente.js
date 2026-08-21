@@ -115,9 +115,20 @@ export function crearCliente({
       return codigo;
     },
 
-    unir(codigo, nombre) {
+    /**
+     * Entra en una sala. `camuflajes` son los DOS elegidos en la tienda.
+     *
+     * Van los dos y no solo el del bando propio para que cambiar de lado dentro
+     * de la sala no necesite otro mensaje: el servidor se queda con el que toca.
+     * Es decoracion — no entra en la simulacion ni en la huella de estado.
+     */
+    unir(codigo, nombre, camuflajes = null) {
       estado.nombre = nombre;
-      return enviar(mensaje(PIDE.unir, { sala: normalizarCodigo(codigo), nombre }));
+      return enviar(mensaje(PIDE.unir, {
+        sala: normalizarCodigo(codigo),
+        nombre,
+        ...(camuflajes ? { camuflajes } : {}),
+      }));
     },
 
     elegirBando: (bando) => enviar(mensaje(PIDE.bando, { bando })),

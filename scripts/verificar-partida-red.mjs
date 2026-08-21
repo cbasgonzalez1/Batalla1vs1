@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { sesionEnContexto, ponerCamuflajes } from './sesion-de-prueba.mjs';
 
 /**
  * Dos navegadores jugando la misma partida.
@@ -14,8 +15,11 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 const nav = await chromium.launch();
 const errores = [];
 
-async function abrir(nombre) {
+async function abrir(nombre, cuenta) {
   const ctx = await nav.newContext({ locale: 'es-ES' });
+  // El token se siembra ANTES de navegar: con el servidor de cuentas levantado,
+  // el panel de acceso taparia la sala y no se podria pulsar nada.
+  await sesionEnContexto(ctx, cuenta);
   const pg = await ctx.newPage();
   pg.on('console', (m) => m.type() === 'error' && errores.push(`[${nombre}] ${m.text()}`));
   pg.on('pageerror', (e) => errores.push(`[${nombre}] ${e}`));
@@ -50,18 +54,25 @@ const estado = (pg) =>
         Math.round(t.heights[Math.floor((i * t.cols) / 24)] * 1000) / 1000
       ),
       meToca: G.sincronia.meToca(),
+      // El color del casco de CADA vehiculo, tal cual esta pintado. Es lo unico
+      // que dice si el camuflaje del rival ha llegado de verdad.
+      cascos: G.state.plantel.map((p) => p.chassis.color),
       ronda: G.sincronia.estado.partida?.ronda ?? null,
       tardios: G.sincronia.tardios.length,
     };
   });
 
-const ana = await abrir('Ana');
+const ana = await abrir('Ana', 'red-ana');
+// Cada una elige camuflajes distintos. Lo que se prueba es que VIAJAN, no la
+// tienda, asi que se ponen a mano.
+await ponerCamuflajes(ana, { a: 'a-bosque', b: 'b-abisal' });
 await ana.fill('#s-nombre', 'Ana');
 await ana.click('#s-crear');
 await esperar(700);
 const codigo = await ana.textContent('#s-codigo');
 
-const bea = await abrir('Bea');
+const bea = await abrir('Bea', 'red-bea');
+await ponerCamuflajes(bea, { a: 'a-liquen', b: 'b-pizarra' });
 await bea.fill('#s-nombre', 'Bea');
 await bea.fill('#s-codigo-input', codigo);
 await bea.click('#s-unir');
@@ -72,6 +83,22 @@ await bea.click('#s-listo');
 await esperar(1200);
 
 console.log(`sala ${codigo}, partida en marcha\n`);
+
+// ── el camuflaje del rival ────────────────────────────────────────────────
+// Ana juega en A con `a-bosque` y Bea en B con `b-pizarra`. Los DOS moviles
+// tienen que pintar los dos tanques igual: si cada uno se viera solo el suyo, lo
+// comprado no se veria donde importa, que es en el campo.
+const cascosA = (await estado(ana)).cascos;
+const cascosB = (await estado(bea)).cascos;
+const esperados = [0x577543, 0x5b8486];   // a-bosque, b-pizarra
+const camuflajesBien =
+  JSON.stringify(cascosA) === JSON.stringify(esperados)
+  && JSON.stringify(cascosB) === JSON.stringify(esperados);
+console.log(
+  `camuflajes: Ana ve [${cascosA.map((c) => c.toString(16)).join(', ')}]  `
+  + `Bea ve [${cascosB.map((c) => c.toString(16)).join(', ')}]  `
+  + `${camuflajesBien ? 'LOS DOS IGUAL' : 'NO CUADRAN'}\n`
+);
 
 // Cuatro turnos: dispara siempre quien tiene el turno, desde SU pantalla.
 for (let turno = 0; turno < 4; turno++) {
@@ -124,6 +151,7 @@ console.log(`errores de consola: ${errores.length ? errores.join(' ; ') : 'ningu
 await nav.close();
 
 const fallos =
+  (camuflajesBien ? 0 : 1) +
   (JSON.stringify(finA.perfil) !== JSON.stringify(finB.perfil) ? 1 : 0) +
   (JSON.stringify(finA.vidas) !== JSON.stringify(finB.vidas) ? 1 : 0) +
   (finA.masa !== finB.masa ? 1 : 0) +

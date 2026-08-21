@@ -168,3 +168,41 @@ describe('huella del estado', () => {
     expect(h).toBeLessThanOrEqual(0xffffffff);
   });
 });
+
+describe('los camuflajes que llegan al entrar en una sala', () => {
+  const unir = (camuflajes) => validar({
+    v: VERSION, tipo: PIDE.unir, sala: 'ABCD', nombre: 'Ana', camuflajes,
+  });
+
+  it('sin camuflajes vale: se juega sin cuenta', () => {
+    expect(unir(undefined).ok).toBe(true);
+    expect(unir(null).ok).toBe(true);
+  });
+
+  it('con los dos vale', () => {
+    expect(unir({ a: 'a-bosque', b: 'b-abisal' }).ok).toBe(true);
+  });
+
+  it('con uno solo tambien: puede que solo tenga ese', () => {
+    expect(unir({ a: 'a-bosque' }).ok).toBe(true);
+    expect(unir({ a: null, b: 'b-abisal' }).ok).toBe(true);
+  });
+
+  it.each([
+    ['un numero', { a: 7 }],
+    ['con mayusculas', { a: 'A-Bosque' }],
+    ['con espacios', { a: 'a bosque' }],
+    ['vacio', { a: '' }],
+    ['larguisimo', { a: 'a'.repeat(41) }],
+    ['no es objeto', 'a-bosque'],
+  ])('rechaza %s', (_, camuflajes) => {
+    expect(unir(camuflajes).ok).toBe(false);
+  });
+
+  it('no comprueba que exista, solo la forma', () => {
+    // El catalogo vive en el arte y puede crecer sin que el servidor se entere.
+    // Un identificador que ningun movil reconozca se pinta con el color del
+    // bando y la partida sigue: un cosmetico no puede impedir jugar.
+    expect(unir({ a: 'a-inventado-que-no-existe' }).ok).toBe(true);
+  });
+});

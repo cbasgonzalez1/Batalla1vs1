@@ -86,6 +86,29 @@ export const mensaje = (tipo, datos = {}) => ({ v: VERSION, tipo, ...datos });
  * nada —cada movil simula por su cuenta y el resultado no cuadraria— pero si
  * podria tirar la partida de los demas, y eso hay que impedirlo.
  */
+/**
+ * Los camuflajes que manda un cliente al entrar en la sala.
+ *
+ * Se comprueba la FORMA, no que existan: el catalogo vive en el arte y puede
+ * crecer sin que el servidor se entere. Un identificador que ningun movil
+ * reconozca se pinta con el color del bando y la partida sigue — es decoracion,
+ * y un cosmetico no puede impedir jugar.
+ *
+ * @returns {string|null} el motivo del no, o null si valen
+ */
+function camuflajesInvalidos(camuflajes) {
+  if (camuflajes === undefined || camuflajes === null) return null;
+  if (typeof camuflajes !== 'object') return 'camuflajes invalidos';
+  for (const bando of ['a', 'b']) {
+    const id = camuflajes[bando];
+    if (id === undefined || id === null) continue;
+    if (typeof id !== 'string' || !/^[a-z0-9-]{1,40}$/.test(id)) {
+      return `camuflaje de ${bando} invalido`;
+    }
+  }
+  return null;
+}
+
 export function validar(bruto) {
   if (!bruto || typeof bruto !== 'object') return { ok: false, motivo: 'no es un objeto' };
   if (bruto.v !== VERSION) return { ok: false, motivo: `version ${bruto.v} distinta de ${VERSION}` };
@@ -97,6 +120,8 @@ export function validar(bruto) {
       return { ok: false, motivo: 'sin nombre' };
     }
     if (bruto.nombre.length > 16) return { ok: false, motivo: 'nombre demasiado largo' };
+    const mal = camuflajesInvalidos(bruto.camuflajes);
+    if (mal) return { ok: false, motivo: mal };
   }
 
   if (bruto.tipo === PIDE.bando && bruto.bando !== 'a' && bruto.bando !== 'b') {

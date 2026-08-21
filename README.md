@@ -230,9 +230,15 @@ que hay detrás es una partida y no un vacío.
 pnpm verificar:cuenta   # las dos pantallas, en un navegador de verdad
 ```
 
-Lo que falta: en red, **el camuflaje del rival**. Hoy cada uno ve el suyo porque
-el camuflaje no viaja todavía en el mensaje de arranque de la sala
-(`docs/PLATAFORMA.md` §6).
+En red el camuflaje **viaja**: cada uno manda los dos suyos al entrar en la sala,
+el servidor se queda con el del bando que juega y lo reparte con la alineación,
+así que los dos móviles pintan los dos tanques igual. Lo comprueba
+`pnpm verificar:red`. El servidor no comprueba que el camuflaje exista, sólo la
+forma: el catálogo vive en el arte y puede crecer sin que se entere, y un
+identificador desconocido se pinta con el color del bando y la partida sigue.
+
+Lo siguiente es **la reconexión** (`docs/PLATAFORMA.md` §3.2): hoy, si se cae el
+socket, te quedas fuera de tu partida.
 
 ### Hacia dónde va
 

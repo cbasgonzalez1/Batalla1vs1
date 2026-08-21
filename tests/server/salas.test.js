@@ -257,3 +257,50 @@ describe('desincronia', () => {
     expect(salidas).toEqual([]);
   });
 });
+
+describe('el camuflaje viaja con el jugador', () => {
+  /**
+   * Es decoracion y no toca la simulacion, pero tiene que llegar: sin esto, en
+   * una partida en red el tanque de enfrente sale con el color de serie y lo
+   * comprado no se ve donde importa, que es en el campo.
+   */
+  const conCamuflajes = () => {
+    const salas = crearSalas({ rng: () => 0.5, semillaDe: () => 'semilla' });
+    const sala = salas.crear();
+    salas.unir(sala.codigo, {
+      id: 'uno', nombre: 'Ana', camuflajes: { a: 'a-bosque', b: 'b-abisal' },
+    });
+    salas.unir(sala.codigo, { id: 'dos', nombre: 'Bea' });
+    return { salas, codigo: sala.codigo };
+  };
+
+  it('el estado publico enseña el del bando que juega', () => {
+    const { salas, codigo } = conCamuflajes();
+    const [ana] = salas.estado(codigo).jugadores;
+    expect(ana.bando).toBe('a');
+    expect(ana.camuflaje).toBe('a-bosque');
+  });
+
+  it('cambiar de bando cambia el camuflaje sin mandar nada mas', () => {
+    // Se guardan los DOS al entrar justo para esto.
+    const { salas, codigo } = conCamuflajes();
+    salas.cambiarBando(codigo, 'uno', 'b');
+    const ana = salas.estado(codigo).jugadores.find((j) => j.id === 'uno');
+    expect(ana.camuflaje).toBe('b-abisal');
+  });
+
+  it('quien no manda camuflaje sale a null, y eso vale', () => {
+    const { salas, codigo } = conCamuflajes();
+    const bea = salas.estado(codigo).jugadores.find((j) => j.id === 'dos');
+    expect(bea.camuflaje).toBe(null);
+  });
+
+  it('la alineacion lo lleva, que es lo que monta el vehiculo', () => {
+    const { salas, codigo } = conCamuflajes();
+    salas.marcarListo(codigo, 'uno');
+    salas.marcarListo(codigo, 'dos');
+    const { alineacion } = salas.empezar(codigo);
+    expect(alineacion.find((j) => j.id === 'uno').camuflaje).toBe('a-bosque');
+    expect(alineacion.find((j) => j.id === 'dos').camuflaje).toBe(null);
+  });
+});

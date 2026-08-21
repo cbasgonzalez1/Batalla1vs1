@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { sesionEnContexto } from './sesion-de-prueba.mjs';
 
 /**
  * Dos navegadores de verdad entrando a la misma sala.
@@ -14,8 +15,11 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 const nav = await chromium.launch();
 const errores = [];
 
-async function abrir(locale, ruta) {
+async function abrir(locale, ruta, cuenta) {
   const ctx = await nav.newContext({ locale });
+  // Con el servidor de cuentas levantado, el panel de acceso tapa la sala: el
+  // token se siembra antes de navegar. Sin ese servidor no hace nada.
+  await sesionEnContexto(ctx, cuenta);
   const pg = await ctx.newPage();
   pg.on('console', (m) => m.type() === 'error' && errores.push(`[${locale}] ${m.text()}`));
   pg.on('pageerror', (e) => errores.push(`[${locale}] ${e}`));
@@ -35,7 +39,7 @@ const leer = (pg) =>
   }));
 
 // Anfitrion: crea la sala.
-const uno = await abrir('es-ES', '/?online');
+const uno = await abrir('es-ES', '/?online', 'lobby-uno');
 await uno.fill('#s-nombre', 'Ana');
 await uno.click('#s-crear');
 await esperar(600);
@@ -47,7 +51,7 @@ console.log(`  aviso:   "${trasCrear.aviso}"   boton listo desactivado=${trasCre
 
 // Invitado: entra con el codigo dictado.
 // El invitado abre el enlace con el codigo ya puesto, teclea su nombre y entra.
-const dos = await abrir('en-US', '/?online');
+const dos = await abrir('en-US', '/?online', 'lobby-dos');
 await dos.fill('#s-nombre', 'Bea');
 await dos.fill('#s-codigo-input', trasCrear.codigo);
 await dos.click('#s-unir');

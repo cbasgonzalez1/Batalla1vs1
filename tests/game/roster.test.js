@@ -158,3 +158,20 @@ describe('colocacion en el campo', () => {
     expect(pos.get('b1')).toBeCloseTo(44, 6);
   });
 });
+
+describe('el camuflaje llega al participante', () => {
+  it('se conserva tal cual, sin tocarlo', () => {
+    // El roster no opina de decoracion: la reparte y ya. Si algun dia la
+    // simulacion leyera esto, dos moviles con catalogos distintos calcularian
+    // cosas distintas — que es justo lo que `PLATAFORMA.md` §0.2 prohibe.
+    const partida = crearPartida({
+      jugadores: [
+        { id: 'a1', nombre: 'Ana', bando: 'a', camuflaje: 'a-bosque' },
+        { id: 'b1', nombre: 'Bea', bando: 'b' },
+      ],
+      semilla: 'x',
+    });
+    expect(partida.participantes.find((p) => p.id === 'a1').camuflaje).toBe('a-bosque');
+    expect(partida.participantes.find((p) => p.id === 'b1').camuflaje).toBe(null);
+  });
+});

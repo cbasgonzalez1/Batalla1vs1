@@ -49,6 +49,11 @@ export function crearPartida({ jugadores, semilla }) {
         nombre: j.nombre ?? j.id,
         bando,
         indice,                  // posicion dentro de su bando, de fuera a dentro
+        // El camuflaje viaja con el jugador y no se toca aqui: es DECORACION.
+        // No entra en el paso fijo, no cambia una sola cifra de la simulacion y
+        // un movil que no lo reconozca pinta el color de su bando y sigue
+        // jugando (`docs/PLATAFORMA.md` §0.2).
+        camuflaje: j.camuflaje ?? null,
         estado: newPlayerState(),
       });
     });

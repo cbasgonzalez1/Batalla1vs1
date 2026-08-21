@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import { sesionEnContexto } from './sesion-de-prueba.mjs';
 
 /**
  * Seis navegadores, tres por bando, la misma partida.
@@ -18,8 +19,11 @@ const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 const nav = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=gl-egl'] });
 const errores = [];
 
-async function abrir(nombre) {
+async function abrir(nombre, cuenta) {
   const ctx = await nav.newContext({ locale: 'es-ES' });
+  // Con el servidor de cuentas levantado, el panel de acceso tapa la sala: el
+  // token se siembra antes de navegar. Sin ese servidor no hace nada.
+  await sesionEnContexto(ctx, cuenta);
   const pg = await ctx.newPage();
   pg.on('console', (m) => m.type() === 'error' && errores.push(`[${nombre}] ${m.text()}`));
   pg.on('pageerror', (e) => errores.push(`[${nombre}] ${e}`));
@@ -65,7 +69,7 @@ const nombres = ['Ana', 'Bea', 'Caro', 'Dani', 'Eva', 'Fran'];
 const paginas = [];
 
 // El primero crea la sala; los demas entran con el codigo.
-paginas.push(await abrir(nombres[0]));
+paginas.push(await abrir(nombres[0], 'trio-0'));
 await paginas[0].fill('#s-nombre', nombres[0]);
 await paginas[0].click('#s-crear');
 await esperar(700);
@@ -73,7 +77,7 @@ const codigo = await paginas[0].textContent('#s-codigo');
 console.log(`sala ${codigo}`);
 
 for (let i = 1; i < 6; i++) {
-  const pg = await abrir(nombres[i]);
+  const pg = await abrir(nombres[i], `trio-${i}`);
   await pg.fill('#s-nombre', nombres[i]);
   await pg.fill('#s-codigo-input', codigo);
   await pg.click('#s-unir');
